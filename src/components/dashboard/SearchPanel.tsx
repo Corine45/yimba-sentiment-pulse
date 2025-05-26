@@ -205,7 +205,7 @@ export const SearchPanel = () => {
                 {Object.entries(searchResults.platforms).map(([platform, count]) => (
                   <div key={platform} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <span className="capitalize font-medium">{platform}</span>
-                    <span className="text-blue-600 font-bold">{count}</span>
+                    <span className="text-blue-600 font-bold">{count as number}</span>
                   </div>
                 ))}
               </div>
