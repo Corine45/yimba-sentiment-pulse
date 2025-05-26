@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -88,7 +87,7 @@ export const SearchPanel = () => {
             </Button>
           </div>
 
-          {/* Filters */}
+          {/* Basic Filters */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label>Langue</Label>
@@ -130,6 +129,62 @@ export const SearchPanel = () => {
                   <SelectItem value="30d">30 jours</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+          </div>
+
+          {/* New Advanced Filters */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Analyse par genre</Label>
+              <Select>
+                <SelectTrigger>
+                  <SelectValue placeholder="Sélectionner..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tous genres</SelectItem>
+                  <SelectItem value="male">Masculin</SelectItem>
+                  <SelectItem value="female">Féminin</SelectItem>
+                  <SelectItem value="other">Autre</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Type de contenu</Label>
+              <Select>
+                <SelectTrigger>
+                  <SelectValue placeholder="Sélectionner..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tous contenus</SelectItem>
+                  <SelectItem value="text">Texte uniquement</SelectItem>
+                  <SelectItem value="image">Images</SelectItem>
+                  <SelectItem value="video">Vidéos</SelectItem>
+                  <SelectItem value="mixed">Contenu mixte</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Content Type Filters */}
+          <div className="space-y-3">
+            <Label>Filtres de contenu avancés</Label>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {[
+                { id: "visual", label: "Analyse visuelle" },
+                { id: "video", label: "Analyse vidéo" },
+                { id: "audio", label: "Contenu audio" },
+                { id: "influencer", label: "Influenceurs" },
+                { id: "viral", label: "Contenu viral" },
+                { id: "trending", label: "Tendances" }
+              ].map((filter) => (
+                <div key={filter.id} className="flex items-center space-x-2">
+                  <Checkbox id={filter.id} />
+                  <Label htmlFor={filter.id} className="text-sm">
+                    {filter.label}
+                  </Label>
+                </div>
+              ))}
             </div>
           </div>
 

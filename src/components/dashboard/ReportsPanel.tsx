@@ -2,7 +2,12 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FileText, Download, Calendar, BarChart } from "lucide-react";
+import { DemographicAnalysis } from "./widgets/DemographicAnalysis";
+import { WordCloud } from "./widgets/WordCloud";
+import { AIAnalysis } from "./widgets/AIAnalysis";
+import { KeywordFrequency } from "./widgets/KeywordFrequency";
 
 export const ReportsPanel = () => {
   const reports = [
@@ -67,8 +72,11 @@ export const ReportsPanel = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="sentiment">Analyse de sentiment</SelectItem>
+                  <SelectItem value="demographic">Analyse démographique</SelectItem>
+                  <SelectItem value="ai">Analyse IA</SelectItem>
                   <SelectItem value="crisis">Rapport de crise</SelectItem>
                   <SelectItem value="trends">Tendances</SelectItem>
+                  <SelectItem value="keywords">Fréquence mots-clés</SelectItem>
                   <SelectItem value="custom">Personnalisé</SelectItem>
                 </SelectContent>
               </Select>
@@ -108,6 +116,39 @@ export const ReportsPanel = () => {
             <FileText className="w-4 h-4 mr-2" />
             Générer le rapport
           </Button>
+        </CardContent>
+      </Card>
+
+      {/* Widget Previews */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Aperçu des widgets de rapport</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Tabs defaultValue="demographic" className="w-full">
+            <TabsList className="grid w-full grid-cols-4">
+              <TabsTrigger value="demographic">Démographie</TabsTrigger>
+              <TabsTrigger value="wordcloud">Nuage de mots</TabsTrigger>
+              <TabsTrigger value="ai">Analyse IA</TabsTrigger>
+              <TabsTrigger value="frequency">Fréquence</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="demographic" className="mt-6">
+              <DemographicAnalysis />
+            </TabsContent>
+            
+            <TabsContent value="wordcloud" className="mt-6">
+              <WordCloud />
+            </TabsContent>
+            
+            <TabsContent value="ai" className="mt-6">
+              <AIAnalysis />
+            </TabsContent>
+            
+            <TabsContent value="frequency" className="mt-6">
+              <KeywordFrequency />
+            </TabsContent>
+          </Tabs>
         </CardContent>
       </Card>
 
@@ -153,11 +194,11 @@ export const ReportsPanel = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {[
               { name: "Rapport Exécutif", description: "Vue d'ensemble pour la direction" },
-              { name: "Analyse Détaillée", description: "Rapport complet avec toutes les métriques" },
+              { name: "Analyse Démographique", description: "Focus sur les données démographiques" },
+              { name: "Analyse IA Complète", description: "Rapport avec tous les widgets IA" },
               { name: "Rapport de Crise", description: "Focus sur les alertes et situations critiques" },
-              { name: "Tendances Sectorielles", description: "Analyse par secteur d'activité" },
-              { name: "Comparatif Concurrentiel", description: "Positionnement vs. concurrence" },
-              { name: "Rapport Régional", description: "Focus géographique spécifique" }
+              { name: "Tendances & Mots-clés", description: "Analyse des tendances et fréquences" },
+              { name: "Rapport Multimédia", description: "Analyse des contenus visuels et vidéos" }
             ].map((template, index) => (
               <div key={index} className="p-4 border border-gray-200 rounded-lg hover:border-blue-300 cursor-pointer transition-colors">
                 <h4 className="font-medium">{template.name}</h4>
