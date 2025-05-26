@@ -1,9 +1,16 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
-import { TrendingUp, TrendingDown, AlertTriangle } from "lucide-react";
+import { TrendingUp, TrendingDown, AlertTriangle, Eye } from "lucide-react";
 
-export const SentimentAnalysis = () => {
+interface SentimentAnalysisProps {
+  userRole: string;
+  permissions: {
+    canAnalyze: boolean;
+    canExportData: boolean;
+  };
+}
+
+export const SentimentAnalysis = ({ userRole, permissions }: SentimentAnalysisProps) => {
   const sentimentData = [
     { name: "Lun", positif: 45, negatif: 25, neutre: 30 },
     { name: "Mar", positif: 52, negatif: 28, neutre: 20 },
@@ -29,6 +36,15 @@ export const SentimentAnalysis = () => {
 
   return (
     <div className="space-y-6">
+      {userRole === "observateur" && (
+        <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+          <p className="text-sm text-blue-800">
+            <Eye className="w-4 h-4 inline mr-1" />
+            Mode consultation - Vous consultez les analyses en lecture seule
+          </p>
+        </div>
+      )}
+
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="border-l-4 border-l-green-500">

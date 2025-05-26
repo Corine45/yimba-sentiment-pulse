@@ -1,10 +1,17 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Bell, AlertTriangle, Eye, ExternalLink } from "lucide-react";
 
-export const AlertsPanel = () => {
+interface AlertsPanelProps {
+  userRole: string;
+  permissions: {
+    canManageAlerts: boolean;
+    canExportData: boolean;
+  };
+}
+
+export const AlertsPanel = ({ userRole, permissions }: AlertsPanelProps) => {
   const alerts = [
     {
       id: 1,
@@ -64,6 +71,15 @@ export const AlertsPanel = () => {
 
   return (
     <div className="space-y-6">
+      {userRole === "observateur" && (
+        <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+          <p className="text-sm text-blue-800">
+            <Bell className="w-4 h-4 inline mr-1" />
+            Mode réception - Vous recevez les alertes en lecture seule
+          </p>
+        </div>
+      )}
+
       {/* Alert Summary */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card className="text-center">
@@ -97,7 +113,9 @@ export const AlertsPanel = () => {
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <Bell className="w-5 h-5 text-blue-600" />
-            <span>Alertes actives</span>
+            <span>
+              {permissions.canManageAlerts ? "Alertes actives" : "Notifications reçues"}
+            </span>
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -134,7 +152,7 @@ export const AlertsPanel = () => {
                   <div className="flex space-x-2">
                     <Button variant="outline" size="sm">
                       <Eye className="w-4 h-4 mr-2" />
-                      Analyser
+                      {permissions.canManageAlerts ? "Analyser" : "Voir"}
                     </Button>
                     <Button variant="outline" size="sm">
                       <ExternalLink className="w-4 h-4 mr-2" />
