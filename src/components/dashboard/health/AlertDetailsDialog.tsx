@@ -108,11 +108,11 @@ export const AlertDetailsDialog = ({
   };
 
   const handleAssign = (assignee: string) => {
-    const updatedAlert = {...alert, assignedTo: assignee};
+    const updatedAlert = {...alert, assignedTo: assignee === "unassigned" ? null : assignee};
     onUpdateAlert(updatedAlert);
     toast({
       title: "Alerte assignée",
-      description: `L'alerte ${alert.id} a été assignée à ${assignee}`,
+      description: assignee === "unassigned" ? `L'alerte ${alert.id} n'est plus assignée` : `L'alerte ${alert.id} a été assignée à ${assignee}`,
     });
   };
 
@@ -191,12 +191,12 @@ export const AlertDetailsDialog = ({
               <div>
                 <Label className="text-sm font-medium text-gray-600">Assigné à</Label>
                 {healthPermissions.canAssignCases ? (
-                  <Select value={alert.assignedTo || ""} onValueChange={handleAssign}>
+                  <Select value={alert.assignedTo || "unassigned"} onValueChange={handleAssign}>
                     <SelectTrigger>
                       <SelectValue placeholder="Sélectionner un assigné" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Non assigné</SelectItem>
+                      <SelectItem value="unassigned">Non assigné</SelectItem>
                       <SelectItem value="Dr. Kouassi">Dr. Kouassi</SelectItem>
                       <SelectItem value="Dr. Traore">Dr. Traore</SelectItem>
                       <SelectItem value="Dr. Diabaté">Dr. Diabaté</SelectItem>
