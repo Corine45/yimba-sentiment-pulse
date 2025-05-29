@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -305,32 +304,4 @@ export const Dashboard = ({ user, onLogout }: DashboardProps) => {
       </div>
     </div>
   );
-
-  // Fonction pour obtenir la couleur du badge selon le rôle
-  function getRoleBadgeColor(role: string) {
-    switch (role) {
-      case "admin":
-        return "bg-red-100 text-red-800";
-      case "analyste":
-        return "bg-blue-100 text-blue-800";
-      case "observateur":
-        return "bg-gray-100 text-gray-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
-  }
-
-  // Fonction pour obtenir le label du rôle en français
-  function getRoleLabel(role: string) {
-    switch (role) {
-      case "admin":
-        return "Administrateur";
-      case "analyste":
-        return "Analyste";
-      case "observateur":
-        return "Observateur";
-      default:
-        return role;
-    }
-  }
 };
