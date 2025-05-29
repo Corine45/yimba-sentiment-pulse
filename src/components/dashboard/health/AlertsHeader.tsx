@@ -1,16 +1,20 @@
 
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus } from "lucide-react";
 import { HealthRole, HealthPermissions } from "../utils/healthPermissions";
 
 interface AlertsHeaderProps {
   healthRole: HealthRole;
   healthPermissions: HealthPermissions;
   alertsCount: number;
+  CreateAlertComponent: () => React.ReactNode | null;
 }
 
-export const AlertsHeader = ({ healthRole, healthPermissions, alertsCount }: AlertsHeaderProps) => {
+export const AlertsHeader = ({ 
+  healthRole, 
+  healthPermissions, 
+  alertsCount,
+  CreateAlertComponent 
+}: AlertsHeaderProps) => {
   return (
     <div className="flex justify-between items-center">
       <div>
@@ -21,12 +25,7 @@ export const AlertsHeader = ({ healthRole, healthPermissions, alertsCount }: Ale
         </p>
       </div>
       <div className="flex items-center space-x-2">
-        {healthPermissions.canCreateAlerts && (
-          <Button>
-            <Plus className="w-4 h-4 mr-2" />
-            Nouvelle alerte
-          </Button>
-        )}
+        <CreateAlertComponent />
         <Badge variant="outline" className="text-xs">
           {alertsCount} alertes
         </Badge>

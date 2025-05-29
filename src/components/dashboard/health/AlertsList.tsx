@@ -16,14 +16,24 @@ interface Alert {
   verified: boolean;
   assignedTo: string | null;
   rawText: string;
+  reporterName?: string;
+  reporterContact?: string;
+  createdAt?: string;
 }
 
 interface AlertsListProps {
   alerts: Alert[];
   healthPermissions: HealthPermissions;
+  onViewDetails: (alert: Alert) => void;
+  onUpdateAlert: (alert: Alert) => void;
 }
 
-export const AlertsList = ({ alerts, healthPermissions }: AlertsListProps) => {
+export const AlertsList = ({ 
+  alerts, 
+  healthPermissions, 
+  onViewDetails,
+  onUpdateAlert 
+}: AlertsListProps) => {
   if (alerts.length === 0) {
     return (
       <Card>
@@ -39,7 +49,13 @@ export const AlertsList = ({ alerts, healthPermissions }: AlertsListProps) => {
   return (
     <div className="space-y-4">
       {alerts.map((alert) => (
-        <AlertCard key={alert.id} alert={alert} healthPermissions={healthPermissions} />
+        <AlertCard 
+          key={alert.id} 
+          alert={alert} 
+          healthPermissions={healthPermissions}
+          onViewDetails={onViewDetails}
+          onUpdateAlert={onUpdateAlert}
+        />
       ))}
     </div>
   );
