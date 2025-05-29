@@ -1,5 +1,5 @@
 
-import { HealthRole } from "../../utils/healthPermissions";
+import { HealthRole } from "../../../utils/healthPermissions";
 
 export interface HealthUser {
   id: string;
