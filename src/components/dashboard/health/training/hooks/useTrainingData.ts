@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { TrainingModule, TrainingResource, TrainingStats } from "../types/trainingTypes";
 import { HealthRole } from "../../../utils/healthPermissions";
@@ -33,7 +32,8 @@ export const useTrainingData = (healthRole: HealthRole) => {
         status: "in_progress",
         progress: 65,
         category: "analysis",
-        lastAccessed: "2024-01-20"
+        lastAccessed: "2024-01-20",
+        certificateAvailable: true
       },
       {
         id: "crisis-management",

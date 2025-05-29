@@ -81,7 +81,9 @@ export const TrainingModuleCard = ({ module, onStart, onContinue }: TrainingModu
               {module.level}
             </Badge>
             {module.certificateAvailable && (
-              <Award className="w-4 h-4 text-yellow-500" title="Certificat disponible" />
+              <div className="relative">
+                <Award className="w-4 h-4 text-yellow-500" />
+              </div>
             )}
           </div>
         </div>
