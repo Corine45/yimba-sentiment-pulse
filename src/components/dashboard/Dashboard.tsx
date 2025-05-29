@@ -8,7 +8,8 @@ import { SentimentAnalysis } from "./SentimentAnalysis";
 import { AlertsPanel } from "./AlertsPanel";
 import { ReportsPanel } from "./ReportsPanel";
 import { UserManagement } from "./UserManagement";
-import { LogOut, Eye, Bell, TrendingUp, FileText, Users, Settings } from "lucide-react";
+import { HealthSurveillance } from "./HealthSurveillance";
+import { LogOut, Eye, Bell, TrendingUp, FileText, Users, Settings, Activity } from "lucide-react";
 
 interface DashboardProps {
   user: any;
@@ -30,6 +31,8 @@ export const Dashboard = ({ user, onLogout }: DashboardProps) => {
           canManageUsers: true,
           canAccessSettings: true,
           canExportData: true,
+          canAccessHealthSurveillance: true,
+          canConfigureHealthSources: true,
           searchLevel: "advanced", // recherches avancées
         };
       case "analyste":
@@ -41,6 +44,8 @@ export const Dashboard = ({ user, onLogout }: DashboardProps) => {
           canManageUsers: false,
           canAccessSettings: false,
           canExportData: true,
+          canAccessHealthSurveillance: true,
+          canConfigureHealthSources: false,
           searchLevel: "advanced", // recherches avancées
         };
       case "observateur":
@@ -52,6 +57,8 @@ export const Dashboard = ({ user, onLogout }: DashboardProps) => {
           canManageUsers: false,
           canAccessSettings: false,
           canExportData: false,
+          canAccessHealthSurveillance: true,
+          canConfigureHealthSources: false,
           searchLevel: "basic", // recherches simples
         };
       default:
@@ -63,6 +70,8 @@ export const Dashboard = ({ user, onLogout }: DashboardProps) => {
           canManageUsers: false,
           canAccessSettings: false,
           canExportData: false,
+          canAccessHealthSurveillance: false,
+          canConfigureHealthSources: false,
           searchLevel: "none",
         };
     }
@@ -112,6 +121,16 @@ export const Dashboard = ({ user, onLogout }: DashboardProps) => {
       icon: FileText,
       description: permissions.canGenerateReports ? "Génération de rapports" : "Consultation des rapports"
     });
+
+    // Nouveau module Veille Sanitaire
+    if (permissions.canAccessHealthSurveillance) {
+      tabs.push({
+        value: "health",
+        label: "Veille Sanitaire",
+        icon: Activity,
+        description: permissions.canConfigureHealthSources ? "Surveillance sanitaire complète" : user.role === "analyste" ? "Analyse sanitaire + export" : "Consultation sanitaire"
+      });
+    }
     
     if (permissions.canManageUsers) {
       tabs.push({
@@ -245,6 +264,12 @@ export const Dashboard = ({ user, onLogout }: DashboardProps) => {
             <ReportsPanel userRole={user.role} permissions={permissions} />
           </TabsContent>
 
+          {permissions.canAccessHealthSurveillance && (
+            <TabsContent value="health" className="space-y-6">
+              <HealthSurveillance userRole={user.role} permissions={permissions} />
+            </TabsContent>
+          )}
+
           {permissions.canManageUsers && (
             <TabsContent value="users" className="space-y-6">
               <UserManagement />
@@ -280,4 +305,32 @@ export const Dashboard = ({ user, onLogout }: DashboardProps) => {
       </div>
     </div>
   );
+
+  // Fonction pour obtenir la couleur du badge selon le rôle
+  function getRoleBadgeColor(role: string) {
+    switch (role) {
+      case "admin":
+        return "bg-red-100 text-red-800";
+      case "analyste":
+        return "bg-blue-100 text-blue-800";
+      case "observateur":
+        return "bg-gray-100 text-gray-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  }
+
+  // Fonction pour obtenir le label du rôle en français
+  function getRoleLabel(role: string) {
+    switch (role) {
+      case "admin":
+        return "Administrateur";
+      case "analyste":
+        return "Analyste";
+      case "observateur":
+        return "Observateur";
+      default:
+        return role;
+    }
+  }
 };
