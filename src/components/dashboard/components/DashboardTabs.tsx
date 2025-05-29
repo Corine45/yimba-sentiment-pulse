@@ -8,6 +8,7 @@ import { ReportsPanel } from "../ReportsPanel";
 import { UserManagement } from "../UserManagement";
 import { HealthSurveillance } from "../HealthSurveillance";
 import { Eye, Bell, TrendingUp, FileText, Users, Settings, Activity } from "lucide-react";
+import { HealthRole } from "../utils/healthPermissions";
 
 interface DashboardTabsProps {
   activeTab: string;
@@ -91,6 +92,14 @@ export const DashboardTabs = ({ activeTab, onTabChange, user, permissions }: Das
 
   const availableTabs = getAvailableTabs();
 
+  // Simuler un profil utilisateur pour le module santé
+  // En production, ceci devrait venir de la base de données
+  const healthUserProfile = {
+    name: user.name,
+    email: user.email || `${user.name.toLowerCase().replace(' ', '.')}@example.com`,
+    healthRole: "admin_sante" as HealthRole // Par défaut, ajuster selon la logique métier
+  };
+
   return (
     <Tabs value={activeTab} onValueChange={onTabChange} className="space-y-6">
       <TabsList className={`grid w-full bg-white p-1 shadow-sm`} style={{gridTemplateColumns: `repeat(${availableTabs.length}, 1fr)`}}>
@@ -122,7 +131,10 @@ export const DashboardTabs = ({ activeTab, onTabChange, user, permissions }: Das
 
       {permissions.canAccessHealthSurveillance && (
         <TabsContent value="health" className="space-y-6">
-          <HealthSurveillance userRole={user.role} permissions={permissions} />
+          <HealthSurveillance 
+            healthRole={healthUserProfile.healthRole}
+            userProfile={healthUserProfile}
+          />
         </TabsContent>
       )}
 

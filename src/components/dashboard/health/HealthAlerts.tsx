@@ -5,14 +5,15 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { AlertTriangle, Search, Filter, Eye, CheckCircle, XCircle } from "lucide-react";
+import { AlertTriangle, Search, Filter, Eye, CheckCircle, XCircle, Edit, Plus } from "lucide-react";
+import { HealthRole, HealthPermissions } from "../utils/healthPermissions";
 
 interface HealthAlertsProps {
-  userRole: string;
-  permissions: any;
+  healthRole: HealthRole;
+  healthPermissions: HealthPermissions;
 }
 
-export const HealthAlerts = ({ userRole, permissions }: HealthAlertsProps) => {
+export const HealthAlerts = ({ healthRole, healthPermissions }: HealthAlertsProps) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [severityFilter, setSeverityFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -93,7 +94,10 @@ export const HealthAlerts = ({ userRole, permissions }: HealthAlertsProps) => {
     const matchesSeverity = severityFilter === "all" || alert.severity === severityFilter;
     const matchesStatus = statusFilter === "all" || alert.status === statusFilter;
     
-    return matchesSearch && matchesSeverity && matchesStatus;
+    // Filtrer selon le rôle - les observateurs ne voient que les alertes vérifiées
+    const matchesRole = healthRole !== "observateur_partenaire" || alert.verified;
+    
+    return matchesSearch && matchesSeverity && matchesStatus && matchesRole;
   });
 
   return (
@@ -103,10 +107,17 @@ export const HealthAlerts = ({ userRole, permissions }: HealthAlertsProps) => {
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Gestion des alertes sanitaires</h2>
           <p className="text-gray-600">
-            {permissions.canManageAlerts ? "Gérez et suivez les alertes" : "Consultez les alertes en cours"}
+            {healthPermissions.canEditAlerts ? "Gérez et suivez les alertes" : "Consultez les alertes en cours"}
+            {healthRole === "observateur_partenaire" && " - Alertes vérifiées uniquement"}
           </p>
         </div>
         <div className="flex items-center space-x-2">
+          {healthPermissions.canCreateAlerts && (
+            <Button>
+              <Plus className="w-4 h-4 mr-2" />
+              Nouvelle alerte
+            </Button>
+          )}
           <Badge variant="outline" className="text-xs">
             {filteredAlerts.length} alertes
           </Badge>
@@ -222,25 +233,27 @@ export const HealthAlerts = ({ userRole, permissions }: HealthAlertsProps) => {
                       <Eye className="w-4 h-4 mr-2" />
                       Détails
                     </Button>
-                    {permissions.canManageAlerts && (
-                      <>
-                        {alert.status === 'nouveau' && (
-                          <Button size="sm">
-                            <CheckCircle className="w-4 h-4 mr-2" />
-                            Prendre en charge
-                          </Button>
-                        )}
-                        {alert.status === 'en_cours' && (
-                          <Button size="sm" variant="outline">
-                            <XCircle className="w-4 h-4 mr-2" />
-                            Marquer résolu
-                          </Button>
-                        )}
-                      </>
+                    {healthPermissions.canEditAlerts && (
+                      <Button variant="outline" size="sm">
+                        <Edit className="w-4 h-4 mr-2" />
+                        Modifier
+                      </Button>
+                    )}
+                    {healthPermissions.canValidateAlerts && !alert.verified && (
+                      <Button size="sm">
+                        <CheckCircle className="w-4 h-4 mr-2" />
+                        Valider
+                      </Button>
+                    )}
+                    {healthPermissions.canEditAlerts && alert.status === 'en_cours' && (
+                      <Button size="sm" variant="outline">
+                        <XCircle className="w-4 h-4 mr-2" />
+                        Marquer résolu
+                      </Button>
                     )}
                   </div>
                   
-                  {permissions.canExportData && (
+                  {healthPermissions.canExportData && (
                     <Button variant="ghost" size="sm">
                       Exporter
                     </Button>

@@ -7,10 +7,11 @@ import { HealthMap } from "./HealthMap";
 import { HealthMetrics } from "./HealthMetrics";
 import { HealthTrends } from "./HealthTrends";
 import { Activity, AlertTriangle, MapPin, TrendingUp, Download, RefreshCw } from "lucide-react";
+import { HealthRole, HealthPermissions } from "../utils/healthPermissions";
 
 interface HealthDashboardProps {
-  userRole: string;
-  permissions: any;
+  healthRole: HealthRole;
+  healthPermissions: HealthPermissions;
 }
 
 interface HealthAlert {
@@ -23,7 +24,7 @@ interface HealthAlert {
   verified: boolean;
 }
 
-export const HealthDashboard = ({ userRole, permissions }: HealthDashboardProps) => {
+export const HealthDashboard = ({ healthRole, healthPermissions }: HealthDashboardProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [lastUpdate, setLastUpdate] = useState(new Date());
   
@@ -95,13 +96,25 @@ export const HealthDashboard = ({ userRole, permissions }: HealthDashboardProps)
     }, 2000);
   };
 
+  // Filtrer les alertes selon le rôle - les observateurs ne voient que les alertes vérifiées
+  const visibleAlerts = healthRole === "observateur_partenaire" 
+    ? healthAlerts.filter(alert => alert.verified)
+    : healthAlerts;
+
   return (
     <div className="space-y-6">
       {/* Header avec actions */}
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Tableau de bord sanitaire</h2>
-          <p className="text-gray-600">Surveillance en temps réel - Côte d'Ivoire</p>
+          <p className="text-gray-600">
+            Surveillance en temps réel - Côte d'Ivoire
+            {healthRole === "observateur_partenaire" && (
+              <Badge className="ml-2 text-xs bg-blue-100 text-blue-800">
+                Alertes vérifiées uniquement
+              </Badge>
+            )}
+          </p>
         </div>
         <div className="flex items-center space-x-3">
           <span className="text-sm text-gray-500">
@@ -111,7 +124,7 @@ export const HealthDashboard = ({ userRole, permissions }: HealthDashboardProps)
             <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
             Actualiser
           </Button>
-          {permissions.canExportData && (
+          {healthPermissions.canExportData && (
             <Button size="sm">
               <Download className="w-4 h-4 mr-2" />
               Exporter
@@ -134,7 +147,7 @@ export const HealthDashboard = ({ userRole, permissions }: HealthDashboardProps)
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <HealthMap alerts={healthAlerts} />
+            <HealthMap alerts={visibleAlerts} />
           </CardContent>
         </Card>
 
@@ -147,13 +160,13 @@ export const HealthDashboard = ({ userRole, permissions }: HealthDashboardProps)
                 Alertes récentes
               </div>
               <Badge variant="outline" className="text-xs">
-                {healthAlerts.length} actives
+                {visibleAlerts.length} visibles
               </Badge>
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3 max-h-80 overflow-y-auto">
-              {healthAlerts.map((alert) => (
+              {visibleAlerts.map((alert) => (
                 <div key={alert.id} className={`p-3 rounded-lg border ${getSeverityColor(alert.severity)}`}>
                   <div className="flex items-start justify-between">
                     <div className="flex items-start space-x-3">
