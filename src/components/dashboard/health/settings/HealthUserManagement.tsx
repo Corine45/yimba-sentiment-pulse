@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -23,6 +22,7 @@ interface HealthUser {
 
 export const HealthUserManagement = () => {
   const { toast } = useToast();
+  
   const [users, setUsers] = useState<HealthUser[]>([
     {
       id: "1",
@@ -198,7 +198,7 @@ export const HealthUserManagement = () => {
                 </div>
                 <div>
                   <Label htmlFor="userRole">Rôle dans le module</Label>
-                  <Select value={newUser.role} onValueChange={(value: HealthRole) => setNewUser(prev => ({ ...prev, role: value }))}>
+                  <Select value={newUser.role} onValueChange={(value) => setNewUser(prev => ({ ...prev, role: value as HealthRole }))}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -319,7 +319,7 @@ export const HealthUserManagement = () => {
                 </div>
                 <div>
                   <Label htmlFor="editRole">Rôle</Label>
-                  <Select value={selectedUser.role} onValueChange={(value: HealthRole) => setSelectedUser(prev => prev ? { ...prev, role: value } : null)}>
+                  <Select value={selectedUser.role} onValueChange={(value) => setSelectedUser(prev => prev ? { ...prev, role: value as HealthRole } : null)}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
