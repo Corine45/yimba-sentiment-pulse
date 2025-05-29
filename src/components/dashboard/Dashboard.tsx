@@ -172,8 +172,12 @@ export const Dashboard = ({ user, onLogout }: DashboardProps) => {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-full flex items-center justify-center">
-                  <Eye className="w-5 h-5 text-white" />
+                <div className="w-10 h-10 flex items-center justify-center">
+                  <img 
+                    src="/lovable-uploads/a22a86d5-8372-43c1-b810-1514798e3569.png" 
+                    alt="YIMBA Logo" 
+                    className="w-8 h-8 object-contain"
+                  />
                 </div>
                 <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
                   YIMBA

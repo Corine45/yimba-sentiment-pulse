@@ -23,8 +23,12 @@ const Index = () => {
         <header className="relative z-10 px-6 py-4">
           <div className="max-w-7xl mx-auto flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-full flex items-center justify-center">
-                <Eye className="w-6 h-6 text-white" />
+              <div className="w-12 h-12 flex items-center justify-center">
+                <img 
+                  src="/lovable-uploads/a22a86d5-8372-43c1-b810-1514798e3569.png" 
+                  alt="YIMBA Logo" 
+                  className="w-10 h-10 object-contain"
+                />
               </div>
               <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
                 YIMBA
