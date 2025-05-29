@@ -2,12 +2,13 @@
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { GeographicSelector } from "./GeographicSelector";
 
 export const SearchFilters = () => {
   return (
     <div className="space-y-6">
       {/* Basic Filters */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label>Langue</Label>
           <Select defaultValue="fr">
@@ -23,20 +24,6 @@ export const SearchFilters = () => {
         </div>
 
         <div className="space-y-2">
-          <Label>Pays</Label>
-          <Select defaultValue="ci">
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ci">Côte d'Ivoire</SelectItem>
-              <SelectItem value="fr">France</SelectItem>
-              <SelectItem value="all">Tous pays</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="space-y-2">
           <Label>Période</Label>
           <Select defaultValue="7d">
             <SelectTrigger>
@@ -46,10 +33,16 @@ export const SearchFilters = () => {
               <SelectItem value="1d">24 heures</SelectItem>
               <SelectItem value="7d">7 jours</SelectItem>
               <SelectItem value="30d">30 jours</SelectItem>
+              <SelectItem value="3m">3 mois</SelectItem>
+              <SelectItem value="6m">6 mois</SelectItem>
+              <SelectItem value="12m">12 mois</SelectItem>
             </SelectContent>
           </Select>
         </div>
       </div>
+
+      {/* Geographic Selection */}
+      <GeographicSelector />
 
       {/* Advanced Filters */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

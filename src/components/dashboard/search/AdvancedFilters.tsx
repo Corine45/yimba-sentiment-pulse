@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { useState } from "react";
 import { CalendarIcon, X, Filter } from "lucide-react";
 import { format } from "date-fns";
@@ -15,22 +17,23 @@ export const AdvancedFilters = () => {
   const [dateFrom, setDateFrom] = useState<Date>();
   const [dateTo, setDateTo] = useState<Date>();
   const [selectedLanguages, setSelectedLanguages] = useState<string[]>([]);
-  const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
+  const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>(["twitter", "facebook", "instagram", "tiktok", "youtube"]);
 
   const languages = [
     { code: 'fr', name: 'Français' },
     { code: 'en', name: 'Anglais' },
     { code: 'es', name: 'Espagnol' },
     { code: 'de', name: 'Allemand' },
-    { code: 'it', name: 'Italien' }
+    { code: 'it', name: 'Italien' },
+    { code: 'ar', name: 'Arabe' }
   ];
 
-  const countries = [
-    { code: 'FR', name: 'France' },
-    { code: 'BE', name: 'Belgique' },
-    { code: 'CH', name: 'Suisse' },
-    { code: 'CA', name: 'Canada' },
-    { code: 'US', name: 'États-Unis' }
+  const platforms = [
+    { id: 'twitter', name: 'Twitter/X' },
+    { id: 'facebook', name: 'Facebook' },
+    { id: 'instagram', name: 'Instagram' },
+    { id: 'tiktok', name: 'TikTok' },
+    { id: 'youtube', name: 'YouTube' }
   ];
 
   const addLanguage = (language: string) => {
@@ -43,14 +46,12 @@ export const AdvancedFilters = () => {
     setSelectedLanguages(selectedLanguages.filter(l => l !== language));
   };
 
-  const addCountry = (country: string) => {
-    if (!selectedCountries.includes(country)) {
-      setSelectedCountries([...selectedCountries, country]);
-    }
-  };
-
-  const removeCountry = (country: string) => {
-    setSelectedCountries(selectedCountries.filter(c => c !== country));
+  const togglePlatform = (platformId: string) => {
+    setSelectedPlatforms(prev => 
+      prev.includes(platformId) 
+        ? prev.filter(id => id !== platformId)
+        : [...prev, platformId]
+    );
   };
 
   return (
@@ -62,9 +63,28 @@ export const AdvancedFilters = () => {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
+        {/* Plateformes */}
+        <div className="space-y-3">
+          <label className="text-sm font-medium">Plateformes</label>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            {platforms.map((platform) => (
+              <div key={platform.id} className="flex items-center space-x-2">
+                <Checkbox 
+                  id={platform.id}
+                  checked={selectedPlatforms.includes(platform.id)}
+                  onCheckedChange={() => togglePlatform(platform.id)}
+                />
+                <Label htmlFor={platform.id} className="text-sm">
+                  {platform.name}
+                </Label>
+              </div>
+            ))}
+          </div>
+        </div>
+
         {/* Période */}
         <div className="space-y-3">
-          <label className="text-sm font-medium">Période</label>
+          <label className="text-sm font-medium">Période personnalisée</label>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="text-xs text-gray-600">Date de début</label>
@@ -106,6 +126,24 @@ export const AdvancedFilters = () => {
                 </PopoverContent>
               </Popover>
             </div>
+          </div>
+          
+          {/* Périodes prédéfinies étendues */}
+          <div className="space-y-2">
+            <label className="text-xs text-gray-600">Ou sélectionner une période prédéfinie</label>
+            <Select>
+              <SelectTrigger>
+                <SelectValue placeholder="Période prédéfinie" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="1d">24 heures</SelectItem>
+                <SelectItem value="7d">7 jours</SelectItem>
+                <SelectItem value="30d">30 jours</SelectItem>
+                <SelectItem value="3m">3 mois</SelectItem>
+                <SelectItem value="6m">6 mois</SelectItem>
+                <SelectItem value="12m">12 mois</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
@@ -165,37 +203,6 @@ export const AdvancedFilters = () => {
                   <X 
                     className="w-3 h-3 cursor-pointer" 
                     onClick={() => removeLanguage(langCode)}
-                  />
-                </Badge>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Pays */}
-        <div className="space-y-3">
-          <label className="text-sm font-medium">Pays/Régions</label>
-          <Select onValueChange={addCountry}>
-            <SelectTrigger>
-              <SelectValue placeholder="Ajouter un pays" />
-            </SelectTrigger>
-            <SelectContent>
-              {countries.map((country) => (
-                <SelectItem key={country.code} value={country.code}>
-                  {country.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <div className="flex flex-wrap gap-2">
-            {selectedCountries.map((countryCode) => {
-              const country = countries.find(c => c.code === countryCode);
-              return (
-                <Badge key={countryCode} variant="secondary" className="flex items-center gap-1">
-                  {country?.name}
-                  <X 
-                    className="w-3 h-3 cursor-pointer" 
-                    onClick={() => removeCountry(countryCode)}
                   />
                 </Badge>
               );
