@@ -1,4 +1,3 @@
-
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -39,7 +38,7 @@ export const HealthCaseTracking = ({ healthRole, healthPermissions }: HealthCase
     handleAssignCase
   } = useCaseManagement();
 
-  const hasFilters = searchTerm || statusFilter !== "all" || priorityFilter !== "all" || assigneeFilter !== "all";
+  const hasFilters = Boolean(searchTerm) || statusFilter !== "all" || priorityFilter !== "all" || assigneeFilter !== "all";
 
   if (!healthPermissions.canTrackCases && !healthPermissions.canCreateCaseFiles) {
     return (
