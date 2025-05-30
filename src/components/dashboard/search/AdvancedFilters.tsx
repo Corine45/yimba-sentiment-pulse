@@ -155,7 +155,7 @@ export const AdvancedFilters = () => {
               <SelectValue placeholder="Tous les sentiments" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Tous les sentiments</SelectItem>
+              <SelectItem value="all_sentiments">Tous les sentiments</SelectItem>
               <SelectItem value="positive">Positif uniquement</SelectItem>
               <SelectItem value="negative">Négatif uniquement</SelectItem>
               <SelectItem value="neutral">Neutre uniquement</SelectItem>
@@ -218,7 +218,7 @@ export const AdvancedFilters = () => {
               <SelectValue placeholder="Tous les types" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Tous les types</SelectItem>
+              <SelectItem value="all_types">Tous les types</SelectItem>
               <SelectItem value="text">Texte uniquement</SelectItem>
               <SelectItem value="image">Avec images</SelectItem>
               <SelectItem value="video">Avec vidéos</SelectItem>

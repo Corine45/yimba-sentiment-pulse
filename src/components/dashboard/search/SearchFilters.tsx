@@ -18,7 +18,7 @@ export const SearchFilters = () => {
             <SelectContent>
               <SelectItem value="fr">Français</SelectItem>
               <SelectItem value="en">Anglais</SelectItem>
-              <SelectItem value="all">Toutes langues</SelectItem>
+              <SelectItem value="all_languages">Toutes langues</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -53,7 +53,7 @@ export const SearchFilters = () => {
               <SelectValue placeholder="Sélectionner..." />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Tous genres</SelectItem>
+              <SelectItem value="all_genders">Tous genres</SelectItem>
               <SelectItem value="male">Masculin</SelectItem>
               <SelectItem value="female">Féminin</SelectItem>
               <SelectItem value="other">Autre</SelectItem>
@@ -68,7 +68,7 @@ export const SearchFilters = () => {
               <SelectValue placeholder="Sélectionner..." />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Tous contenus</SelectItem>
+              <SelectItem value="all_content">Tous contenus</SelectItem>
               <SelectItem value="text">Texte uniquement</SelectItem>
               <SelectItem value="image">Images</SelectItem>
               <SelectItem value="video">Vidéos</SelectItem>

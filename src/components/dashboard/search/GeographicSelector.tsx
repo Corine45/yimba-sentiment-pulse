@@ -76,28 +76,28 @@ const geographicData: GeographicData = {
 };
 
 export const GeographicSelector = () => {
-  const [selectedContinent, setSelectedContinent] = useState<string>("");
-  const [selectedCountry, setSelectedCountry] = useState<string>("");
-  const [selectedRegion, setSelectedRegion] = useState<string>("");
+  const [selectedContinent, setSelectedContinent] = useState<string>("all");
+  const [selectedCountry, setSelectedCountry] = useState<string>("all");
+  const [selectedRegion, setSelectedRegion] = useState<string>("all");
 
   const handleContinentChange = (continent: string) => {
     setSelectedContinent(continent);
-    setSelectedCountry("");
-    setSelectedRegion("");
+    setSelectedCountry("all");
+    setSelectedRegion("all");
   };
 
   const handleCountryChange = (country: string) => {
     setSelectedCountry(country);
-    setSelectedRegion("");
+    setSelectedRegion("all");
   };
 
   const getAvailableCountries = () => {
-    if (!selectedContinent) return [];
+    if (!selectedContinent || selectedContinent === "all") return [];
     return Object.entries(geographicData.continents[selectedContinent]?.countries || {});
   };
 
   const getAvailableRegions = () => {
-    if (!selectedCountry || !selectedContinent) return [];
+    if (!selectedCountry || !selectedContinent || selectedCountry === "all" || selectedContinent === "all") return [];
     const country = geographicData.continents[selectedContinent]?.countries[selectedCountry];
     return country?.regions || [];
   };
@@ -115,7 +115,7 @@ export const GeographicSelector = () => {
               <SelectValue placeholder="Sélectionner un continent" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Tous les continents</SelectItem>
+              <SelectItem value="all">Tous les continents</SelectItem>
               {Object.entries(geographicData.continents).map(([key, continent]) => (
                 <SelectItem key={key} value={key}>
                   {continent.name}
@@ -131,13 +131,13 @@ export const GeographicSelector = () => {
           <Select 
             value={selectedCountry} 
             onValueChange={handleCountryChange}
-            disabled={!selectedContinent}
+            disabled={!selectedContinent || selectedContinent === "all"}
           >
             <SelectTrigger>
               <SelectValue placeholder="Sélectionner un pays" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Tous les pays</SelectItem>
+              <SelectItem value="all">Tous les pays</SelectItem>
               {getAvailableCountries().map(([key, country]) => (
                 <SelectItem key={key} value={key}>
                   {country.name}
@@ -155,13 +155,13 @@ export const GeographicSelector = () => {
           <Select 
             value={selectedRegion} 
             onValueChange={setSelectedRegion}
-            disabled={!selectedCountry || getAvailableRegions().length === 0}
+            disabled={!selectedCountry || selectedCountry === "all" || getAvailableRegions().length === 0}
           >
             <SelectTrigger>
               <SelectValue placeholder="Sélectionner une région" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Toutes les régions</SelectItem>
+              <SelectItem value="all">Toutes les régions</SelectItem>
               {getAvailableRegions().map((region) => (
                 <SelectItem key={region} value={region}>
                   {region}
@@ -173,13 +173,13 @@ export const GeographicSelector = () => {
       </div>
 
       {/* Affichage de la sélection actuelle */}
-      {(selectedContinent || selectedCountry || selectedRegion) && (
+      {(selectedContinent !== "all" || selectedCountry !== "all" || selectedRegion !== "all") && (
         <div className="mt-3 p-3 bg-blue-50 rounded-lg">
           <div className="text-sm text-blue-700">
             <span className="font-medium">Sélection actuelle: </span>
-            {selectedContinent && geographicData.continents[selectedContinent]?.name}
-            {selectedCountry && ` > ${geographicData.continents[selectedContinent]?.countries[selectedCountry]?.name}`}
-            {selectedRegion && ` > ${selectedRegion}`}
+            {selectedContinent !== "all" && geographicData.continents[selectedContinent]?.name}
+            {selectedCountry !== "all" && ` > ${geographicData.continents[selectedContinent]?.countries[selectedCountry]?.name}`}
+            {selectedRegion !== "all" && ` > ${selectedRegion}`}
           </div>
         </div>
       )}
