@@ -1,7 +1,8 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Download, CheckCircle, Clock, FileText, Monitor, FileImage, Eye, Share2, Trash2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Download, CheckCircle, Clock, FileText, Monitor, FileImage, Eye, Share2, Trash2, Brain } from "lucide-react";
 import { GeneratedReport, FORMATS } from "../types/reportTypes";
 
 interface GeneratedReportsListProps {
@@ -109,6 +110,19 @@ export const GeneratedReportsList = ({
 
               {/* Corps du rapport avec options de téléchargement */}
               <div className="p-4 space-y-3">
+                {/* Badge contexte IA */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Badge className="bg-purple-100 text-purple-800 border-purple-200">
+                      <Brain className="w-3 h-3 mr-1" />
+                      Contexte IA intégré
+                    </Badge>
+                    <Badge className="bg-blue-100 text-blue-800 border-blue-200">
+                      Analyse complète
+                    </Badge>
+                  </div>
+                </div>
+
                 {/* Informations détaillées */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-green-700">
                   <div>
@@ -122,6 +136,19 @@ export const GeneratedReportsList = ({
                   </div>
                   <div>
                     <span className="font-medium">ID:</span> {report.id.slice(-8)}
+                  </div>
+                </div>
+
+                {/* Nouvelles fonctionnalités incluses */}
+                <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
+                  <h5 className="font-medium text-blue-900 mb-2">✨ Nouvelles fonctionnalités incluses :</h5>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-xs text-blue-800">
+                    <div>• Analyse par influenceur</div>
+                    <div>• Répartition par média</div>
+                    <div>• Diversité des sources</div>
+                    <div>• Portée potentielle</div>
+                    <div>• Distribution géographique</div>
+                    <div>• Contexte IA automatique</div>
                   </div>
                 </div>
 
@@ -159,8 +186,9 @@ export const GeneratedReportsList = ({
                   {/* Informations supplémentaires */}
                   <div className="mt-2 p-3 bg-green-50 rounded-lg">
                     <div className="text-xs text-green-600 space-y-1">
-                      <div>• Le rapport sera téléchargé dans votre dossier de téléchargements par défaut</div>
-                      <div>• Format de fichier: .{report.format === 'powerpoint' ? 'html' : report.format === 'pdf' ? 'html' : 'html'}</div>
+                      <div>• Rapport enrichi avec analyse IA et nouveaux insights</div>
+                      <div>• Inclut toutes les métriques avancées de veille</div>
+                      <div>• Format optimisé pour présentation et partage</div>
                       <div>• Compatible avec tous les navigateurs modernes</div>
                     </div>
                   </div>

@@ -1,10 +1,16 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
-import { TrendingUp, TrendingDown, AlertTriangle, Eye } from "lucide-react";
+import { TrendingUp, TrendingDown, AlertTriangle, Eye, Users, Globe, Brain, Target } from "lucide-react";
 import { EngagementStats } from "./widgets/EngagementStats";
 import { RecentMentions } from "./widgets/RecentMentions";
 import { RealTimeDashboard } from "./widgets/RealTimeDashboard";
+import { InfluencerAnalysis } from "./widgets/InfluencerAnalysis";
+import { MediaDistribution } from "./widgets/MediaDistribution";
+import { SourceDiversity } from "./widgets/SourceDiversity";
+import { GeographicDistribution } from "./widgets/GeographicDistribution";
+import { AIContextGenerator } from "./widgets/AIContextGenerator";
+import { PotentialReach } from "./widgets/PotentialReach";
 
 interface SentimentAnalysisProps {
   userRole: string;
@@ -94,12 +100,17 @@ export const SentimentAnalysis = ({ userRole, permissions }: SentimentAnalysisPr
         </div>
       )}
 
+      {/* Contexte IA en premier */}
+      <AIContextGenerator />
+
       <Tabs defaultValue="overview" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="overview">Vue d'ensemble</TabsTrigger>
+          <TabsTrigger value="influencers">Influenceurs</TabsTrigger>
+          <TabsTrigger value="media">Médias</TabsTrigger>
+          <TabsTrigger value="geographic">Géographie</TabsTrigger>
+          <TabsTrigger value="reach">Impact</TabsTrigger>
           <TabsTrigger value="realtime">Temps réel</TabsTrigger>
-          <TabsTrigger value="engagement">Engagement</TabsTrigger>
-          <TabsTrigger value="mentions">Mentions</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
@@ -144,6 +155,9 @@ export const SentimentAnalysis = ({ userRole, permissions }: SentimentAnalysisPr
               </CardContent>
             </Card>
           </div>
+
+          {/* Diversité des sources */}
+          <SourceDiversity />
 
           {/* Charts */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -229,90 +243,24 @@ export const SentimentAnalysis = ({ userRole, permissions }: SentimentAnalysisPr
           </Card>
         </TabsContent>
 
+        <TabsContent value="influencers" className="space-y-6">
+          <InfluencerAnalysis />
+        </TabsContent>
+
+        <TabsContent value="media" className="space-y-6">
+          <MediaDistribution />
+        </TabsContent>
+
+        <TabsContent value="geographic" className="space-y-6">
+          <GeographicDistribution />
+        </TabsContent>
+
+        <TabsContent value="reach" className="space-y-6">
+          <PotentialReach />
+        </TabsContent>
+
         <TabsContent value="realtime" className="space-y-6">
           <RealTimeDashboard />
-        </TabsContent>
-
-        <TabsContent value="engagement" className="space-y-6">
-          <EngagementStats data={engagementData} />
-          
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Évolution de l'engagement</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={sentimentData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" />
-                    <YAxis />
-                    <Tooltip />
-                    <Bar dataKey="positif" fill="#10B981" radius={[2, 2, 0, 0]} />
-                    <Bar dataKey="negatif" fill="#EF4444" radius={[2, 2, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Heures de pointe</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {[
-                    { hour: "9h-10h", engagement: 95, posts: 234 },
-                    { hour: "12h-13h", engagement: 88, posts: 187 },
-                    { hour: "18h-19h", engagement: 92, posts: 156 },
-                    { hour: "20h-21h", engagement: 87, posts: 143 }
-                  ].map((slot) => (
-                    <div key={slot.hour} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <div>
-                        <div className="font-medium">{slot.hour}</div>
-                        <div className="text-sm text-gray-600">{slot.posts} posts</div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-lg font-bold text-blue-600">{slot.engagement}%</div>
-                        <div className="text-sm text-gray-600">engagement</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="mentions" className="space-y-6">
-          <RecentMentions mentions={recentMentions} />
-          
-          <Card>
-            <CardHeader>
-              <CardTitle>Analyse des mots-clés</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {[
-                  { keyword: "éducation", count: 1234, sentiment: 0.7 },
-                  { keyword: "innovation", count: 987, sentiment: 0.8 },
-                  { keyword: "technologie", count: 756, sentiment: 0.6 },
-                  { keyword: "apprentissage", count: 543, sentiment: 0.9 }
-                ].map((item) => (
-                  <div key={item.keyword} className="p-3 border rounded-lg text-center">
-                    <div className="font-medium text-gray-900">#{item.keyword}</div>
-                    <div className="text-sm text-gray-600">{item.count} mentions</div>
-                    <div className={`text-xs mt-1 ${
-                      item.sentiment > 0.7 ? 'text-green-600' : 
-                      item.sentiment > 0.5 ? 'text-yellow-600' : 'text-red-600'
-                    }`}>
-                      {Math.round(item.sentiment * 100)}% positif
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
         </TabsContent>
       </Tabs>
     </div>
