@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import { ReportConfig, ReportGenerationProgress, GeneratedReport } from '../types/reportTypes';
-import { generateExecutiveReportData, generateExecutiveReportHTML, generateExecutiveReportPowerPoint, generateExecutiveReportPDF } from '../templates/ExecutiveReportGenerator';
+import { generateExecutiveReportData } from '../templates/utils/dataGenerator';
+import { generateExecutiveReportHTML } from '../templates/generators/htmlGenerator';
+import { generateExecutiveReportPowerPoint } from '../templates/generators/powerpointGenerator';
+import { generateExecutiveReportPDF } from '../templates/generators/pdfGenerator';
 
 export const useReportGenerator = () => {
   const [progress, setProgress] = useState<ReportGenerationProgress>({
