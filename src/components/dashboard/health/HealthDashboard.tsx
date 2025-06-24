@@ -1,12 +1,12 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { HealthMap } from "./HealthMap";
+import { HealthDashboardHeader } from "./HealthDashboardHeader";
+import { HealthMapPanel } from "./HealthMapPanel";
+import { HealthAlertsPanel } from "./HealthAlertsPanel";
 import { HealthMetrics } from "./HealthMetrics";
 import { HealthTrends } from "./HealthTrends";
-import { Activity, AlertTriangle, MapPin, TrendingUp, Download, RefreshCw } from "lucide-react";
+import { TrendingUp } from "lucide-react";
 import { HealthRole, HealthPermissions } from "../utils/healthPermissions";
 
 interface HealthDashboardProps {
@@ -68,26 +68,6 @@ export const HealthDashboard = ({ healthRole, healthPermissions }: HealthDashboa
     }
   ]);
 
-  const getSeverityColor = (severity: string) => {
-    switch (severity) {
-      case 'critique': return 'bg-red-100 text-red-800 border-red-200';
-      case 'modéré': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'faible': return 'bg-green-100 text-green-800 border-green-200';
-      default: return 'bg-gray-100 text-gray-800 border-gray-200';
-    }
-  };
-
-  const getDiseaseIcon = (disease: string) => {
-    const icons: Record<string, string> = {
-      'COVID-19': '🦠',
-      'Paludisme': '🦟',
-      'Dengue': '🦟',
-      'Rougeole': '🔴',
-      'VIH': '⚕️'
-    };
-    return icons[disease] || '⚕️';
-  };
-
   const handleRefresh = () => {
     setIsLoading(true);
     setTimeout(() => {
@@ -104,99 +84,21 @@ export const HealthDashboard = ({ healthRole, healthPermissions }: HealthDashboa
   return (
     <div className="space-y-6">
       {/* Header avec actions */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">Tableau de bord sanitaire</h2>
-          <p className="text-gray-600">
-            Surveillance en temps réel - Côte d'Ivoire
-            {healthRole === "observateur_partenaire" && (
-              <Badge className="ml-2 text-xs bg-blue-100 text-blue-800">
-                Alertes vérifiées uniquement
-              </Badge>
-            )}
-          </p>
-        </div>
-        <div className="flex items-center space-x-3">
-          <span className="text-sm text-gray-500">
-            Dernière MAJ: {lastUpdate.toLocaleTimeString('fr-FR')}
-          </span>
-          <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isLoading}>
-            <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-            Actualiser
-          </Button>
-          {healthPermissions.canExportData && (
-            <Button size="sm">
-              <Download className="w-4 h-4 mr-2" />
-              Exporter
-            </Button>
-          )}
-        </div>
-      </div>
+      <HealthDashboardHeader
+        healthRole={healthRole}
+        healthPermissions={healthPermissions}
+        lastUpdate={lastUpdate}
+        isLoading={isLoading}
+        onRefresh={handleRefresh}
+      />
 
       {/* Métriques principales */}
       <HealthMetrics />
 
       {/* Carte et alertes */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Carte interactive */}
-        <Card className="lg:col-span-1">
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <MapPin className="w-5 h-5 mr-2 text-blue-600" />
-              Cartographie des signaux
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <HealthMap alerts={visibleAlerts} />
-          </CardContent>
-        </Card>
-
-        {/* Alertes récentes */}
-        <Card className="lg:col-span-1">
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <div className="flex items-center">
-                <AlertTriangle className="w-5 h-5 mr-2 text-yellow-600" />
-                Alertes récentes
-              </div>
-              <Badge variant="outline" className="text-xs">
-                {visibleAlerts.length} visibles
-              </Badge>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3 max-h-80 overflow-y-auto">
-              {visibleAlerts.map((alert) => (
-                <div key={alert.id} className={`p-3 rounded-lg border ${getSeverityColor(alert.severity)}`}>
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-start space-x-3">
-                      <span className="text-lg">{getDiseaseIcon(alert.disease)}</span>
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-2">
-                          <h4 className="font-medium">{alert.disease}</h4>
-                          {alert.verified && (
-                            <Badge variant="outline" className="text-xs bg-green-50 text-green-700">
-                              Vérifié
-                            </Badge>
-                          )}
-                        </div>
-                        <p className="text-sm opacity-80 mt-1">{alert.location}</p>
-                        <div className="flex items-center space-x-2 mt-2 text-xs opacity-75">
-                          <span>{alert.timestamp}</span>
-                          <span>•</span>
-                          <span>{alert.source}</span>
-                        </div>
-                      </div>
-                    </div>
-                    <Badge variant="outline" className="text-xs">
-                      {alert.severity}
-                    </Badge>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+        <HealthMapPanel alerts={visibleAlerts} />
+        <HealthAlertsPanel alerts={visibleAlerts} />
       </div>
 
       {/* Graphiques de tendances */}
