@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { FileText, CheckCircle } from "lucide-react";
+import { FileText, CheckCircle, Download, FileImage, Monitor } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { DateRangePicker } from "./components/DateRangePicker";
 import { AdvancedReportOptions } from "./components/AdvancedReportOptions";
@@ -31,6 +31,24 @@ export const ReportGenerator = ({ canGenerateReports }: ReportGeneratorProps) =>
   const isFormValid = reportType && period && format && 
     (period !== 'custom' || (customDateRange?.startDate && customDateRange?.endDate));
 
+  const getFormatIcon = (formatKey: string) => {
+    switch (formatKey) {
+      case 'pdf': return <FileText className="w-4 h-4" />;
+      case 'powerpoint': return <Monitor className="w-4 h-4" />;
+      case 'html': return <FileImage className="w-4 h-4" />;
+      default: return <FileText className="w-4 h-4" />;
+    }
+  };
+
+  const getFormatDescription = (formatKey: string) => {
+    switch (formatKey) {
+      case 'pdf': return 'Document optimisé pour impression et archivage';
+      case 'powerpoint': return 'Présentation interactive avec slides animées';
+      case 'html': return 'Rapport web interactif avec graphiques dynamiques';
+      default: return '';
+    }
+  };
+
   const handleGenerateReport = async () => {
     if (!isFormValid) {
       toast({
@@ -54,7 +72,13 @@ export const ReportGenerator = ({ canGenerateReports }: ReportGeneratorProps) =>
       
       toast({
         title: "Rapport généré avec succès!",
-        description: `Le rapport "${report.title}" est prêt à être téléchargé.`,
+        description: `Le rapport "${report.title}" au format ${FORMATS[format as keyof typeof FORMATS]} est prêt.`,
+        action: (
+          <div className="flex items-center gap-2">
+            <Download className="w-4 h-4" />
+            <span>Téléchargé</span>
+          </div>
+        ),
       });
 
       // Reset form
@@ -78,7 +102,10 @@ export const ReportGenerator = ({ canGenerateReports }: ReportGeneratorProps) =>
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Générer un nouveau rapport</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <FileText className="w-5 h-5" />
+            Générer un nouveau rapport
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -111,17 +138,27 @@ export const ReportGenerator = ({ canGenerateReports }: ReportGeneratorProps) =>
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">Format *</label>
+              <label className="text-sm font-medium">Format de sortie *</label>
               <Select value={format} onValueChange={setFormat} disabled={progress.isGenerating}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner..." />
+                  <SelectValue placeholder="Choisir le format..." />
                 </SelectTrigger>
                 <SelectContent>
                   {Object.entries(FORMATS).map(([key, label]) => (
-                    <SelectItem key={key} value={key}>{label}</SelectItem>
+                    <SelectItem key={key} value={key}>
+                      <div className="flex items-center gap-2">
+                        {getFormatIcon(key)}
+                        <span>{label}</span>
+                      </div>
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+              {format && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  {getFormatDescription(format)}
+                </p>
+              )}
             </div>
           </div>
 
@@ -130,6 +167,22 @@ export const ReportGenerator = ({ canGenerateReports }: ReportGeneratorProps) =>
               onDateRangeChange={(startDate, endDate) => setCustomDateRange({startDate, endDate})}
               disabled={progress.isGenerating}
             />
+          )}
+
+          {format && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-start gap-3">
+                {getFormatIcon(format)}
+                <div>
+                  <h4 className="font-medium text-blue-900">
+                    Format sélectionné: {FORMATS[format as keyof typeof FORMATS]}
+                  </h4>
+                  <p className="text-sm text-blue-700 mt-1">
+                    {getFormatDescription(format)}
+                  </p>
+                </div>
+              </div>
+            </div>
           )}
 
           <div className="flex items-center justify-between">
@@ -150,8 +203,8 @@ export const ReportGenerator = ({ canGenerateReports }: ReportGeneratorProps) =>
                 <>Génération en cours...</>
               ) : (
                 <>
-                  <FileText className="w-4 h-4 mr-2" />
-                  Générer le rapport
+                  {format && getFormatIcon(format)}
+                  <span className="ml-2">Générer le rapport</span>
                 </>
               )}
             </Button>
@@ -177,6 +230,10 @@ export const ReportGenerator = ({ canGenerateReports }: ReportGeneratorProps) =>
             <div className="flex items-center text-green-800">
               <CheckCircle className="w-5 h-5 mr-2" />
               <span className="font-medium">Rapport généré avec succès!</span>
+              <div className="ml-auto flex items-center gap-2 text-sm">
+                <Download className="w-4 h-4" />
+                <span>Téléchargement automatique activé</span>
+              </div>
             </div>
           </CardContent>
         </Card>
