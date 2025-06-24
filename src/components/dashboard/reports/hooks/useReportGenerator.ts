@@ -1,6 +1,6 @@
-
 import { useState } from 'react';
 import { ReportConfig, ReportGenerationProgress, GeneratedReport } from '../types/reportTypes';
+import { generateExecutiveReportData, generateExecutiveReportHTML } from '../templates/ExecutiveReportGenerator';
 
 export const useReportGenerator = () => {
   const [progress, setProgress] = useState<ReportGenerationProgress>({
@@ -37,13 +37,27 @@ export const useReportGenerator = () => {
       await new Promise(resolve => setTimeout(resolve, delay));
     }
 
+    // Générer le contenu réel du rapport
+    let fileContent = '';
+    let fileUrl = '#';
+    
+    if (config.type === 'custom' && config.title === 'Rapport Exécutif') {
+      // Générer le rapport exécutif avec des données réelles
+      const reportData = generateExecutiveReportData(config);
+      fileContent = generateExecutiveReportHTML(reportData, config);
+      
+      // Créer un blob et une URL pour le téléchargement
+      const blob = new Blob([fileContent], { type: 'text/html' });
+      fileUrl = URL.createObjectURL(blob);
+    }
+
     const newReport: GeneratedReport = {
       id: `report-${Date.now()}`,
-      title: getReportTitle(config),
+      title: config.title || getReportTitle(config),
       type: config.type,
       format: config.format,
       generatedAt: new Date().toISOString(),
-      fileUrl: '#', // URL simulée
+      fileUrl: fileUrl,
       size: getEstimatedSize(config),
       status: 'completed'
     };
@@ -55,6 +69,16 @@ export const useReportGenerator = () => {
       progress: 100,
       currentStep: 'Terminé'
     });
+
+    // Auto-download pour les rapports HTML
+    if (fileUrl !== '#' && config.format === 'pdf') {
+      const link = document.createElement('a');
+      link.href = fileUrl;
+      link.download = `${newReport.title.replace(/\s+/g, '_')}.html`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
 
     return newReport;
   };
