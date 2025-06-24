@@ -48,6 +48,6 @@ export const PERIODS = {
 
 export const FORMATS = {
   pdf: 'PDF',
-  excel: 'Excel',
-  powerpoint: 'PowerPoint'
+  powerpoint: 'PowerPoint',
+  html: 'HTML'
 };

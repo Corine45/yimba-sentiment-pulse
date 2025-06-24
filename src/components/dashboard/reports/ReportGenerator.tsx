@@ -1,9 +1,8 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { FileText, CheckCircle, Download, FileImage, Monitor } from "lucide-react";
+import { FileText, CheckCircle, Download, FileImage, Monitor, Clock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { DateRangePicker } from "./components/DateRangePicker";
 import { AdvancedReportOptions } from "./components/AdvancedReportOptions";
@@ -23,7 +22,7 @@ export const ReportGenerator = ({ canGenerateReports }: ReportGeneratorProps) =>
   const [advancedOptions, setAdvancedOptions] = useState<any>({});
   const [showAdvanced, setShowAdvanced] = useState(false);
 
-  const { progress, generateReport, cancelGeneration } = useReportGenerator();
+  const { progress, generatedReports, generateReport, cancelGeneration, downloadReport } = useReportGenerator();
   const { toast } = useToast();
 
   if (!canGenerateReports) return null;
@@ -65,6 +64,7 @@ export const ReportGenerator = ({ canGenerateReports }: ReportGeneratorProps) =>
         period,
         format,
         customDateRange: period === 'custom' ? customDateRange : undefined,
+        title: 'Rapport Exécutif',
         ...advancedOptions
       };
 
@@ -73,12 +73,6 @@ export const ReportGenerator = ({ canGenerateReports }: ReportGeneratorProps) =>
       toast({
         title: "Rapport généré avec succès!",
         description: `Le rapport "${report.title}" au format ${FORMATS[format as keyof typeof FORMATS]} est prêt.`,
-        action: (
-          <div className="flex items-center gap-2">
-            <Download className="w-4 h-4" />
-            <span>Téléchargé</span>
-          </div>
-        ),
       });
 
       // Reset form
@@ -224,16 +218,46 @@ export const ReportGenerator = ({ canGenerateReports }: ReportGeneratorProps) =>
         onCancel={cancelGeneration}
       />
 
-      {progress.progress === 100 && !progress.isGenerating && (
-        <Card className="border-green-300 bg-green-50">
-          <CardContent className="p-4">
-            <div className="flex items-center text-green-800">
-              <CheckCircle className="w-5 h-5 mr-2" />
-              <span className="font-medium">Rapport généré avec succès!</span>
-              <div className="ml-auto flex items-center gap-2 text-sm">
-                <Download className="w-4 h-4" />
-                <span>Téléchargement automatique activé</span>
-              </div>
+      {/* Section des rapports générés */}
+      {generatedReports.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Download className="w-5 h-5" />
+              Rapports générés
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {generatedReports.map((report) => (
+                <div key={report.id} className="flex items-center justify-between p-4 border rounded-lg bg-green-50 border-green-300">
+                  <div className="flex items-center gap-3">
+                    <CheckCircle className="w-5 h-5 text-green-600" />
+                    <div>
+                      <h4 className="font-medium text-green-800">{report.title}</h4>
+                      <div className="flex items-center gap-4 text-sm text-green-700">
+                        <span className="flex items-center gap-1">
+                          {getFormatIcon(report.format)}
+                          {FORMATS[report.format as keyof typeof FORMATS]}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          {new Date(report.generatedAt).toLocaleString('fr-FR')}
+                        </span>
+                        <span>{report.size}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <Button 
+                    onClick={() => downloadReport(report)}
+                    className="bg-green-600 hover:bg-green-700 text-white"
+                    size="sm"
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    Télécharger
+                  </Button>
+                </div>
+              ))}
             </div>
           </CardContent>
         </Card>

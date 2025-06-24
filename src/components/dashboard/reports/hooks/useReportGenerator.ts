@@ -14,6 +14,28 @@ export const useReportGenerator = () => {
 
   const [generatedReports, setGeneratedReports] = useState<GeneratedReport[]>([]);
 
+  const downloadReport = (report: GeneratedReport) => {
+    if (report.fileUrl && report.fileUrl !== '#') {
+      const link = document.createElement('a');
+      link.href = report.fileUrl;
+      link.download = getFileName(report);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  };
+
+  const getFileName = (report: GeneratedReport): string => {
+    const date = new Date().toISOString().split('T')[0];
+    const extensions: Record<string, string> = {
+      pdf: 'html', // Pour l'instant HTML optimisé pour PDF
+      powerpoint: 'html', // Pour l'instant HTML optimisé pour PowerPoint
+      html: 'html'
+    };
+    
+    return `${report.title.replace(/\s+/g, '_')}_${date}.${extensions[report.format] || 'html'}`;
+  };
+
   const generateReport = async (config: ReportConfig): Promise<GeneratedReport> => {
     setProgress({
       isGenerating: true,
@@ -43,8 +65,7 @@ export const useReportGenerator = () => {
     // Générer le contenu réel du rapport
     let fileContent = '';
     let fileUrl = '#';
-    let fileName = '';
-    let mimeType = '';
+    let mimeType = 'text/html';
     
     if (config.type === 'custom' && config.title === 'Rapport Exécutif') {
       // Générer le rapport exécutif avec des données réelles
@@ -52,16 +73,10 @@ export const useReportGenerator = () => {
       
       if (config.format === 'pdf') {
         fileContent = generateExecutiveReportPDF(reportData, config);
-        fileName = `Rapport_Executif_${new Date().toISOString().split('T')[0]}.html`;
-        mimeType = 'text/html';
       } else if (config.format === 'powerpoint') {
         fileContent = generateExecutiveReportPowerPoint(reportData, config);
-        fileName = `Rapport_Executif_${new Date().toISOString().split('T')[0]}.html`;
-        mimeType = 'text/html';
       } else {
         fileContent = generateExecutiveReportHTML(reportData, config);
-        fileName = `Rapport_Executif_${new Date().toISOString().split('T')[0]}.html`;
-        mimeType = 'text/html';
       }
       
       // Créer un blob et une URL pour le téléchargement
@@ -87,16 +102,6 @@ export const useReportGenerator = () => {
       progress: 100,
       currentStep: 'Terminé'
     });
-
-    // Auto-download pour tous les formats
-    if (fileUrl !== '#') {
-      const link = document.createElement('a');
-      link.href = fileUrl;
-      link.download = fileName;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    }
 
     return newReport;
   };
@@ -126,7 +131,8 @@ export const useReportGenerator = () => {
     const baseSizes: Record<string, number> = {
       pdf: 2.5,
       excel: 1.2,
-      powerpoint: 8.0
+      powerpoint: 8.0,
+      html: 1.8
     };
     
     const multipliers: Record<string, number> = {
@@ -152,6 +158,7 @@ export const useReportGenerator = () => {
     progress,
     generatedReports,
     generateReport,
-    cancelGeneration
+    cancelGeneration,
+    downloadReport
   };
 };
