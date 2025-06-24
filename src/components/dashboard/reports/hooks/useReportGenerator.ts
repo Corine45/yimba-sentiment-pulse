@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ReportConfig, ReportGenerationProgress, GeneratedReport } from '../types/reportTypes';
-import { generateExecutiveReportData, generateExecutiveReportHTML } from '../templates/ExecutiveReportGenerator';
+import { generateExecutiveReportData, generateExecutiveReportHTML, generateExecutiveReportPowerPoint, generateExecutiveReportPDF } from '../templates/ExecutiveReportGenerator';
 
 export const useReportGenerator = () => {
   const [progress, setProgress] = useState<ReportGenerationProgress>({
@@ -40,14 +40,29 @@ export const useReportGenerator = () => {
     // Générer le contenu réel du rapport
     let fileContent = '';
     let fileUrl = '#';
+    let fileName = '';
+    let mimeType = '';
     
     if (config.type === 'custom' && config.title === 'Rapport Exécutif') {
       // Générer le rapport exécutif avec des données réelles
       const reportData = generateExecutiveReportData(config);
-      fileContent = generateExecutiveReportHTML(reportData, config);
+      
+      if (config.format === 'pdf') {
+        fileContent = generateExecutiveReportPDF(reportData, config);
+        fileName = `Rapport_Executif_${new Date().toISOString().split('T')[0]}.html`;
+        mimeType = 'text/html';
+      } else if (config.format === 'powerpoint') {
+        fileContent = generateExecutiveReportPowerPoint(reportData, config);
+        fileName = `Rapport_Executif_${new Date().toISOString().split('T')[0]}.html`;
+        mimeType = 'text/html';
+      } else {
+        fileContent = generateExecutiveReportHTML(reportData, config);
+        fileName = `Rapport_Executif_${new Date().toISOString().split('T')[0]}.html`;
+        mimeType = 'text/html';
+      }
       
       // Créer un blob et une URL pour le téléchargement
-      const blob = new Blob([fileContent], { type: 'text/html' });
+      const blob = new Blob([fileContent], { type: mimeType });
       fileUrl = URL.createObjectURL(blob);
     }
 
@@ -70,11 +85,11 @@ export const useReportGenerator = () => {
       currentStep: 'Terminé'
     });
 
-    // Auto-download pour les rapports HTML
-    if (fileUrl !== '#' && config.format === 'pdf') {
+    // Auto-download pour tous les formats
+    if (fileUrl !== '#') {
       const link = document.createElement('a');
       link.href = fileUrl;
-      link.download = `${newReport.title.replace(/\s+/g, '_')}.html`;
+      link.download = fileName;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
