@@ -1,14 +1,16 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { FileText, CheckCircle, Download, FileImage, Monitor, Clock } from "lucide-react";
+import { FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { DateRangePicker } from "./components/DateRangePicker";
 import { AdvancedReportOptions } from "./components/AdvancedReportOptions";
 import { ReportGenerationProgress } from "./components/ReportGenerationProgress";
+import { ReportFormFields } from "./components/ReportFormFields";
+import { ReportFormatSelector } from "./components/ReportFormatSelector";
+import { GeneratedReportsList } from "./components/GeneratedReportsList";
 import { useReportGenerator } from "./hooks/useReportGenerator";
-import { REPORT_TYPES, PERIODS, FORMATS } from "./types/reportTypes";
+import { FORMATS } from "./types/reportTypes";
 
 interface ReportGeneratorProps {
   canGenerateReports: boolean;
@@ -33,18 +35,9 @@ export const ReportGenerator = ({ canGenerateReports }: ReportGeneratorProps) =>
   const getFormatIcon = (formatKey: string) => {
     switch (formatKey) {
       case 'pdf': return <FileText className="w-4 h-4" />;
-      case 'powerpoint': return <Monitor className="w-4 h-4" />;
-      case 'html': return <FileImage className="w-4 h-4" />;
+      case 'powerpoint': return <FileText className="w-4 h-4" />;
+      case 'html': return <FileText className="w-4 h-4" />;
       default: return <FileText className="w-4 h-4" />;
-    }
-  };
-
-  const getFormatDescription = (formatKey: string) => {
-    switch (formatKey) {
-      case 'pdf': return 'Document optimisé pour impression et archivage';
-      case 'powerpoint': return 'Présentation interactive avec slides animées';
-      case 'html': return 'Rapport web interactif avec graphiques dynamiques';
-      default: return '';
     }
   };
 
@@ -102,82 +95,21 @@ export const ReportGenerator = ({ canGenerateReports }: ReportGeneratorProps) =>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Type de rapport *</label>
-              <Select value={reportType} onValueChange={setReportType} disabled={progress.isGenerating}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.entries(REPORT_TYPES).map(([key, label]) => (
-                    <SelectItem key={key} value={key}>{label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          <ReportFormFields
+            reportType={reportType}
+            period={period}
+            customDateRange={customDateRange}
+            onReportTypeChange={setReportType}
+            onPeriodChange={setPeriod}
+            onDateRangeChange={(startDate, endDate) => setCustomDateRange({startDate, endDate})}
+            disabled={progress.isGenerating}
+          />
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Période *</label>
-              <Select value={period} onValueChange={setPeriod} disabled={progress.isGenerating}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.entries(PERIODS).map(([key, label]) => (
-                    <SelectItem key={key} value={key}>{label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Format de sortie *</label>
-              <Select value={format} onValueChange={setFormat} disabled={progress.isGenerating}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Choisir le format..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.entries(FORMATS).map(([key, label]) => (
-                    <SelectItem key={key} value={key}>
-                      <div className="flex items-center gap-2">
-                        {getFormatIcon(key)}
-                        <span>{label}</span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {format && (
-                <p className="text-xs text-muted-foreground mt-1">
-                  {getFormatDescription(format)}
-                </p>
-              )}
-            </div>
-          </div>
-
-          {period === 'custom' && (
-            <DateRangePicker 
-              onDateRangeChange={(startDate, endDate) => setCustomDateRange({startDate, endDate})}
-              disabled={progress.isGenerating}
-            />
-          )}
-
-          {format && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <div className="flex items-start gap-3">
-                {getFormatIcon(format)}
-                <div>
-                  <h4 className="font-medium text-blue-900">
-                    Format sélectionné: {FORMATS[format as keyof typeof FORMATS]}
-                  </h4>
-                  <p className="text-sm text-blue-700 mt-1">
-                    {getFormatDescription(format)}
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
+          <ReportFormatSelector
+            format={format}
+            onFormatChange={setFormat}
+            disabled={progress.isGenerating}
+          />
 
           <div className="flex items-center justify-between">
             <Button
@@ -218,50 +150,10 @@ export const ReportGenerator = ({ canGenerateReports }: ReportGeneratorProps) =>
         onCancel={cancelGeneration}
       />
 
-      {/* Section des rapports générés */}
-      {generatedReports.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Download className="w-5 h-5" />
-              Rapports générés
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {generatedReports.map((report) => (
-                <div key={report.id} className="flex items-center justify-between p-4 border rounded-lg bg-green-50 border-green-300">
-                  <div className="flex items-center gap-3">
-                    <CheckCircle className="w-5 h-5 text-green-600" />
-                    <div>
-                      <h4 className="font-medium text-green-800">{report.title}</h4>
-                      <div className="flex items-center gap-4 text-sm text-green-700">
-                        <span className="flex items-center gap-1">
-                          {getFormatIcon(report.format)}
-                          {FORMATS[report.format as keyof typeof FORMATS]}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Clock className="w-3 h-3" />
-                          {new Date(report.generatedAt).toLocaleString('fr-FR')}
-                        </span>
-                        <span>{report.size}</span>
-                      </div>
-                    </div>
-                  </div>
-                  <Button 
-                    onClick={() => downloadReport(report)}
-                    className="bg-green-600 hover:bg-green-700 text-white"
-                    size="sm"
-                  >
-                    <Download className="w-4 h-4 mr-2" />
-                    Télécharger
-                  </Button>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      <GeneratedReportsList
+        reports={generatedReports}
+        onDownload={downloadReport}
+      />
     </div>
   );
 };
