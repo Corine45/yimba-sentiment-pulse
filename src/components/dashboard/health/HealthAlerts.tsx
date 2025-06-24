@@ -1,7 +1,6 @@
-
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AlertTriangle, BarChart3, TrendingUp, Settings } from "lucide-react";
+import { AlertTriangle, BarChart3, TrendingUp } from "lucide-react";
 import { HealthRole, HealthPermissions } from "../utils/healthPermissions";
 import { ComparativeTable } from "./ComparativeTable";
 import { AlertsHeader } from "./AlertsHeader";
