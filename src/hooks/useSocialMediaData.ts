@@ -42,7 +42,20 @@ export const useSocialMediaData = (searchTerm?: string) => {
       if (error) {
         console.error('Error fetching social media data:', error);
       } else {
-        setPosts(data || []);
+        // Transform the data to match our interface
+        const transformedData: SocialMediaPost[] = (data || []).map(item => ({
+          id: item.id,
+          platform: item.platform,
+          content: item.content,
+          author: item.author,
+          sentiment: (item.sentiment as 'positive' | 'negative' | 'neutral') || 'neutral',
+          engagement: (item.engagement as any) || { likes: 0, shares: 0, comments: 0 },
+          reach: item.reach || 0,
+          created_at: item.created_at,
+          search_term: item.search_term || ''
+        }));
+        
+        setPosts(transformedData);
       }
     } catch (error) {
       console.error('Error:', error);
