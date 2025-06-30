@@ -9,16 +9,132 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      profiles: {
+        Row: {
+          created_at: string | null
+          email: string
+          id: string
+          name: string
+          role: Database["public"]["Enums"]["app_role"]
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          id: string
+          name: string
+          role?: Database["public"]["Enums"]["app_role"]
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          id?: string
+          name?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      search_history: {
+        Row: {
+          created_at: string | null
+          filters: Json | null
+          id: string
+          results_count: number | null
+          search_term: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          filters?: Json | null
+          id?: string
+          results_count?: number | null
+          search_term: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          filters?: Json | null
+          id?: string
+          results_count?: number | null
+          search_term?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      social_media_data: {
+        Row: {
+          author: string
+          content: string
+          created_at: string | null
+          engagement: Json | null
+          id: string
+          platform: string
+          reach: number | null
+          search_term: string | null
+          sentiment: string | null
+        }
+        Insert: {
+          author: string
+          content: string
+          created_at?: string | null
+          engagement?: Json | null
+          id?: string
+          platform: string
+          reach?: number | null
+          search_term?: string | null
+          sentiment?: string | null
+        }
+        Update: {
+          author?: string
+          content?: string
+          created_at?: string | null
+          engagement?: Json | null
+          id?: string
+          platform?: string
+          reach?: number | null
+          search_term?: string | null
+          sentiment?: string | null
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _user_id: string
+          _role: Database["public"]["Enums"]["app_role"]
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "analyste" | "observateur"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -133,6 +249,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "analyste", "observateur"],
+    },
   },
 } as const
