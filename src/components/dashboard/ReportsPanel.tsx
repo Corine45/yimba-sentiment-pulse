@@ -2,8 +2,9 @@
 import { Eye } from "lucide-react";
 import { ReportGenerator } from "./reports/ReportGenerator";
 import { WidgetPreviews } from "./reports/WidgetPreviews";
-import { ReportsList } from "./reports/ReportsList";
 import { ReportTemplates } from "./reports/ReportTemplates";
+import { DynamicDemographicAnalysis } from "./widgets/DynamicDemographicAnalysis";
+import { DynamicReportsList } from "./widgets/DynamicReportsList";
 
 interface ReportsPanelProps {
   userRole: string;
@@ -25,16 +26,20 @@ export const ReportsPanel = ({ userRole, permissions }: ReportsPanelProps) => {
         </div>
       )}
 
-      <ReportGenerator canGenerateReports={permissions.canGenerateReports} />
+      {/* Analyses démographiques dynamiques */}
+      <DynamicDemographicAnalysis />
       
-      <WidgetPreviews canGenerateReports={permissions.canGenerateReports} />
-      
-      <ReportsList 
-        canGenerateReports={permissions.canGenerateReports}
-        canExportData={permissions.canExportData}
-      />
-      
-      <ReportTemplates canGenerateReports={permissions.canGenerateReports} />
+      {/* Liste des rapports dynamique */}
+      <DynamicReportsList />
+
+      {/* Outils de génération de rapports pour les utilisateurs autorisés */}
+      {permissions.canGenerateReports && (
+        <>
+          <ReportGenerator canGenerateReports={permissions.canGenerateReports} />
+          <WidgetPreviews canGenerateReports={permissions.canGenerateReports} />
+          <ReportTemplates canGenerateReports={permissions.canGenerateReports} />
+        </>
+      )}
     </div>
   );
 };

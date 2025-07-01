@@ -41,17 +41,17 @@ export const useNotifications = () => {
           .limit(10);
 
         searchResults?.forEach(result => {
-          const severity = result.total_mentions > 100 ? 'high' : 
-                          result.total_mentions > 50 ? 'medium' : 'low';
+          const severity = result.total_mentions && result.total_mentions > 100 ? 'high' : 
+                          result.total_mentions && result.total_mentions > 50 ? 'medium' : 'low';
           
           generatedNotifications.push({
             id: `search-${result.id}`,
             type: 'search',
             severity: severity as 'low' | 'medium' | 'high',
             title: 'Nouvelle recherche terminée',
-            message: `Recherche "${result.search_term}" sur ${result.platform}: ${result.total_mentions} mentions trouvées`,
+            message: `Recherche "${result.search_term}" sur ${result.platform}: ${result.total_mentions || 0} mentions trouvées`,
             source: result.platform,
-            timestamp: result.created_at,
+            timestamp: result.created_at || new Date().toISOString(),
             read: false,
             data: result,
             user_id: result.user_id
@@ -75,7 +75,7 @@ export const useNotifications = () => {
             severity: event.severity === 'critical' ? 'critical' : 
                      event.severity === 'high' ? 'high' : 'medium',
             title: 'Événement de sécurité',
-            message: `${event.event_type}: ${event.event_data?.component || 'Système'}`,
+            message: `${event.event_type}: ${event.event_data && typeof event.event_data === 'object' && event.event_data !== null ? (event.event_data as any).component || 'Système' : 'Système'}`,
             source: 'Système de sécurité',
             timestamp: event.created_at,
             read: false,
