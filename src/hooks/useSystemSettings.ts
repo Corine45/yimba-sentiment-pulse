@@ -46,35 +46,36 @@ export interface SystemStats {
   };
 }
 
+const defaultSettings: SystemSettings = {
+  surveillance: {
+    frequency: 15,
+    maxConcurrentJobs: 5,
+    retryAttempts: 3,
+    timeout: 30
+  },
+  storage: {
+    retentionPeriod: 12,
+    autoArchive: true,
+    compressionEnabled: true,
+    maxStorageSize: 50
+  },
+  notifications: {
+    emailEnabled: true,
+    smsEnabled: false,
+    webhookEnabled: true,
+    digestFrequency: "daily"
+  },
+  performance: {
+    enableCaching: true,
+    cacheExpiry: 60,
+    enableCompression: true,
+    maxMemoryUsage: 80
+  }
+};
+
 export const useSystemSettings = () => {
   const { toast } = useToast();
-  const [settings, setSettings] = useState<SystemSettings>({
-    surveillance: {
-      frequency: 15,
-      maxConcurrentJobs: 5,
-      retryAttempts: 3,
-      timeout: 30
-    },
-    storage: {
-      retentionPeriod: 12,
-      autoArchive: true,
-      compressionEnabled: true,
-      maxStorageSize: 50
-    },
-    notifications: {
-      emailEnabled: true,
-      smsEnabled: false,
-      webhookEnabled: true,
-      digestFrequency: "daily"
-    },
-    performance: {
-      enableCaching: true,
-      cacheExpiry: 60,
-      enableCompression: true,
-      maxMemoryUsage: 80
-    }
-  });
-
+  const [settings, setSettings] = useState<SystemSettings>(defaultSettings);
   const [stats, setStats] = useState<SystemStats>({
     uptime: "0%",
     lastRestart: "N/A",
@@ -160,10 +161,18 @@ export const useSystemSettings = () => {
       }
 
       if (configData?.metadata) {
-        setSettings(prevSettings => ({
-          ...prevSettings,
-          ...configData.metadata
-        }));
+        try {
+          const parsedSettings = typeof configData.metadata === 'string' 
+            ? JSON.parse(configData.metadata) 
+            : configData.metadata;
+          
+          setSettings({
+            ...defaultSettings,
+            ...parsedSettings
+          });
+        } catch (parseError) {
+          console.error('Erreur lors du parsing des paramètres:', parseError);
+        }
       }
     } catch (error) {
       console.error('Erreur lors du chargement des paramètres:', error);
@@ -183,7 +192,7 @@ export const useSystemSettings = () => {
           metric_type: 'system_config',
           value: 1,
           unit: 'config',
-          metadata: newSettings
+          metadata: JSON.stringify(newSettings)
         });
 
       if (error) {
