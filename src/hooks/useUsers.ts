@@ -28,47 +28,57 @@ export const useUsers = () => {
   const fetchUsers = async () => {
     try {
       setLoading(true);
+      console.log('Fetching users from Supabase...');
       
-      // Récupérer les profils avec leurs rôles
+      // Récupérer tous les profils utilisateurs
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
-        .select(`
-          id,
-          name,
-          email,
-          role,
-          created_at,
-          updated_at
-        `);
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      console.log('Profiles fetched:', profiles);
+      console.log('Profiles error:', profilesError);
 
       if (profilesError) {
         console.error('Error fetching profiles:', profilesError);
+        toast({
+          title: "Erreur",
+          description: "Impossible de charger les profils utilisateurs",
+          variant: "destructive"
+        });
         return;
       }
 
-      // Récupérer les sessions utilisateurs pour le statut et dernière connexion
+      // Récupérer les sessions utilisateurs pour déterminer le statut
       const { data: sessions, error: sessionsError } = await supabase
         .from('user_sessions')
-        .select('user_id, session_start, is_active')
+        .select('user_id, session_start, session_end, is_active')
         .order('session_start', { ascending: false });
 
+      console.log('Sessions fetched:', sessions);
       if (sessionsError) {
         console.error('Error fetching sessions:', sessionsError);
       }
 
-      // Combiner les données
+      // Combiner les données des profils avec les informations de session
       const usersWithStatus = profiles?.map(profile => {
         const userSessions = sessions?.filter(s => s.user_id === profile.id) || [];
         const latestSession = userSessions[0];
         const hasActiveSession = userSessions.some(s => s.is_active);
         
         return {
-          ...profile,
+          id: profile.id,
+          name: profile.name,
+          email: profile.email,
+          role: profile.role,
+          created_at: profile.created_at,
+          updated_at: profile.updated_at,
           status: hasActiveSession ? 'active' as const : 'inactive' as const,
           last_login: latestSession?.session_start || undefined
         };
       }) || [];
 
+      console.log('Users with status:', usersWithStatus);
       setUsers(usersWithStatus);
     } catch (error) {
       console.error('Error in fetchUsers:', error);
@@ -84,6 +94,8 @@ export const useUsers = () => {
 
   const addUser = async (newUser: NewUser) => {
     try {
+      console.log('Adding new user:', newUser);
+      
       // Créer un utilisateur via Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: newUser.email,
@@ -95,6 +107,8 @@ export const useUsers = () => {
         }
       });
 
+      console.log('Auth signup result:', authData, authError);
+
       if (authError) {
         throw authError;
       }
@@ -103,19 +117,27 @@ export const useUsers = () => {
         // Mettre à jour le profil avec le rôle spécifique
         const { error: profileError } = await supabase
           .from('profiles')
-          .update({ role: newUser.role })
+          .update({ 
+            role: newUser.role,
+            name: newUser.name 
+          })
           .eq('id', authData.user.id);
+
+        console.log('Profile update error:', profileError);
 
         if (profileError) {
           throw profileError;
         }
 
-        // Mettre à jour les rôles utilisateur
+        // Mettre à jour ou créer le rôle utilisateur
         const { error: roleError } = await supabase
           .from('user_roles')
-          .update({ role: newUser.role })
-          .eq('user_id', authData.user.id);
+          .upsert({ 
+            user_id: authData.user.id,
+            role: newUser.role 
+          });
 
+        console.log('Role upsert error:', roleError);
         if (roleError) {
           console.error('Error updating user role:', roleError);
         }
@@ -125,7 +147,7 @@ export const useUsers = () => {
           description: `${newUser.name} a été ajouté avec succès`,
         });
 
-        fetchUsers(); // Rafraîchir la liste
+        await fetchUsers(); // Rafraîchir la liste
         return true;
       }
     } catch (error: any) {
@@ -141,6 +163,8 @@ export const useUsers = () => {
 
   const updateUser = async (userId: string, updates: Partial<User>) => {
     try {
+      console.log('Updating user:', userId, updates);
+      
       const { error } = await supabase
         .from('profiles')
         .update({
@@ -151,6 +175,8 @@ export const useUsers = () => {
         })
         .eq('id', userId);
 
+      console.log('Profile update error:', error);
+
       if (error) {
         throw error;
       }
@@ -159,9 +185,12 @@ export const useUsers = () => {
       if (updates.role) {
         const { error: roleError } = await supabase
           .from('user_roles')
-          .update({ role: updates.role })
-          .eq('user_id', userId);
+          .upsert({ 
+            user_id: userId,
+            role: updates.role 
+          });
 
+        console.log('Role update error:', roleError);
         if (roleError) {
           console.error('Error updating user role:', roleError);
         }
@@ -172,7 +201,7 @@ export const useUsers = () => {
         description: "Les informations ont été sauvegardées",
       });
 
-      fetchUsers(); // Rafraîchir la liste
+      await fetchUsers(); // Rafraîchir la liste
     } catch (error: any) {
       console.error('Error updating user:', error);
       toast({
@@ -185,6 +214,8 @@ export const useUsers = () => {
 
   const deleteUser = async (userId: string) => {
     try {
+      console.log('Deleting user:', userId);
+      
       // Supprimer d'abord les données liées
       await supabase.from('user_roles').delete().eq('user_id', userId);
       await supabase.from('user_sessions').delete().eq('user_id', userId);
@@ -195,6 +226,8 @@ export const useUsers = () => {
         .delete()
         .eq('id', userId);
 
+      console.log('Profile delete error:', error);
+
       if (error) {
         throw error;
       }
@@ -204,7 +237,7 @@ export const useUsers = () => {
         description: "L'utilisateur a été supprimé avec succès",
       });
 
-      fetchUsers(); // Rafraîchir la liste
+      await fetchUsers(); // Rafraîchir la liste
     } catch (error: any) {
       console.error('Error deleting user:', error);
       toast({

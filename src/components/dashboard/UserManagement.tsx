@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,11 +7,11 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Users, Plus, Edit, Trash2, Search, Loader2 } from "lucide-react";
+import { Users, Plus, Edit, Trash2, Search, Loader2, RefreshCw } from "lucide-react";
 import { useUsers, type User, type NewUser } from "@/hooks/useUsers";
 
 export const UserManagement = () => {
-  const { users, loading, addUser, updateUser, deleteUser, getStats } = useUsers();
+  const { users, loading, addUser, updateUser, deleteUser, getStats, refetch } = useUsers();
   const [searchTerm, setSearchTerm] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -25,6 +25,12 @@ export const UserManagement = () => {
 
   const stats = getStats();
 
+  // Debug effect to log users data
+  useEffect(() => {
+    console.log('Users data:', users);
+    console.log('Stats:', stats);
+  }, [users]);
+
   const filteredUsers = users.filter(user => {
     const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          user.email.toLowerCase().includes(searchTerm.toLowerCase());
@@ -35,7 +41,10 @@ export const UserManagement = () => {
   });
 
   const handleAddUser = async () => {
-    if (!newUser.name || !newUser.email) return;
+    if (!newUser.name || !newUser.email) {
+      alert("Veuillez remplir tous les champs obligatoires");
+      return;
+    }
     
     const success = await addUser(newUser);
     if (success) {
@@ -89,6 +98,18 @@ export const UserManagement = () => {
 
   return (
     <div className="space-y-6">
+      {/* Debug info */}
+      <div className="bg-gray-50 p-4 rounded-lg">
+        <p className="text-sm text-gray-600">
+          Debug: {users.length} utilisateurs chargés depuis Supabase
+        </p>
+        {users.length > 0 && (
+          <p className="text-sm text-gray-600">
+            Emails: {users.map(u => u.email).join(', ')}
+          </p>
+        )}
+      </div>
+
       {/* User Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card className="text-center">
@@ -125,61 +146,67 @@ export const UserManagement = () => {
               <Users className="w-5 h-5 text-blue-600" />
               <span>Gestion des utilisateurs</span>
             </CardTitle>
-            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-              <DialogTrigger asChild>
-                <Button className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Nouvel utilisateur
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Ajouter un utilisateur</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="name">Nom complet</Label>
-                    <Input
-                      id="name"
-                      value={newUser.name}
-                      onChange={(e) => setNewUser(prev => ({ ...prev, name: e.target.value }))}
-                      placeholder="Ex: Jean Dupont"
-                    />
+            <div className="flex space-x-2">
+              <Button variant="outline" onClick={refetch}>
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Actualiser
+              </Button>
+              <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Nouvel utilisateur
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Ajouter un utilisateur</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="name">Nom complet</Label>
+                      <Input
+                        id="name"
+                        value={newUser.name}
+                        onChange={(e) => setNewUser(prev => ({ ...prev, name: e.target.value }))}
+                        placeholder="Ex: Jean Dupont"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="email">Email</Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        value={newUser.email}
+                        onChange={(e) => setNewUser(prev => ({ ...prev, email: e.target.value }))}
+                        placeholder="Ex: jean.dupont@example.com"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="role">Rôle</Label>
+                      <Select value={newUser.role} onValueChange={(value: any) => setNewUser(prev => ({ ...prev, role: value }))}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="admin">Administrateur</SelectItem>
+                          <SelectItem value="analyste">Analyste</SelectItem>
+                          <SelectItem value="observateur">Observateur</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="flex justify-end space-x-2">
+                      <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+                        Annuler
+                      </Button>
+                      <Button onClick={handleAddUser}>
+                        Ajouter
+                      </Button>
+                    </div>
                   </div>
-                  <div>
-                    <Label htmlFor="email">Email</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={newUser.email}
-                      onChange={(e) => setNewUser(prev => ({ ...prev, email: e.target.value }))}
-                      placeholder="Ex: jean.dupont@example.com"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="role">Rôle</Label>
-                    <Select value={newUser.role} onValueChange={(value: any) => setNewUser(prev => ({ ...prev, role: value }))}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="admin">Administrateur</SelectItem>
-                        <SelectItem value="analyste">Analyste</SelectItem>
-                        <SelectItem value="observateur">Observateur</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="flex justify-end space-x-2">
-                    <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
-                      Annuler
-                    </Button>
-                    <Button onClick={handleAddUser}>
-                      Ajouter
-                    </Button>
-                  </div>
-                </div>
-              </DialogContent>
-            </Dialog>
+                </DialogContent>
+              </Dialog>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -225,8 +252,13 @@ export const UserManagement = () => {
               <div className="text-center py-8">
                 <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                 <p className="text-gray-600">
-                  {users.length === 0 ? "Aucun utilisateur trouvé" : "Aucun utilisateur ne correspond aux filtres"}
+                  {users.length === 0 ? "Aucun utilisateur trouvé dans la base de données" : "Aucun utilisateur ne correspond aux filtres"}
                 </p>
+                {users.length === 0 && (
+                  <p className="text-sm text-gray-500 mt-2">
+                    Vérifiez votre connexion Supabase et les données dans la table 'profiles'
+                  </p>
+                )}
               </div>
             ) : (
               filteredUsers.map((user) => (
@@ -239,7 +271,7 @@ export const UserManagement = () => {
                       <h4 className="font-medium">{user.name}</h4>
                       <p className="text-sm text-gray-600">{user.email}</p>
                       <p className="text-xs text-gray-500">
-                        Créé le {new Date(user.created_at).toLocaleDateString('fr-FR')}
+                        Créé le {new Date(user.created_at).toLocaleDateString('fr-FR')} - ID: {user.id.slice(0, 8)}...
                       </p>
                     </div>
                   </div>
