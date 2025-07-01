@@ -37,38 +37,38 @@ export const TrendingTopics = () => {
     result.search_term ? result.search_term.split(' ').filter(word => word.length > 3) : []
   );
 
-  // Compter la fréquence des mots-clés
-  const keywordCounts = allKeywords.reduce((acc, keyword) => {
+  // Compter la fréquence des mots-clés avec typage correct
+  const keywordCounts = allKeywords.reduce((acc: Record<string, number>, keyword) => {
     const cleanKeyword = keyword.toLowerCase().replace(/[^\w]/g, '');
     acc[cleanKeyword] = (acc[cleanKeyword] || 0) + 1;
     return acc;
-  }, {} as Record<string, number>);
+  }, {});
 
   // Trier par fréquence et prendre les 10 premiers
   const trendingTopics = Object.entries(keywordCounts)
-    .sort(([,a], [,b]) => b - a)
+    .sort(([,a], [,b]) => (b as number) - (a as number))
     .slice(0, 10)
     .map(([keyword, count], index) => ({
       keyword,
-      count,
+      count: count as number,
       rank: index + 1,
       trend: Math.random() > 0.5 ? 'up' : 'down', // Simuler une tendance basée sur les données
       change: Math.floor(Math.random() * 50) + 1
     }));
 
-  // Extraire les hashtags des posts de médias sociaux
+  // Extraire les hashtags des posts de médias sociaux avec typage correct
   const hashtags = posts
     .flatMap(post => {
       const matches = post.content.match(/#\w+/g);
       return matches || [];
     })
-    .reduce((acc, hashtag) => {
+    .reduce((acc: Record<string, number>, hashtag) => {
       acc[hashtag] = (acc[hashtag] || 0) + 1;
       return acc;
-    }, {} as Record<string, number>);
+    }, {});
 
   const topHashtags = Object.entries(hashtags)
-    .sort(([,a], [,b]) => b - a)
+    .sort(([,a], [,b]) => (b as number) - (a as number))
     .slice(0, 5);
 
   return (
@@ -121,7 +121,7 @@ export const TrendingTopics = () => {
                 <div className="flex flex-wrap gap-2">
                   {topHashtags.map(([hashtag, count]) => (
                     <Badge key={hashtag} variant="secondary" className="text-sm">
-                      {hashtag} ({count})
+                      {hashtag} ({count as number})
                     </Badge>
                   ))}
                 </div>
