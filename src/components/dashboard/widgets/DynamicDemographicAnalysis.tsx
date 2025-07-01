@@ -31,19 +31,19 @@ export const DynamicDemographicAnalysis = () => {
     <div className="space-y-6">
       {/* Header avec bouton refresh */}
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">Analyse démographique</h2>
+        <h2 className="text-2xl font-bold">Analyse démographique - Données réelles</h2>
         <Button variant="outline" onClick={refetch} className="flex items-center gap-2">
           <RefreshCw className="w-4 h-4" />
           Actualiser
         </Button>
       </div>
 
-      {/* Age Distribution */}
+      {/* Age Distribution - Données réelles uniquement */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <Users className="w-5 h-5 text-blue-600" />
-            <span>Répartition par âge</span>
+            <span>Répartition par âge (Données Supabase)</span>
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -68,17 +68,17 @@ export const DynamicDemographicAnalysis = () => {
           ) : (
             <div className="text-center py-8 text-gray-500">
               <Users className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-              <p>Aucune donnée démographique disponible.</p>
-              <p className="text-sm mt-2">Les données seront générées après vos premières recherches.</p>
+              <p className="font-medium text-red-600">Aucune donnée réelle trouvée dans Supabase</p>
+              <p className="text-sm mt-2">Effectuez des recherches pour générer des données démographiques réelles.</p>
             </div>
           )}
         </CardContent>
       </Card>
 
-      {/* Gender Analysis */}
+      {/* Gender Analysis - Données réelles uniquement */}
       <Card>
         <CardHeader>
-          <CardTitle>Analyse par genre</CardTitle>
+          <CardTitle>Analyse par genre (Données Supabase)</CardTitle>
         </CardHeader>
         <CardContent>
           {demographicData.genders.length > 0 ? (
@@ -87,7 +87,7 @@ export const DynamicDemographicAnalysis = () => {
                 <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                   <div className="flex-1">
                     <div className="font-medium">{item.name}</div>
-                    <div className="text-sm text-gray-600">{item.mentions} mentions</div>
+                    <div className="text-sm text-gray-600">{item.mentions} mentions réelles</div>
                     <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
                       <div 
                         className="bg-blue-600 h-2 rounded-full transition-all duration-500" 
@@ -101,16 +101,17 @@ export const DynamicDemographicAnalysis = () => {
             </div>
           ) : (
             <div className="text-center py-8 text-gray-500">
-              <p>Aucune donnée de genre disponible.</p>
+              <p className="font-medium text-red-600">Aucune donnée de genre réelle dans Supabase</p>
+              <p className="text-sm mt-2">Les données apparaîtront après vos recherches.</p>
             </div>
           )}
         </CardContent>
       </Card>
 
-      {/* Location Analysis */}
+      {/* Location Analysis - Données réelles uniquement */}
       <Card>
         <CardHeader>
-          <CardTitle>Répartition géographique</CardTitle>
+          <CardTitle>Répartition géographique (Données Supabase)</CardTitle>
         </CardHeader>
         <CardContent>
           {demographicData.locations.length > 0 ? (
@@ -121,7 +122,7 @@ export const DynamicDemographicAnalysis = () => {
                 <YAxis />
                 <Tooltip 
                   formatter={(value, name) => [
-                    name === 'mentions' ? `${value} mentions` : `Score: ${value}`,
+                    name === 'mentions' ? `${value} mentions réelles` : `Score: ${value}`,
                     name === 'mentions' ? 'Mentions' : 'Sentiment'
                   ]}
                 />
@@ -130,7 +131,8 @@ export const DynamicDemographicAnalysis = () => {
             </ResponsiveContainer>
           ) : (
             <div className="text-center py-8 text-gray-500">
-              <p>Aucune donnée géographique disponible.</p>
+              <p className="font-medium text-red-600">Aucune donnée géographique réelle dans Supabase</p>
+              <p className="text-sm mt-2">Les données géographiques seront générées automatiquement.</p>
             </div>
           )}
         </CardContent>

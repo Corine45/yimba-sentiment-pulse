@@ -14,6 +14,7 @@ const Index = () => {
 
   useEffect(() => {
     if (!loading && !user) {
+      console.log('Utilisateur non connecté, redirection vers /auth');
       navigate('/auth', { replace: true });
     }
   }, [user, loading, navigate]);
@@ -27,8 +28,12 @@ const Index = () => {
   }
 
   if (!user || !profile) {
+    console.log('Pas d\'utilisateur ou de profil, redirection vers /auth');
+    navigate('/auth', { replace: true });
     return null;
   }
+
+  console.log('Utilisateur connecté:', user.email, 'Profil:', profile.role);
 
   return (
     <Dashboard 

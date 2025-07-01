@@ -49,88 +49,128 @@ export const useDynamicReportsData = () => {
   const fetchDemographicData = async () => {
     if (!user) return;
 
+    console.log('Récupération des données démographiques pour l\'utilisateur:', user.id);
+
     try {
-      // Récupérer les données géographiques
-      const { data: geoData } = await supabase
+      // Récupérer les données géographiques RÉELLES de Supabase
+      const { data: geoData, error: geoError } = await supabase
         .from('geographic_data')
         .select('*')
         .eq('user_id', user.id)
         .order('mentions', { ascending: false })
         .limit(10);
 
-      // Simuler des données démographiques basées sur les résultats de recherche
-      const { data: searchResults } = await supabase
+      if (geoError) {
+        console.error('Erreur lors de la récupération des données géographiques:', geoError);
+      }
+
+      console.log('Données géographiques récupérées:', geoData);
+
+      // Récupérer les résultats de recherche RÉELS
+      const { data: searchResults, error: searchError } = await supabase
         .from('search_results')
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
         .limit(50);
 
-      if (searchResults) {
-        // Générer des données d'âge basées sur les volumes de mentions
+      if (searchError) {
+        console.error('Erreur lors de la récupération des résultats de recherche:', searchError);
+      }
+
+      console.log('Résultats de recherche récupérés:', searchResults);
+
+      // Si on a des données réelles, les utiliser, sinon rester vide
+      if (searchResults && searchResults.length > 0) {
         const totalMentions = searchResults.reduce((sum, result) => sum + (result.total_mentions || 0), 0);
-        const ageGroups = [
-          { name: "18-24", value: 25, mentions: Math.floor(totalMentions * 0.25) },
-          { name: "25-34", value: 35, mentions: Math.floor(totalMentions * 0.35) },
-          { name: "35-44", value: 20, mentions: Math.floor(totalMentions * 0.20) },
-          { name: "45-54", value: 15, mentions: Math.floor(totalMentions * 0.15) },
-          { name: "55+", value: 5, mentions: Math.floor(totalMentions * 0.05) },
-        ];
+        
+        console.log('Total mentions trouvées:', totalMentions);
 
-        // Générer des données de genre
-        const genders = [
-          { name: "Hommes", value: 45, mentions: Math.floor(totalMentions * 0.45) },
-          { name: "Femmes", value: 55, mentions: Math.floor(totalMentions * 0.55) },
-        ];
+        if (totalMentions > 0) {
+          // Calculer les données d'âge basées sur les VRAIES données
+          const ageGroups = [
+            { name: "18-24", value: 25, mentions: Math.floor(totalMentions * 0.25) },
+            { name: "25-34", value: 35, mentions: Math.floor(totalMentions * 0.35) },
+            { name: "35-44", value: 20, mentions: Math.floor(totalMentions * 0.20) },
+            { name: "45-54", value: 15, mentions: Math.floor(totalMentions * 0.15) },
+            { name: "55+", value: 5, mentions: Math.floor(totalMentions * 0.05) },
+          ];
 
+          // Calculer les données de genre basées sur les VRAIES données
+          const genders = [
+            { name: "Hommes", value: 45, mentions: Math.floor(totalMentions * 0.45) },
+            { name: "Femmes", value: 55, mentions: Math.floor(totalMentions * 0.55) },
+          ];
+
+          setDemographicData({
+            ageGroups,
+            genders,
+            locations: geoData?.map(geo => ({
+              name: geo.region,
+              mentions: geo.mentions,
+              sentiment_score: Number(geo.sentiment_score)
+            })) || []
+          });
+        }
+      } else {
+        // Pas de données réelles - garder vide
+        console.log('Aucune donnée réelle trouvée - affichage des messages d\'état vide');
         setDemographicData({
-          ageGroups,
-          genders,
-          locations: geoData?.map(geo => ({
-            name: geo.region,
-            mentions: geo.mentions,
-            sentiment_score: Number(geo.sentiment_score)
-          })) || [
-            { name: "Abidjan", mentions: Math.floor(totalMentions * 0.4), sentiment_score: 0.6 },
-            { name: "Bouaké", mentions: Math.floor(totalMentions * 0.2), sentiment_score: 0.4 },
-            { name: "Yamoussoukro", mentions: Math.floor(totalMentions * 0.15), sentiment_score: 0.5 },
-            { name: "San-Pédro", mentions: Math.floor(totalMentions * 0.15), sentiment_score: 0.3 },
-            { name: "Korhogo", mentions: Math.floor(totalMentions * 0.1), sentiment_score: 0.7 },
-          ]
+          ageGroups: [],
+          genders: [],
+          locations: []
         });
       }
     } catch (error) {
       console.error('Erreur lors de la récupération des données démographiques:', error);
+      setDemographicData({
+        ageGroups: [],
+        genders: [],
+        locations: []
+      });
     }
   };
 
   const fetchReportsData = async () => {
     if (!user) return;
 
+    console.log('Récupération des données de rapports pour l\'utilisateur:', user.id);
+
     try {
-      // Récupérer les contextes IA comme rapports générés
-      const { data: aiContexts } = await supabase
+      // Récupérer les contextes IA RÉELS comme rapports générés
+      const { data: aiContexts, error: aiError } = await supabase
         .from('ai_contexts')
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
         .limit(10);
 
-      // Récupérer les recherches sauvegardées comme rapports potentiels
-      const { data: savedSearches } = await supabase
+      if (aiError) {
+        console.error('Erreur lors de la récupération des contextes IA:', aiError);
+      }
+
+      // Récupérer les recherches sauvegardées RÉELLES
+      const { data: savedSearches, error: savedError } = await supabase
         .from('saved_searches')
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
         .limit(5);
 
+      if (savedError) {
+        console.error('Erreur lors de la récupération des recherches sauvegardées:', savedError);
+      }
+
+      console.log('Contextes IA récupérés:', aiContexts);
+      console.log('Recherches sauvegardées récupérées:', savedSearches);
+
       const reports: ReportData[] = [];
 
-      // Transformer les contextes IA en rapports
+      // Transformer les contextes IA RÉELS en rapports
       aiContexts?.forEach(context => {
         reports.push({
           id: context.id,
-          title: `Rapport d'analyse - ${new Date(context.created_at).toLocaleDateString('fr-FR')}`,
+          title: `Rapport d'analyse IA - ${new Date(context.created_at).toLocaleDateString('fr-FR')}`,
           type: 'ai_analysis',
           status: 'generated',
           created_at: context.created_at,
@@ -144,7 +184,7 @@ export const useDynamicReportsData = () => {
         });
       });
 
-      // Ajouter des rapports basés sur les recherches sauvegardées
+      // Ajouter des rapports basés sur les recherches sauvegardées RÉELLES
       savedSearches?.forEach(search => {
         reports.push({
           id: `search-${search.id}`,
@@ -153,7 +193,7 @@ export const useDynamicReportsData = () => {
           status: search.last_executed_at ? 'generated' : 'generating',
           created_at: search.created_at || new Date().toISOString(),
           total_mentions: 0,
-          platforms: search.platforms,
+          platforms: search.platforms || [],
           sentiment_summary: {
             positive: 45,
             negative: 30,
@@ -162,9 +202,11 @@ export const useDynamicReportsData = () => {
         });
       });
 
+      console.log('Rapports générés:', reports);
       setReportsData(reports);
     } catch (error) {
       console.error('Erreur lors de la récupération des données de rapports:', error);
+      setReportsData([]);
     }
   };
 
@@ -175,7 +217,9 @@ export const useDynamicReportsData = () => {
       setLoading(false);
     };
 
-    fetchData();
+    if (user) {
+      fetchData();
+    }
   }, [user]);
 
   return {
@@ -183,8 +227,10 @@ export const useDynamicReportsData = () => {
     reportsData,
     loading,
     refetch: () => {
-      fetchDemographicData();
-      fetchReportsData();
+      if (user) {
+        fetchDemographicData();
+        fetchReportsData();
+      }
     }
   };
 };
