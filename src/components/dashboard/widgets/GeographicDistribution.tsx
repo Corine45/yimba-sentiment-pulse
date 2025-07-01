@@ -2,6 +2,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { MapPin, Globe, TrendingUp } from "lucide-react";
+import { useSearchResults } from "@/hooks/useSearchResults";
+import { useGeographicData } from "@/hooks/useGeographicData";
+import { useSocialMediaData } from "@/hooks/useSocialMediaData";
 
 interface GeographicData {
   country: string;
@@ -18,90 +21,117 @@ interface GeographicData {
 }
 
 export const GeographicDistribution = () => {
-  const geographicData: GeographicData[] = [
-    {
-      country: "Côte d'Ivoire",
-      countryCode: "CI",
-      posts: 4563,
-      engagement: 234000,
-      percentage: 63.2,
-      sentiment: "positive",
-      topCities: [
-        { city: "Abidjan", posts: 2890 },
-        { city: "Bouaké", posts: 567 },
-        { city: "Yamoussoukro", posts: 445 },
-        { city: "San Pedro", posts: 234 }
-      ],
-      flag: "🇨🇮"
-    },
-    {
-      country: "France",
-      countryCode: "FR", 
-      posts: 1234,
-      engagement: 89000,
-      percentage: 17.1,
-      sentiment: "neutral",
-      topCities: [
-        { city: "Paris", posts: 678 },
-        { city: "Lyon", posts: 234 },
-        { city: "Marseille", posts: 189 },
-        { city: "Toulouse", posts: 133 }
-      ],
-      flag: "🇫🇷"
-    },
-    {
-      country: "Sénégal",
-      countryCode: "SN",
-      posts: 567,
-      engagement: 45000,
-      percentage: 7.9,
-      sentiment: "positive",
-      topCities: [
-        { city: "Dakar", posts: 345 },
-        { city: "Thiès", posts: 123 },
-        { city: "Saint-Louis", posts: 99 }
-      ],
-      flag: "🇸🇳"
-    },
-    {
-      country: "Burkina Faso",
-      countryCode: "BF",
-      posts: 345,
-      engagement: 23000,
-      percentage: 4.8,
-      sentiment: "neutral",
-      topCities: [
-        { city: "Ouagadougou", posts: 234 },
-        { city: "Bobo-Dioulasso", posts: 111 }
-      ],
-      flag: "🇧🇫"
-    },
-    {
-      country: "Mali",
-      countryCode: "ML",
-      posts: 289,
-      engagement: 18000,
-      percentage: 4.0,
-      sentiment: "positive",
-      topCities: [
-        { city: "Bamako", posts: 189 },
-        { city: "Sikasso", posts: 100 }
-      ],
-      flag: "🇲🇱"
-    },
-    {
-      country: "Autres",
-      countryCode: "XX",
-      posts: 216,
-      engagement: 12000,
-      percentage: 3.0,
-      sentiment: "neutral",
-      topCities: [
-        { city: "Non localisé", posts: 216 }
-      ],
-      flag: "🌍"
+  const { searchResults, loading } = useSearchResults();
+  const { geographicData, loading: geoLoading } = useGeographicData();
+  const { posts } = useSocialMediaData();
+
+  if (loading || geoLoading) {
+    return (
+      <div className="space-y-6">
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-center h-64">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Combiner les données géographiques de Supabase avec les résultats de recherche
+  const processedGeographicData: GeographicData[] = [];
+
+  // Traiter les données géographiques de la table geographic_data
+  geographicData.forEach(geoItem => {
+    const countryData = processedGeographicData.find(item => item.country === geoItem.country);
+    if (countryData) {
+      countryData.posts += geoItem.mentions;
+      countryData.engagement += geoItem.mentions * 10; // Estimation de l'engagement
+    } else {
+      processedGeographicData.push({
+        country: geoItem.country,
+        countryCode: geoItem.country.slice(0, 2).toUpperCase(),
+        posts: geoItem.mentions,
+        engagement: geoItem.mentions * 10,
+        percentage: 0, // Sera calculé plus tard
+        sentiment: geoItem.sentiment_score > 0.5 ? 'positive' : geoItem.sentiment_score < -0.5 ? 'negative' : 'neutral',
+        topCities: [{ city: geoItem.region, posts: geoItem.mentions }],
+        flag: getCountryFlag(geoItem.country)
+      });
     }
-  ];
+  });
+
+  // Ajouter les données des posts de médias sociaux (estimation géographique basée sur le contenu)
+  posts.forEach(post => {
+    // Estimation simple basée sur des mots-clés dans le contenu
+    const estimatedCountry = extractCountryFromContent(post.content);
+    if (estimatedCountry) {
+      const countryData = processedGeographicData.find(item => item.country === estimatedCountry);
+      if (countryData) {
+        countryData.posts += 1;
+        countryData.engagement += (post.engagement?.likes || 0) + (post.engagement?.shares || 0);
+      } else {
+        processedGeographicData.push({
+          country: estimatedCountry,
+          countryCode: estimatedCountry.slice(0, 2).toUpperCase(),
+          posts: 1,
+          engagement: (post.engagement?.likes || 0) + (post.engagement?.shares || 0),
+          percentage: 0,
+          sentiment: post.sentiment === 'positive' ? 'positive' : post.sentiment === 'negative' ? 'negative' : 'neutral',
+          topCities: [{ city: 'Non spécifié', posts: 1 }],
+          flag: getCountryFlag(estimatedCountry)
+        });
+      }
+    }
+  });
+
+  // Calculer les pourcentages
+  const totalPosts = processedGeographicData.reduce((sum, item) => sum + item.posts, 0);
+  processedGeographicData.forEach(item => {
+    item.percentage = totalPosts > 0 ? (item.posts / totalPosts) * 100 : 0;
+  });
+
+  // Trier par nombre de posts
+  processedGeographicData.sort((a, b) => b.posts - a.posts);
+
+  function getCountryFlag(country: string): string {
+    const flags: Record<string, string> = {
+      "Côte d'Ivoire": "🇨🇮",
+      "France": "🇫🇷",
+      "Sénégal": "🇸🇳",
+      "Burkina Faso": "🇧🇫",
+      "Mali": "🇲🇱",
+      "Ghana": "🇬🇭",
+      "Nigeria": "🇳🇬",
+      "Maroc": "🇲🇦",
+      "Cameroun": "🇨🇲",
+      "Tunisia": "🇹🇳"
+    };
+    return flags[country] || "🌍";
+  }
+
+  function extractCountryFromContent(content: string): string | null {
+    const countryKeywords: Record<string, string[]> = {
+      "Côte d'Ivoire": ["abidjan", "yamoussoukro", "bouaké", "côte d'ivoire", "ivoirien"],
+      "France": ["paris", "lyon", "marseille", "france", "français"],
+      "Sénégal": ["dakar", "thiès", "sénégal", "sénégalais"],
+      "Mali": ["bamako", "mali", "malien"],
+      "Burkina Faso": ["ouagadougou", "burkina", "burkinabé"],
+      "Ghana": ["accra", "ghana", "ghanéen"],
+      "Nigeria": ["lagos", "abuja", "nigeria", "nigérian"],
+      "Maroc": ["casablanca", "rabat", "maroc", "marocain"],
+      "Cameroun": ["yaoundé", "douala", "cameroun", "camerounais"]
+    };
+
+    const lowerContent = content.toLowerCase();
+    for (const [country, keywords] of Object.entries(countryKeywords)) {
+      if (keywords.some(keyword => lowerContent.includes(keyword))) {
+        return country;
+      }
+    }
+    return null;
+  }
 
   const getSentimentColor = (sentiment: string) => {
     switch (sentiment) {
@@ -117,12 +147,35 @@ export const GeographicDistribution = () => {
     return num.toString();
   };
 
-  const totalPosts = geographicData.reduce((sum, item) => sum + item.posts, 0);
-  const totalEngagement = geographicData.reduce((sum, item) => sum + item.engagement, 0);
+  const totalEngagement = processedGeographicData.reduce((sum, item) => sum + item.engagement, 0);
+
+  if (processedGeographicData.length === 0) {
+    return (
+      <div className="space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Globe className="w-5 h-5 mr-2 text-blue-600" />
+              Répartition géographique
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-center py-12">
+              <Globe className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Aucune donnée géographique disponible</h3>
+              <p className="text-gray-600">
+                Effectuez des recherches pour voir la répartition géographique de vos mentions.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
-      {/* Carte conceptuelle */}
+      {/* Métriques principales */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center">
@@ -132,7 +185,6 @@ export const GeographicDistribution = () => {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Métriques principales */}
             <div className="space-y-4">
               <div className="text-center p-4 bg-blue-50 rounded-lg">
                 <div className="text-2xl font-bold text-blue-600">{formatNumber(totalPosts)}</div>
@@ -140,29 +192,30 @@ export const GeographicDistribution = () => {
               </div>
               
               <div className="text-center p-4 bg-green-50 rounded-lg">
-                <div className="text-2xl font-bold text-green-600">{geographicData.length}</div>
+                <div className="text-2xl font-bold text-green-600">{processedGeographicData.length}</div>
                 <div className="text-sm text-green-700">Pays identifiés</div>
               </div>
             </div>
 
-            {/* Zone géographique principale */}
-            <div className="space-y-3">
-              <h4 className="font-medium">Zone d'influence principale</h4>
-              <div className="p-4 border-2 border-orange-200 bg-orange-50 rounded-lg">
-                <div className="flex items-center space-x-3 mb-2">
-                  <span className="text-2xl">🇨🇮</span>
-                  <div>
-                    <h5 className="font-medium">Côte d'Ivoire</h5>
-                    <p className="text-sm text-gray-600">Pays dominant</p>
+            {processedGeographicData.length > 0 && (
+              <div className="space-y-3">
+                <h4 className="font-medium">Zone d'influence principale</h4>
+                <div className="p-4 border-2 border-orange-200 bg-orange-50 rounded-lg">
+                  <div className="flex items-center space-x-3 mb-2">
+                    <span className="text-2xl">{processedGeographicData[0].flag}</span>
+                    <div>
+                      <h5 className="font-medium">{processedGeographicData[0].country}</h5>
+                      <p className="text-sm text-gray-600">Pays dominant</p>
+                    </div>
+                  </div>
+                  <div className="text-sm text-gray-700">
+                    <div>• {processedGeographicData[0].percentage.toFixed(1)}% des publications</div>
+                    <div>• {formatNumber(processedGeographicData[0].engagement)} interactions</div>
+                    <div>• Sentiment globalement {processedGeographicData[0].sentiment === 'positive' ? 'positif' : processedGeographicData[0].sentiment === 'negative' ? 'négatif' : 'neutre'}</div>
                   </div>
                 </div>
-                <div className="text-sm text-gray-700">
-                  <div>• {geographicData[0].percentage}% des publications</div>
-                  <div>• {formatNumber(geographicData[0].engagement)} interactions</div>
-                  <div>• Sentiment globalement positif</div>
-                </div>
               </div>
-            </div>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -172,12 +225,12 @@ export const GeographicDistribution = () => {
         <CardHeader>
           <CardTitle className="flex items-center">
             <MapPin className="w-5 h-5 mr-2 text-green-600" />
-            Détail par pays et villes
+            Détail par pays et régions
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {geographicData.map((country, index) => (
+            {processedGeographicData.map((country, index) => (
               <div key={country.countryCode} className="border rounded-lg p-4">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center space-x-3">
@@ -185,7 +238,7 @@ export const GeographicDistribution = () => {
                     <div>
                       <h4 className="font-medium">{country.country}</h4>
                       <p className="text-sm text-gray-600">
-                        {country.percentage}% du total • {formatNumber(country.posts)} publications
+                        {country.percentage.toFixed(1)}% du total • {formatNumber(country.posts)} publications
                       </p>
                     </div>
                   </div>
@@ -206,12 +259,12 @@ export const GeographicDistribution = () => {
                     <div className="space-y-1 text-sm text-gray-600">
                       <div>Publications: {formatNumber(country.posts)}</div>
                       <div>Engagement: {formatNumber(country.engagement)}</div>
-                      <div>Part du trafic: {country.percentage}%</div>
+                      <div>Part du trafic: {country.percentage.toFixed(1)}%</div>
                     </div>
                   </div>
 
                   <div>
-                    <h5 className="font-medium text-sm mb-2">Principales villes</h5>
+                    <h5 className="font-medium text-sm mb-2">Principales régions</h5>
                     <div className="space-y-1">
                       {country.topCities.slice(0, 3).map((city, cityIndex) => (
                         <div key={cityIndex} className="flex justify-between text-sm">
@@ -223,12 +276,11 @@ export const GeographicDistribution = () => {
                   </div>
                 </div>
 
-                {/* Barre de progression */}
                 <div className="mt-3">
                   <div className="w-full bg-gray-200 rounded-full h-2">
                     <div 
                       className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                      style={{ width: `${country.percentage}%` }}
+                      style={{ width: `${Math.min(country.percentage, 100)}%` }}
                     />
                   </div>
                 </div>
@@ -251,22 +303,24 @@ export const GeographicDistribution = () => {
             <div className="space-y-3">
               <h4 className="font-medium">Observations clés</h4>
               <ul className="space-y-2 text-sm text-gray-700">
-                <li className="flex items-start space-x-2">
-                  <span className="text-green-600 font-bold">•</span>
-                  <span>Forte concentration ivoirienne (63% des publications)</span>
-                </li>
-                <li className="flex items-start space-x-2">
-                  <span className="text-blue-600 font-bold">•</span>
-                  <span>Abidjan représente 40% du trafic national</span>
-                </li>
-                <li className="flex items-start space-x-2">
-                  <span className="text-purple-600 font-bold">•</span>
-                  <span>Présence diaspora française notable (17%)</span>
-                </li>
-                <li className="flex items-start space-x-2">
-                  <span className="text-orange-600 font-bold">•</span>
-                  <span>Écho régional en Afrique de l'Ouest</span>
-                </li>
+                {processedGeographicData.length > 0 && (
+                  <>
+                    <li className="flex items-start space-x-2">
+                      <span className="text-green-600 font-bold">•</span>
+                      <span>Forte concentration en {processedGeographicData[0].country} ({processedGeographicData[0].percentage.toFixed(1)}% des publications)</span>
+                    </li>
+                    {processedGeographicData.length > 1 && (
+                      <li className="flex items-start space-x-2">
+                        <span className="text-blue-600 font-bold">•</span>
+                        <span>Présence significative en {processedGeographicData[1].country} ({processedGeographicData[1].percentage.toFixed(1)}%)</span>
+                      </li>
+                    )}
+                    <li className="flex items-start space-x-2">
+                      <span className="text-purple-600 font-bold">•</span>
+                      <span>Couverture sur {processedGeographicData.length} pays différents</span>
+                    </li>
+                  </>
+                )}
               </ul>
             </div>
 
@@ -275,15 +329,15 @@ export const GeographicDistribution = () => {
               <ul className="space-y-2 text-sm text-gray-700">
                 <li className="flex items-start space-x-2">
                   <span className="text-green-600 font-bold">→</span>
-                  <span>Renforcer la présence en régions ivoiriennes</span>
+                  <span>Renforcer la présence dans les régions principales</span>
                 </li>
                 <li className="flex items-start space-x-2">
                   <span className="text-blue-600 font-bold">→</span>
-                  <span>Développer l'audience diaspora</span>
+                  <span>Explorer de nouveaux marchés géographiques</span>
                 </li>
                 <li className="flex items-start space-x-2">
                   <span className="text-purple-600 font-bold">→</span>
-                  <span>Étendre l'influence sous-régionale</span>
+                  <span>Adapter le contenu aux spécificités locales</span>
                 </li>
               </ul>
             </div>

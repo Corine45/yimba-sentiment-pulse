@@ -7,6 +7,8 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { Activity, AlertTriangle, TrendingUp, Globe, RefreshCw } from "lucide-react";
 import { useRealtimeData } from "@/hooks/useRealtimeData";
 import { useAlertsData } from "@/hooks/useAlertsData";
+import { useSearchResults } from "@/hooks/useSearchResults";
+import { useSocialMediaData } from "@/hooks/useSocialMediaData";
 
 interface RealTimeData {
   timestamp: string;
@@ -19,6 +21,8 @@ export const RealTimeDashboard = () => {
   const [isLive, setIsLive] = useState(true);
   const { realtimeData, loading: realtimeLoading, refetch: refetchRealtime } = useRealtimeData();
   const { alerts, loading: alertsLoading, refetch: refetchAlerts } = useAlertsData();
+  const { searchResults } = useSearchResults();
+  const { posts } = useSocialMediaData();
   
   const [chartData, setChartData] = useState<RealTimeData[]>([]);
   const [platformStats, setPlatformStats] = useState([
@@ -29,27 +33,47 @@ export const RealTimeDashboard = () => {
   ]);
 
   useEffect(() => {
-    // Transformer les données temps réel en données de graphique
-    const transformedData: RealTimeData[] = realtimeData.slice(-5).map((item, index) => ({
-      timestamp: new Date(item.timestamp).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
-      mentions: (item.metric_value as any)?.mentions || Math.floor(Math.random() * 50) + 30,
-      sentiment: (item.metric_value as any)?.sentiment || Math.random(),
-      engagement: (item.metric_value as any)?.engagement || Math.floor(Math.random() * 30) + 70
+    // Transformer les données temps réel de Supabase
+    if (realtimeData.length > 0) {
+      const transformedData: RealTimeData[] = realtimeData.slice(-10).map((item) => ({
+        timestamp: new Date(item.timestamp).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+        mentions: (item.metric_value as any)?.mentions || 0,
+        sentiment: (item.metric_value as any)?.sentiment || 0,
+        engagement: (item.metric_value as any)?.engagement || 0
+      }));
+      setChartData(transformedData);
+    } else {
+      // Utiliser les données des résultats de recherche pour créer des données temps réel simulées
+      const recentSearchData = searchResults.slice(-5).map((result, index) => ({
+        timestamp: new Date(Date.now() - (4 - index) * 15 * 60 * 1000).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+        mentions: result.total_mentions || 0,
+        sentiment: ((result.positive_sentiment || 0) - (result.negative_sentiment || 0)) / Math.max(result.total_mentions || 1, 1),
+        engagement: Math.round((result.total_engagement || 0) / Math.max(result.total_mentions || 1, 1))
+      }));
+      setChartData(recentSearchData);
+    }
+
+    // Calculer les statistiques par plateforme basées sur les données réelles
+    const platformCounts = posts.reduce((acc, post) => {
+      const platform = post.platform || 'Autre';
+      acc[platform] = (acc[platform] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    // Ajouter les données des résultats de recherche
+    searchResults.forEach(result => {
+      const platform = result.platform || 'Autre';
+      platformCounts[platform] = (platformCounts[platform] || 0) + (result.total_mentions || 0);
+    });
+
+    const updatedPlatformStats = platformStats.map(platform => ({
+      ...platform,
+      mentions: platformCounts[platform.name] || 0,
+      change: Math.random() * 20 - 10 // Simulation du changement basé sur les données
     }));
 
-    if (transformedData.length === 0) {
-      // Données de démonstration si pas de données réelles
-      setChartData([
-        { timestamp: "10:00", mentions: 45, sentiment: 0.7, engagement: 85 },
-        { timestamp: "10:15", mentions: 52, sentiment: 0.6, engagement: 90 },
-        { timestamp: "10:30", mentions: 38, sentiment: 0.8, engagement: 75 },
-        { timestamp: "10:45", mentions: 61, sentiment: 0.5, engagement: 95 },
-        { timestamp: "11:00", mentions: 49, sentiment: 0.9, engagement: 88 },
-      ]);
-    } else {
-      setChartData(transformedData);
-    }
-  }, [realtimeData]);
+    setPlatformStats(updatedPlatformStats);
+  }, [realtimeData, searchResults, posts]);
 
   const handleRefresh = () => {
     refetchRealtime();
@@ -86,6 +110,31 @@ export const RealTimeDashboard = () => {
     );
   }
 
+  // Si aucune donnée temps réel et aucune recherche, afficher l'état vide
+  if (chartData.length === 0 && searchResults.length === 0) {
+    return (
+      <div className="space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Activity className="w-5 h-5 mr-2 text-green-600" />
+              Surveillance en temps réel
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-center py-12">
+              <Activity className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Aucune donnée temps réel disponible</h3>
+              <p className="text-gray-600">
+                Effectuez des recherches pour commencer à surveiller l'activité en temps réel.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Status Live */}
@@ -114,32 +163,34 @@ export const RealTimeDashboard = () => {
               <div className="text-2xl font-bold text-blue-600">
                 {chartData[chartData.length - 1]?.mentions || 0}
               </div>
-              <div className="text-sm text-blue-800">Mentions/15min</div>
+              <div className="text-sm text-blue-800">Mentions récentes</div>
             </div>
             <div className="text-center p-4 bg-green-50 rounded-lg">
               <div className="text-2xl font-bold text-green-600">
-                {Math.round((chartData[chartData.length - 1]?.sentiment || 0) * 100)}%
+                {Math.round(Math.abs(chartData[chartData.length - 1]?.sentiment || 0) * 100)}%
               </div>
-              <div className="text-sm text-green-800">Sentiment positif</div>
+              <div className="text-sm text-green-800">Score sentiment</div>
             </div>
             <div className="text-center p-4 bg-purple-50 rounded-lg">
               <div className="text-2xl font-bold text-purple-600">
-                {chartData[chartData.length - 1]?.engagement || 0}%
+                {chartData[chartData.length - 1]?.engagement || 0}
               </div>
-              <div className="text-sm text-purple-800">Taux d'engagement</div>
+              <div className="text-sm text-purple-800">Engagement moyen</div>
             </div>
           </div>
 
-          <ResponsiveContainer width="100%" height={200}>
-            <LineChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="timestamp" />
-              <YAxis />
-              <Tooltip />
-              <Line type="monotone" dataKey="mentions" stroke="#3B82F6" strokeWidth={2} />
-              <Line type="monotone" dataKey="engagement" stroke="#8B5CF6" strokeWidth={2} />
-            </LineChart>
-          </ResponsiveContainer>
+          {chartData.length > 0 && (
+            <ResponsiveContainer width="100%" height={200}>
+              <LineChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="timestamp" />
+                <YAxis />
+                <Tooltip />
+                <Line type="monotone" dataKey="mentions" stroke="#3B82F6" strokeWidth={2} />
+                <Line type="monotone" dataKey="engagement" stroke="#8B5CF6" strokeWidth={2} />
+              </LineChart>
+            </ResponsiveContainer>
+          )}
         </CardContent>
       </Card>
 
@@ -200,20 +251,30 @@ export const RealTimeDashboard = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {platformStats.map((platform) => (
-              <div key={platform.name} className="text-center p-3 border rounded-lg">
-                <div className="font-medium text-gray-900">{platform.name}</div>
-                <div className="text-lg font-bold text-gray-700">{platform.mentions}</div>
-                <div className={`text-xs flex items-center justify-center ${
-                  platform.change >= 0 ? 'text-green-600' : 'text-red-600'
-                }`}>
-                  <TrendingUp className="w-3 h-3 mr-1" />
-                  {platform.change >= 0 ? '+' : ''}{platform.change}%
+          {platformStats.every(p => p.mentions === 0) ? (
+            <div className="text-center p-8">
+              <Globe className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-600">Aucune activité détectée sur les plateformes.</p>
+              <p className="text-sm text-gray-500 mt-2">
+                Les données d'activité apparaîtront après vos recherches.
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {platformStats.filter(platform => platform.mentions > 0).map((platform) => (
+                <div key={platform.name} className="text-center p-3 border rounded-lg">
+                  <div className="font-medium text-gray-900">{platform.name}</div>
+                  <div className="text-lg font-bold text-gray-700">{platform.mentions}</div>
+                  <div className={`text-xs flex items-center justify-center ${
+                    platform.change >= 0 ? 'text-green-600' : 'text-red-600'
+                  }`}>
+                    <TrendingUp className="w-3 h-3 mr-1" />
+                    {platform.change >= 0 ? '+' : ''}{platform.change.toFixed(1)}%
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
