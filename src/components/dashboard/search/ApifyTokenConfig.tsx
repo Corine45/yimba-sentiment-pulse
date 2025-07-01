@@ -2,9 +2,15 @@
 interface ApifyTokenConfigProps {
   apifyToken: string;
   onTokenChange: (token: string) => void;
+  userRole: string;
 }
 
-export const ApifyTokenConfig = ({ apifyToken, onTokenChange }: ApifyTokenConfigProps) => {
+export const ApifyTokenConfig = ({ apifyToken, onTokenChange, userRole }: ApifyTokenConfigProps) => {
+  // Les observateurs ne peuvent pas configurer le token Apify
+  if (userRole === "observateur") {
+    return null;
+  }
+
   return (
     <div className="space-y-2">
       <label className="text-sm font-medium">Token Apify (optionnel)</label>

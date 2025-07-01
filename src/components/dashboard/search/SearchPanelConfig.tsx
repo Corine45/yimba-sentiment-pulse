@@ -47,6 +47,7 @@ export const SearchPanelConfig = ({
         <ApifyTokenConfig
           apifyToken={apifyToken}
           onTokenChange={onApifyTokenChange}
+          userRole={userRole}
         />
 
         <SearchActions
@@ -58,7 +59,8 @@ export const SearchPanelConfig = ({
           hasKeywords={hasKeywords}
           userRole={userRole}
         />
-        <ApiIntegrationNote />
+        
+        {userRole !== "observateur" && <ApiIntegrationNote />}
       </CardContent>
     </Card>
   );
