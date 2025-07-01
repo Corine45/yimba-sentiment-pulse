@@ -1,207 +1,164 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { Users, AlertTriangle, CheckCircle, TrendingUp } from "lucide-react";
-
-interface SourceData {
-  totalPosts: number;
-  uniqueAuthors: number;
-  diversityRatio: number;
-  concentration: {
-    top1Percent: number;
-    top5Percent: number;
-    top10Percent: number;
-  };
-  authorDistribution: {
-    range: string;
-    authors: number;
-    posts: number;
-    percentage: number;
-  }[];
-  riskLevel: 'low' | 'medium' | 'high';
-}
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
+import { Globe, Users } from "lucide-react";
+import { useSearchResults } from "@/hooks/useSearchResults";
+import { useSocialMediaData } from "@/hooks/useSocialMediaData";
 
 export const SourceDiversity = () => {
-  const sourceData: SourceData = {
-    totalPosts: 7214,
-    uniqueAuthors: 3456,
-    diversityRatio: 0.48, // posts/authors ratio
-    concentration: {
-      top1Percent: 25.3,  // % des posts par le top 1% des auteurs
-      top5Percent: 52.1,  // % des posts par le top 5% des auteurs
-      top10Percent: 71.8  // % des posts par le top 10% des auteurs
-    },
-    authorDistribution: [
-      { range: "1 publication", authors: 2134, posts: 2134, percentage: 61.8 },
-      { range: "2-5 publications", authors: 876, posts: 2456, percentage: 25.3 },
-      { range: "6-10 publications", authors: 234, posts: 1678, percentage: 6.8 },
-      { range: "11-20 publications", authors: 134, posts: 1789, percentage: 3.9 },
-      { range: "21+ publications", authors: 78, posts: 2157, percentage: 2.3 }
-    ],
-    riskLevel: 'medium'
-  };
+  const { searchResults, loading } = useSearchResults();
+  const { posts } = useSocialMediaData();
 
-  const getRiskColor = (level: string) => {
-    switch (level) {
-      case 'low': return 'bg-green-100 text-green-800 border-green-200';
-      case 'medium': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'high': return 'bg-red-100 text-red-800 border-red-200';
-      default: return 'bg-gray-100 text-gray-800 border-gray-200';
-    }
-  };
+  if (loading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <Globe className="w-5 h-5 mr-2 text-blue-600" />
+            Diversité des sources
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="animate-pulse">
+            <div className="h-64 bg-gray-200 rounded"></div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
-  const getRiskIcon = (level: string) => {
-    switch (level) {
-      case 'low': return <CheckCircle className="w-4 h-4" />;
-      case 'medium': return <AlertTriangle className="w-4 h-4" />;
-      case 'high': return <AlertTriangle className="w-4 h-4" />;
-      default: return <AlertTriangle className="w-4 h-4" />;
-    }
-  };
+  // Calculer la distribution des plateformes basée sur les résultats de recherche
+  const platformCounts = searchResults.reduce((acc, result) => {
+    const platform = result.platform || 'Autre';
+    acc[platform] = (acc[platform] || 0) + (result.total_mentions || 0);
+    return acc;
+  }, {} as Record<string, number>);
 
-  const getRiskText = (level: string) => {
-    switch (level) {
-      case 'low': return 'Diversité saine';
-      case 'medium': return 'Concentration modérée';
-      case 'high': return 'Forte concentration';
-      default: return 'À analyser';
-    }
-  };
+  // Ajouter les données des posts de médias sociaux
+  posts.forEach(post => {
+    const platform = post.platform || 'Autre';
+    platformCounts[platform] = (platformCounts[platform] || 0) + 1;
+  });
 
-  const formatNumber = (num: number) => {
-    if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
-    return num.toString();
-  };
+  const pieData = Object.entries(platformCounts).map(([platform, count]) => ({
+    name: platform,
+    value: count,
+    color: getPlatformColor(platform)
+  }));
+
+  const totalSources = Object.values(platformCounts).reduce((sum, count) => sum + count, 0);
+  const uniquePlatforms = Object.keys(platformCounts).length;
+
+  // Calculer les auteurs uniques
+  const uniqueAuthors = new Set(posts.map(post => post.author)).size;
+
+  function getPlatformColor(platform: string) {
+    const colors: Record<string, string> = {
+      'Instagram': '#E4405F',
+      'Twitter': '#1DA1F2',
+      'Facebook': '#1877F2',
+      'TikTok': '#000000',
+      'YouTube': '#FF0000',
+      'LinkedIn': '#0A66C2',
+      'Autre': '#6B7280'
+    };
+    return colors[platform] || '#6B7280';
+  }
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center justify-between">
-          <div className="flex items-center">
-            <Users className="w-5 h-5 mr-2 text-blue-600" />
-            Diversité des sources
-          </div>
-          <Badge className={getRiskColor(sourceData.riskLevel)}>
-            {getRiskIcon(sourceData.riskLevel)}
-            <span className="ml-1">{getRiskText(sourceData.riskLevel)}</span>
-          </Badge>
+        <CardTitle className="flex items-center">
+          <Globe className="w-5 h-5 mr-2 text-blue-600" />
+          Diversité des sources
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-6">
-        {/* Métriques principales */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="text-center p-4 bg-blue-50 rounded-lg">
-            <div className="text-2xl font-bold text-blue-600">{formatNumber(sourceData.totalPosts)}</div>
-            <div className="text-sm text-blue-700">Publications totales</div>
+      <CardContent>
+        {totalSources === 0 ? (
+          <div className="text-center py-8 text-gray-500">
+            <Globe className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+            <p>Aucune source détectée</p>
+            <p className="text-sm">Effectuez des recherches pour voir la diversité des sources</p>
           </div>
-          
-          <div className="text-center p-4 bg-green-50 rounded-lg">
-            <div className="text-2xl font-bold text-green-600">{formatNumber(sourceData.uniqueAuthors)}</div>
-            <div className="text-sm text-green-700">Auteurs uniques</div>
-          </div>
-          
-          <div className="text-center p-4 bg-purple-50 rounded-lg">
-            <div className="text-2xl font-bold text-purple-600">{sourceData.diversityRatio.toFixed(2)}</div>
-            <div className="text-sm text-purple-700">Ratio diversité</div>
-            <div className="text-xs text-purple-600 mt-1">
-              (publications/auteurs)
+        ) : (
+          <div className="space-y-6">
+            {/* Métriques principales */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="text-center p-4 bg-blue-50 rounded-lg">
+                <div className="text-2xl font-bold text-blue-600">{uniquePlatforms}</div>
+                <div className="text-sm text-blue-700">Plateformes</div>
+              </div>
+              <div className="text-center p-4 bg-green-50 rounded-lg">
+                <div className="text-2xl font-bold text-green-600">{totalSources}</div>
+                <div className="text-sm text-green-700">Sources totales</div>
+              </div>
+              <div className="text-center p-4 bg-purple-50 rounded-lg">
+                <div className="text-2xl font-bold text-purple-600">{uniqueAuthors}</div>
+                <div className="text-sm text-purple-700">Auteurs uniques</div>
+              </div>
             </div>
-          </div>
-        </div>
 
-        {/* Analyse de concentration */}
-        <div className="space-y-4">
-          <h4 className="font-medium flex items-center">
-            <TrendingUp className="w-4 h-4 mr-2" />
-            Concentration des sources
-          </h4>
-          
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-sm">Top 1% des auteurs</span>
-              <div className="flex items-center space-x-2">
-                <Progress value={sourceData.concentration.top1Percent} className="w-32" />
-                <span className="text-sm font-medium w-12">{sourceData.concentration.top1Percent}%</span>
+            {/* Graphique en secteurs */}
+            <div className="flex flex-col lg:flex-row items-center space-y-4 lg:space-y-0 lg:space-x-6">
+              <div className="w-full lg:w-1/2">
+                <ResponsiveContainer width="100%" height={250}>
+                  <PieChart>
+                    <Pie
+                      data={pieData}
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={80}
+                      dataKey="value"
+                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    >
+                      {pieData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(value) => [`${value} mentions`, 'Mentions']} />
+                  </PieChart>
+                </ResponsiveContainer>
               </div>
-            </div>
-            
-            <div className="flex items-center justify-between">
-              <span className="text-sm">Top 5% des auteurs</span>
-              <div className="flex items-center space-x-2">
-                <Progress value={sourceData.concentration.top5Percent} className="w-32" />
-                <span className="text-sm font-medium w-12">{sourceData.concentration.top5Percent}%</span>
-              </div>
-            </div>
-            
-            <div className="flex items-center justify-between">
-              <span className="text-sm">Top 10% des auteurs</span>
-              <div className="flex items-center space-x-2">
-                <Progress value={sourceData.concentration.top10Percent} className="w-32" />
-                <span className="text-sm font-medium w-12">{sourceData.concentration.top10Percent}%</span>
-              </div>
-            </div>
-          </div>
-        </div>
 
-        {/* Distribution des auteurs */}
-        <div className="space-y-4">
-          <h4 className="font-medium">Répartition par activité</h4>
-          <div className="space-y-3">
-            {sourceData.authorDistribution.map((item, index) => (
-              <div key={index} className="border rounded-lg p-3">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="font-medium text-sm">{item.range}</span>
-                  <Badge variant="outline">{item.percentage}%</Badge>
-                </div>
-                <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
-                  <div>
-                    <span className="font-medium">{formatNumber(item.authors)}</span> auteurs
+              {/* Légende détaillée */}
+              <div className="w-full lg:w-1/2 space-y-2">
+                {pieData.map((entry) => (
+                  <div key={entry.name} className="flex items-center justify-between p-2 border rounded">
+                    <div className="flex items-center space-x-3">
+                      <div 
+                        className="w-4 h-4 rounded"
+                        style={{ backgroundColor: entry.color }}
+                      />
+                      <span className="font-medium">{entry.name}</span>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-semibold">{entry.value}</div>
+                      <div className="text-xs text-gray-500">
+                        {((entry.value / totalSources) * 100).toFixed(1)}%
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <span className="font-medium">{formatNumber(item.posts)}</span> publications
-                  </div>
-                </div>
-                <Progress value={item.percentage} className="mt-2" />
+                ))}
               </div>
-            ))}
-          </div>
-        </div>
+            </div>
 
-        {/* Insights et recommandations */}
-        <div className="p-4 bg-gray-50 rounded-lg">
-          <h4 className="font-medium text-gray-900 mb-2">💡 Analyse et recommandations</h4>
-          <div className="space-y-2 text-sm text-gray-700">
-            {sourceData.riskLevel === 'medium' && (
-              <>
-                <div className="flex items-start space-x-2">
-                  <AlertTriangle className="w-4 h-4 text-yellow-600 mt-0.5 flex-shrink-0" />
-                  <span>Concentration modérée : 25% des publications proviennent de seulement 1% des auteurs</span>
-                </div>
-                <div className="flex items-start space-x-2">
-                  <CheckCircle className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
-                  <span>Bonne base de diversité : 62% des auteurs ne publient qu'une seule fois</span>
-                </div>
-                <div className="flex items-start space-x-2">
-                  <TrendingUp className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
-                  <span>Recommandation : Surveiller les auteurs très actifs pour détecter d'éventuelles campagnes organisées</span>
-                </div>
-              </>
-            )}
+            {/* Insights */}
+            <div className="bg-gray-50 rounded-lg p-4">
+              <h4 className="font-medium mb-2 flex items-center">
+                <Users className="w-4 h-4 mr-2" />
+                Insights sur la diversité
+              </h4>
+              <ul className="text-sm text-gray-700 space-y-1">
+                <li>• {uniquePlatforms} plateformes différentes analysées</li>
+                <li>• {uniqueAuthors} auteurs uniques identifiés</li>
+                <li>• Couverture diversifiée des sources d'information</li>
+                {pieData.length > 0 && (
+                  <li>• {pieData[0].name} est la source principale avec {((pieData[0].value / totalSources) * 100).toFixed(1)}% des mentions</li>
+                )}
+              </ul>
+            </div>
           </div>
-        </div>
-
-        {/* Indicateurs de qualité */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="text-center p-3 border rounded-lg">
-            <div className="text-lg font-bold text-gray-900">Authentique</div>
-            <div className="text-sm text-gray-600">Signal de conversation naturelle détecté</div>
-          </div>
-          <div className="text-center p-3 border rounded-lg">
-            <div className="text-lg font-bold text-gray-900">À surveiller</div>
-            <div className="text-sm text-gray-600">Quelques auteurs très actifs identifiés</div>
-          </div>
-        </div>
+        )}
       </CardContent>
     </Card>
   );
