@@ -1,5 +1,5 @@
 
-import { Eye, Bell, TrendingUp, FileText, Users, Settings, Activity, User } from "lucide-react";
+import { Eye, Bell, TrendingUp, FileText, Users, Settings, Activity, User, BarChart3 } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -15,7 +15,6 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { HealthRole } from "../utils/healthPermissions";
 
 interface AppSidebarProps {
   activeTab: string;
@@ -133,6 +132,24 @@ export const AppSidebar = ({ activeTab, onTabChange, user, permissions }: AppSid
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+        
+        <SidebarGroup>
+          <SidebarGroupLabel>Autres</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton 
+                  onClick={() => navigate('/status')}
+                  className="w-full justify-start"
+                  tooltip="Vue d'ensemble de la plateforme"
+                >
+                  <BarChart3 className="w-4 h-4" />
+                  <span>État des lieux</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

@@ -1,0 +1,32 @@
+
+import { useAuth } from "@/hooks/useAuth";
+import { useProfile } from "@/hooks/useProfile";
+import { StatusOverviewDashboard } from "@/components/status/StatusOverviewDashboard";
+import { useNavigationProtection } from "@/hooks/useNavigationProtection";
+
+const StatusOverview = () => {
+  const { user } = useAuth();
+  const { profile, loading } = useProfile();
+  const { secureLogout } = useNavigationProtection();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  if (!user || !profile) {
+    return null;
+  }
+
+  return (
+    <StatusOverviewDashboard 
+      user={profile} 
+      onLogout={secureLogout} 
+    />
+  );
+};
+
+export default StatusOverview;

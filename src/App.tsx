@@ -14,6 +14,7 @@ import Dashboard from "./pages/Dashboard";
 import AdminPanel from "./pages/AdminPanel";
 import AnalystWorkspace from "./pages/AnalystWorkspace";
 import Profile from "./pages/Profile";
+import StatusOverview from "./pages/StatusOverview";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -52,6 +53,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Profile />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/status" 
+              element={
+                <ProtectedRoute>
+                  <StatusOverview />
                 </ProtectedRoute>
               } 
             />
