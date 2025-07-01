@@ -10,7 +10,7 @@ interface InfluencerData {
   followers: number;
   engagement_rate: number;
   influence_score: number;
-  recent_posts: any[];
+  recent_posts: any; // Changed from any[] to any to match Json type
 }
 
 export const useInfluencerData = () => {
@@ -33,7 +33,18 @@ export const useInfluencerData = () => {
         return;
       }
 
-      setInfluencers(data || []);
+      // Transform the data to match our interface
+      const transformedData: InfluencerData[] = (data || []).map(item => ({
+        id: item.id,
+        name: item.name,
+        platform: item.platform,
+        followers: item.followers,
+        engagement_rate: item.engagement_rate,
+        influence_score: item.influence_score,
+        recent_posts: item.recent_posts || []
+      }));
+
+      setInfluencers(transformedData);
     } catch (error) {
       console.error('Error:', error);
     } finally {
