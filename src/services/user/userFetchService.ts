@@ -49,25 +49,24 @@ export const userFetchService = {
         console.error('Erreur lors de la récupération des sessions:', sessionsError);
       }
 
-      // Tentative de récupération des informations d'authentification (peut échouer si pas admin)
+      // Récupération des informations d'authentification avec service_role
       let authUsers: AuthUser[] = [];
-      let hasAuthAccess = false;
       
       try {
         const { data: authResponse, error: authError } = await supabase.auth.admin.listUsers();
         if (authError) {
-          console.warn('⚠️ Impossible de récupérer les données auth (permissions insuffisantes):', authError);
+          console.error('❌ Erreur lors de la récupération des données auth:', authError);
+          throw new Error('Impossible de récupérer les données auth: ' + authError.message);
         } else {
           authUsers = authResponse?.users || [];
-          hasAuthAccess = true;
           console.log('🔐 Utilisateurs auth récupérés:', authUsers.length);
         }
       } catch (authError) {
-        console.warn('⚠️ Impossible de récupérer les données auth (permissions insuffisantes):', authError);
-        // Continuer sans les données auth
+        console.error('❌ Erreur lors de la récupération des données auth:', authError);
+        throw new Error('Impossible de récupérer les données auth: ' + authError);
       }
 
-      // Combiner les données des profils avec les informations disponibles
+      // Combiner les données des profils avec les informations d'authentification
       const usersWithStatus = profiles.map(profile => {
         // Trouver le rôle de l'utilisateur dans user_roles
         const userRoleEntries = userRoles?.filter(r => r.user_id === profile.id) || [];
@@ -91,14 +90,14 @@ export const userFetchService = {
         // Trouver les informations d'authentification pour cet utilisateur
         const authUser = authUsers.find(u => u.id === profile.id);
         
-        // Déterminer le statut basé sur plusieurs critères
+        // Déterminer le statut basé sur les données auth réelles
         let status: 'active' | 'inactive' = 'inactive';
         let emailConfirmed = false;
         let emailConfirmedAt: string | null = null;
         let lastLogin: string | undefined = undefined;
         
-        if (hasAuthAccess && authUser) {
-          // Si on a accès aux données auth et qu'on trouve l'utilisateur, les utiliser
+        if (authUser) {
+          // Utiliser les vraies données d'authentification
           emailConfirmed = authUser.email_confirmed_at !== null && authUser.email_confirmed_at !== undefined;
           emailConfirmedAt = authUser.email_confirmed_at;
           lastLogin = authUser.last_sign_in_at || undefined;
@@ -109,25 +108,16 @@ export const userFetchService = {
           
           status = emailConfirmed && hasRecentActivity ? 'active' : 'inactive';
         } else {
-          // Si on n'a pas accès aux données auth OU qu'on ne trouve pas l'utilisateur auth
-          // Être très conservateur : considérer l'email comme NON confirmé par défaut
+          // Si on ne trouve pas l'utilisateur dans les données auth, utiliser les sessions
           emailConfirmed = false;
           emailConfirmedAt = null;
           lastLogin = lastSession?.session_start;
-          
-          // Dans ce cas, on ne peut pas vraiment déterminer si l'utilisateur est actif
-          // On se base uniquement sur les sessions
-          const hasActiveSession = activeSession;
-          const hasRecentSession = lastSession && 
-            new Date(lastSession.updated_at) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000); // 7 jours
-          
-          // Sans confirmation d'email, l'utilisateur reste inactif même avec des sessions
           status = 'inactive';
           
-          console.warn(`⚠️ Utilisateur ${profile.email}: Impossible de vérifier l'email - considéré comme non confirmé`);
+          console.warn(`⚠️ Utilisateur ${profile.email}: Non trouvé dans les données auth`);
         }
         
-        console.log(`📧 Utilisateur ${profile.email}: email confirmé = ${emailConfirmed}, status = ${status}, hasAuthAccess = ${hasAuthAccess}`);
+        console.log(`📧 Utilisateur ${profile.email}: email confirmé = ${emailConfirmed}, status = ${status}`);
         
         return {
           id: profile.id,
@@ -148,14 +138,8 @@ export const userFetchService = {
         actifs: usersWithStatus.filter(u => u.status === 'active').length,
         inactifs: usersWithStatus.filter(u => u.status === 'inactive').length,
         emailsConfirmes: usersWithStatus.filter(u => u.email_confirmed).length,
-        emailsNonConfirmes: usersWithStatus.filter(u => !u.email_confirmed).length,
-        hasAuthAccess: hasAuthAccess
+        emailsNonConfirmes: usersWithStatus.filter(u => !u.email_confirmed).length
       });
-      
-      if (!hasAuthAccess) {
-        console.warn('⚠️ ATTENTION: Pas d\'accès aux données auth - tous les emails sont considérés comme non confirmés');
-        console.warn('💡 Pour accéder aux vraies données d\'email, utilisez une clé service_role au lieu de la clé anon');
-      }
       
       return usersWithStatus;
     } catch (error) {
