@@ -1,7 +1,8 @@
 
 import { Button } from "@/components/ui/button";
-import { LogOut } from "lucide-react";
+import { LogOut, User } from "lucide-react";
 import { getRoleBadgeColor, getRoleLabel } from "../utils/dashboardUtils";
+import { useNavigate } from "react-router-dom";
 
 interface DashboardHeaderProps {
   user: any;
@@ -9,6 +10,8 @@ interface DashboardHeaderProps {
 }
 
 export const DashboardHeader = ({ user, onLogout }: DashboardHeaderProps) => {
+  const navigate = useNavigate();
+
   return (
     <header className="bg-white shadow-sm border-b">
       <div className="max-w-7xl mx-auto px-6 py-4">
@@ -37,6 +40,10 @@ export const DashboardHeader = ({ user, onLogout }: DashboardHeaderProps) => {
                 {getRoleLabel(user.role)}
               </span>
             </div>
+            <Button variant="outline" size="sm" onClick={() => navigate('/profile')}>
+              <User className="w-4 h-4 mr-2" />
+              Profil
+            </Button>
             <Button variant="outline" size="sm" onClick={onLogout}>
               <LogOut className="w-4 h-4 mr-2" />
               Déconnexion

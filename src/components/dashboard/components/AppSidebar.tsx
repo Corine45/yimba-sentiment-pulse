@@ -1,5 +1,5 @@
 
-import { Eye, Bell, TrendingUp, FileText, Users, Settings, Activity } from "lucide-react";
+import { Eye, Bell, TrendingUp, FileText, Users, Settings, Activity, User } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -13,6 +13,8 @@ import {
   SidebarFooter,
 } from "@/components/ui/sidebar";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 import { HealthRole } from "../utils/healthPermissions";
 
 interface AppSidebarProps {
@@ -23,6 +25,8 @@ interface AppSidebarProps {
 }
 
 export const AppSidebar = ({ activeTab, onTabChange, user, permissions }: AppSidebarProps) => {
+  const navigate = useNavigate();
+
   const getAvailableTabs = () => {
     const tabs = [];
     
@@ -135,17 +139,29 @@ export const AppSidebar = ({ activeTab, onTabChange, user, permissions }: AppSid
       </SidebarContent>
 
       <SidebarFooter className="p-4">
-        <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
-            <span className="text-gray-600 font-medium text-sm">
-              {user.name?.[0]?.toUpperCase() || 'U'}
-            </span>
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium truncate">{user.name}</p>
-            <Badge variant="outline" className="text-xs">
-              {user.role}
-            </Badge>
+        <div className="space-y-3">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate('/profile')}
+            className="w-full justify-start"
+          >
+            <User className="w-4 h-4 mr-2" />
+            Mon Profil
+          </Button>
+          
+          <div className="flex items-center space-x-3">
+            <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
+              <span className="text-gray-600 font-medium text-sm">
+                {user.name?.[0]?.toUpperCase() || 'U'}
+              </span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium truncate">{user.name}</p>
+              <Badge variant="outline" className="text-xs">
+                {user.role}
+              </Badge>
+            </div>
           </div>
         </div>
       </SidebarFooter>
