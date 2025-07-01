@@ -22,6 +22,29 @@ export const useAuth = () => {
   return context;
 };
 
+// Fonction utilitaire pour nettoyer l'état d'authentification
+const cleanupAuthState = () => {
+  try {
+    // Nettoyer localStorage
+    Object.keys(localStorage).forEach((key) => {
+      if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
+        localStorage.removeItem(key);
+      }
+    });
+    
+    // Nettoyer sessionStorage si disponible
+    if (typeof sessionStorage !== 'undefined') {
+      Object.keys(sessionStorage).forEach((key) => {
+        if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
+          sessionStorage.removeItem(key);
+        }
+      });
+    }
+  } catch (error) {
+    console.warn('Erreur lors du nettoyage du storage:', error);
+  }
+};
+
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -31,9 +54,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        console.log('Auth state change:', event, session?.user?.email);
+        
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
+
+        // Si déconnexion, nettoyer l'historique
+        if (event === 'SIGNED_OUT') {
+          cleanupAuthState();
+          // Remplacer l'historique pour empêcher le retour arrière
+          window.history.replaceState(null, '', '/auth');
+        }
       }
     );
 
@@ -48,11 +80,33 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    return { error };
+    try {
+      // Nettoyer l'état avant la connexion
+      cleanupAuthState();
+      
+      // Tentative de déconnexion globale
+      try {
+        await supabase.auth.signOut({ scope: 'global' });
+      } catch (err) {
+        // Continuer même si ça échoue
+      }
+
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      
+      if (!error) {
+        // Forcer le rechargement de la page pour un état propre
+        setTimeout(() => {
+          window.location.href = '/';
+        }, 100);
+      }
+      
+      return { error };
+    } catch (error) {
+      return { error };
+    }
   };
 
   const signUp = async (email: string, password: string, name: string) => {
@@ -72,7 +126,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    try {
+      // Nettoyer l'état d'abord
+      cleanupAuthState();
+      
+      // Déconnexion globale
+      await supabase.auth.signOut({ scope: 'global' });
+      
+      // Forcer la redirection avec remplacement de l'historique
+      window.location.href = '/auth';
+    } catch (error) {
+      console.error('Erreur lors de la déconnexion:', error);
+      // Forcer la redirection même en cas d'erreur
+      window.location.href = '/auth';
+    }
   };
 
   const value = {
