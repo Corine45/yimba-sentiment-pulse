@@ -49,9 +49,31 @@ export const useDynamicReportsData = () => {
   const fetchDemographicData = async () => {
     if (!user) return;
 
-    console.log('Récupération des données démographiques pour l\'utilisateur:', user.id);
+    console.log('Récupération des données démographiques réelles pour l\'utilisateur:', user.id);
 
     try {
+      // Récupérer les données d'âge RÉELLES de Supabase
+      const { data: ageData, error: ageError } = await supabase
+        .from('age_demographics')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('percentage', { ascending: false });
+
+      if (ageError) {
+        console.error('Erreur lors de la récupération des données d\'âge:', ageError);
+      }
+
+      // Récupérer les données de genre RÉELLES de Supabase
+      const { data: genderData, error: genderError } = await supabase
+        .from('gender_demographics')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('percentage', { ascending: false });
+
+      if (genderError) {
+        console.error('Erreur lors de la récupération des données de genre:', genderError);
+      }
+
       // Récupérer les données géographiques RÉELLES de Supabase
       const { data: geoData, error: geoError } = await supabase
         .from('geographic_data')
@@ -64,63 +86,35 @@ export const useDynamicReportsData = () => {
         console.error('Erreur lors de la récupération des données géographiques:', geoError);
       }
 
+      console.log('Données d\'âge récupérées:', ageData);
+      console.log('Données de genre récupérées:', genderData);
       console.log('Données géographiques récupérées:', geoData);
 
-      // Récupérer les résultats de recherche RÉELS
-      const { data: searchResults, error: searchError } = await supabase
-        .from('search_results')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(50);
+      // Transformer les données en format attendu par les composants
+      const ageGroups = ageData?.map(item => ({
+        name: item.age_group,
+        value: Number(item.percentage),
+        mentions: item.mentions
+      })) || [];
 
-      if (searchError) {
-        console.error('Erreur lors de la récupération des résultats de recherche:', searchError);
-      }
+      const genders = genderData?.map(item => ({
+        name: item.gender,
+        value: Number(item.percentage),
+        mentions: item.mentions
+      })) || [];
 
-      console.log('Résultats de recherche récupérés:', searchResults);
+      const locations = geoData?.map(geo => ({
+        name: geo.region,
+        mentions: geo.mentions,
+        sentiment_score: Number(geo.sentiment_score)
+      })) || [];
 
-      // Si on a des données réelles, les utiliser, sinon rester vide
-      if (searchResults && searchResults.length > 0) {
-        const totalMentions = searchResults.reduce((sum, result) => sum + (result.total_mentions || 0), 0);
-        
-        console.log('Total mentions trouvées:', totalMentions);
+      setDemographicData({
+        ageGroups,
+        genders,
+        locations
+      });
 
-        if (totalMentions > 0) {
-          // Calculer les données d'âge basées sur les VRAIES données
-          const ageGroups = [
-            { name: "18-24", value: 25, mentions: Math.floor(totalMentions * 0.25) },
-            { name: "25-34", value: 35, mentions: Math.floor(totalMentions * 0.35) },
-            { name: "35-44", value: 20, mentions: Math.floor(totalMentions * 0.20) },
-            { name: "45-54", value: 15, mentions: Math.floor(totalMentions * 0.15) },
-            { name: "55+", value: 5, mentions: Math.floor(totalMentions * 0.05) },
-          ];
-
-          // Calculer les données de genre basées sur les VRAIES données
-          const genders = [
-            { name: "Hommes", value: 45, mentions: Math.floor(totalMentions * 0.45) },
-            { name: "Femmes", value: 55, mentions: Math.floor(totalMentions * 0.55) },
-          ];
-
-          setDemographicData({
-            ageGroups,
-            genders,
-            locations: geoData?.map(geo => ({
-              name: geo.region,
-              mentions: geo.mentions,
-              sentiment_score: Number(geo.sentiment_score)
-            })) || []
-          });
-        }
-      } else {
-        // Pas de données réelles - garder vide
-        console.log('Aucune donnée réelle trouvée - affichage des messages d\'état vide');
-        setDemographicData({
-          ageGroups: [],
-          genders: [],
-          locations: []
-        });
-      }
     } catch (error) {
       console.error('Erreur lors de la récupération des données démographiques:', error);
       setDemographicData({

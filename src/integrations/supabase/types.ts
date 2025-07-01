@@ -9,6 +9,39 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      age_demographics: {
+        Row: {
+          age_group: string
+          created_at: string
+          id: string
+          mentions: number
+          percentage: number
+          search_context: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          age_group: string
+          created_at?: string
+          id?: string
+          mentions?: number
+          percentage?: number
+          search_context?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          age_group?: string
+          created_at?: string
+          id?: string
+          mentions?: number
+          percentage?: number
+          search_context?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       ai_contexts: {
         Row: {
           confidence: number
@@ -49,6 +82,39 @@ export type Database = {
           summary?: string
           trends?: Json
           triggers?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      gender_demographics: {
+        Row: {
+          created_at: string
+          gender: string
+          id: string
+          mentions: number
+          percentage: number
+          search_context: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          gender: string
+          id?: string
+          mentions?: number
+          percentage?: number
+          search_context?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          gender?: string
+          id?: string
+          mentions?: number
+          percentage?: number
+          search_context?: string | null
           updated_at?: string
           user_id?: string
         }

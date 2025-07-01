@@ -1,7 +1,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
-import { Users, RefreshCw } from "lucide-react";
+import { Users, RefreshCw, Database } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useDynamicReportsData } from "@/hooks/useDynamicReportsData";
 
@@ -31,7 +31,10 @@ export const DynamicDemographicAnalysis = () => {
     <div className="space-y-6">
       {/* Header avec bouton refresh */}
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">Analyse démographique - Données réelles</h2>
+        <h2 className="text-2xl font-bold flex items-center gap-2">
+          <Database className="w-6 h-6 text-blue-600" />
+          Analyse démographique - Données Supabase réelles
+        </h2>
         <Button variant="outline" onClick={refetch} className="flex items-center gap-2">
           <RefreshCw className="w-4 h-4" />
           Actualiser
@@ -43,7 +46,7 @@ export const DynamicDemographicAnalysis = () => {
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <Users className="w-5 h-5 text-blue-600" />
-            <span>Répartition par âge (Données Supabase)</span>
+            <span>Répartition par âge - Table age_demographics</span>
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -68,8 +71,8 @@ export const DynamicDemographicAnalysis = () => {
           ) : (
             <div className="text-center py-8 text-gray-500">
               <Users className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-              <p className="font-medium text-red-600">Aucune donnée réelle trouvée dans Supabase</p>
-              <p className="text-sm mt-2">Effectuez des recherches pour générer des données démographiques réelles.</p>
+              <p className="font-medium text-red-600">Aucune donnée d'âge réelle dans la table age_demographics</p>
+              <p className="text-sm mt-2">Les données apparaîtront ici après avoir inséré des informations démographiques réelles.</p>
             </div>
           )}
         </CardContent>
@@ -78,7 +81,7 @@ export const DynamicDemographicAnalysis = () => {
       {/* Gender Analysis - Données réelles uniquement */}
       <Card>
         <CardHeader>
-          <CardTitle>Analyse par genre (Données Supabase)</CardTitle>
+          <CardTitle>Analyse par genre - Table gender_demographics</CardTitle>
         </CardHeader>
         <CardContent>
           {demographicData.genders.length > 0 ? (
@@ -101,8 +104,8 @@ export const DynamicDemographicAnalysis = () => {
             </div>
           ) : (
             <div className="text-center py-8 text-gray-500">
-              <p className="font-medium text-red-600">Aucune donnée de genre réelle dans Supabase</p>
-              <p className="text-sm mt-2">Les données apparaîtront après vos recherches.</p>
+              <p className="font-medium text-red-600">Aucune donnée de genre réelle dans la table gender_demographics</p>
+              <p className="text-sm mt-2">Les données apparaîtront ici après avoir inséré des informations démographiques réelles.</p>
             </div>
           )}
         </CardContent>
@@ -111,7 +114,7 @@ export const DynamicDemographicAnalysis = () => {
       {/* Location Analysis - Données réelles uniquement */}
       <Card>
         <CardHeader>
-          <CardTitle>Répartition géographique (Données Supabase)</CardTitle>
+          <CardTitle>Répartition géographique - Table geographic_data</CardTitle>
         </CardHeader>
         <CardContent>
           {demographicData.locations.length > 0 ? (
@@ -131,8 +134,8 @@ export const DynamicDemographicAnalysis = () => {
             </ResponsiveContainer>
           ) : (
             <div className="text-center py-8 text-gray-500">
-              <p className="font-medium text-red-600">Aucune donnée géographique réelle dans Supabase</p>
-              <p className="text-sm mt-2">Les données géographiques seront générées automatiquement.</p>
+              <p className="font-medium text-red-600">Aucune donnée géographique réelle dans la table geographic_data</p>
+              <p className="text-sm mt-2">Les données géographiques seront générées automatiquement lors des recherches.</p>
             </div>
           )}
         </CardContent>
