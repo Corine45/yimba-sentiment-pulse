@@ -1,3 +1,4 @@
+
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -10,7 +11,8 @@ import { CaseStatistics } from "./CaseStatistics";
 import { CaseFilters } from "./CaseFilters";
 import { CaseListItem } from "./CaseListItem";
 import { CaseEmptyState } from "./CaseEmptyState";
-import { useCaseManagement } from "./useCaseManagement";
+import { useHealthSurveillanceData } from "@/hooks/useHealthSurveillanceData";
+import { useState } from "react";
 
 interface HealthCaseTrackingProps {
   healthRole: HealthRole;
@@ -18,25 +20,45 @@ interface HealthCaseTrackingProps {
 }
 
 export const HealthCaseTracking = ({ healthRole, healthPermissions }: HealthCaseTrackingProps) => {
-  const {
-    cases,
-    filteredCases,
-    searchTerm,
-    setSearchTerm,
-    statusFilter,
-    setStatusFilter,
-    priorityFilter,
-    setPriorityFilter,
-    assigneeFilter,
-    setAssigneeFilter,
-    selectedCase,
-    detailsOpen,
-    setDetailsOpen,
-    handleCreateCase,
-    handleUpdateCase,
-    handleViewDetails,
-    handleAssignCase
-  } = useCaseManagement();
+  const { cases: realCases, loading } = useHealthSurveillanceData();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [priorityFilter, setPriorityFilter] = useState("all");
+  const [assigneeFilter, setAssigneeFilter] = useState("all");
+  const [selectedCase, setSelectedCase] = useState<any>(null);
+  const [detailsOpen, setDetailsOpen] = useState(false);
+
+  // Utiliser les vraies données au lieu des données simulées
+  const cases = realCases;
+
+  const filteredCases = cases.filter(caseItem => {
+    const matchesSearch = caseItem.disease.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         caseItem.location.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === "all" || caseItem.status === statusFilter;
+    const matchesPriority = priorityFilter === "all" || caseItem.priority === priorityFilter;
+    const matchesAssignee = assigneeFilter === "all" || 
+                           (assigneeFilter === "unassigned" && !caseItem.assignedTo) ||
+                           caseItem.assignedTo === assigneeFilter;
+    
+    return matchesSearch && matchesStatus && matchesPriority && matchesAssignee;
+  });
+
+  const handleCreateCase = (newCase: any) => {
+    console.log('Nouveau cas créé:', newCase);
+  };
+
+  const handleUpdateCase = (updatedCase: any) => {
+    console.log('Cas mis à jour:', updatedCase);
+  };
+
+  const handleViewDetails = (caseItem: any) => {
+    setSelectedCase(caseItem);
+    setDetailsOpen(true);
+  };
+
+  const handleAssignCase = (caseItem: any, assignee: string) => {
+    console.log('Cas assigné:', caseItem.id, 'à', assignee);
+  };
 
   const hasFilters = Boolean(searchTerm) || statusFilter !== "all" || priorityFilter !== "all" || assigneeFilter !== "all";
 
@@ -49,6 +71,21 @@ export const HealthCaseTracking = ({ healthRole, healthPermissions }: HealthCase
           <p className="text-gray-600">Vous n'avez pas les permissions pour accéder au suivi des cas.</p>
         </CardContent>
       </Card>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="animate-pulse">
+          <div className="h-8 bg-gray-200 rounded w-1/3 mb-4"></div>
+          <div className="space-y-4">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-24 bg-gray-200 rounded"></div>
+            ))}
+          </div>
+        </div>
+      </div>
     );
   }
 
@@ -85,10 +122,8 @@ export const HealthCaseTracking = ({ healthRole, healthPermissions }: HealthCase
         </TabsList>
 
         <TabsContent value="cases" className="space-y-6">
-          {/* Statistiques rapides */}
           <CaseStatistics cases={cases} />
 
-          {/* Filtres */}
           <CaseFilters
             searchTerm={searchTerm}
             setSearchTerm={setSearchTerm}
@@ -100,7 +135,6 @@ export const HealthCaseTracking = ({ healthRole, healthPermissions }: HealthCase
             setAssigneeFilter={setAssigneeFilter}
           />
 
-          {/* Liste des cas */}
           <div className="space-y-4">
             {filteredCases.map((caseItem) => (
               <CaseListItem
@@ -113,7 +147,6 @@ export const HealthCaseTracking = ({ healthRole, healthPermissions }: HealthCase
             ))}
           </div>
 
-          {/* Message si aucun cas */}
           {filteredCases.length === 0 && (
             <CaseEmptyState
               hasFilters={hasFilters}
@@ -128,7 +161,6 @@ export const HealthCaseTracking = ({ healthRole, healthPermissions }: HealthCase
         </TabsContent>
       </Tabs>
 
-      {/* Dialogue des détails */}
       <CaseDetailsDialog
         caseData={selectedCase}
         open={detailsOpen}

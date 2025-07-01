@@ -8,65 +8,19 @@ import { HealthMetrics } from "./HealthMetrics";
 import { HealthTrends } from "./HealthTrends";
 import { TrendingUp } from "lucide-react";
 import { HealthRole, HealthPermissions } from "../utils/healthPermissions";
+import { useHealthSurveillanceData } from "@/hooks/useHealthSurveillanceData";
 
 interface HealthDashboardProps {
   healthRole: HealthRole;
   healthPermissions: HealthPermissions;
 }
 
-interface HealthAlert {
-  id: string;
-  disease: string;
-  location: string;
-  severity: 'faible' | 'modéré' | 'critique';
-  timestamp: string;
-  source: string;
-  verified: boolean;
-}
-
 export const HealthDashboard = ({ healthRole, healthPermissions }: HealthDashboardProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [lastUpdate, setLastUpdate] = useState(new Date());
   
-  // Données simulées d'alertes sanitaires
-  const [healthAlerts] = useState<HealthAlert[]>([
-    {
-      id: "HS001",
-      disease: "COVID-19",
-      location: "Abidjan, Cocody",
-      severity: "modéré",
-      timestamp: "Il y a 15 min",
-      source: "Twitter",
-      verified: true
-    },
-    {
-      id: "HS002", 
-      disease: "Paludisme",
-      location: "Bouaké",
-      severity: "critique",
-      timestamp: "Il y a 32 min",
-      source: "Facebook",
-      verified: false
-    },
-    {
-      id: "HS003",
-      disease: "Dengue",
-      location: "San Pedro",
-      severity: "faible",
-      timestamp: "Il y a 1h",
-      source: "Forum local",
-      verified: true
-    },
-    {
-      id: "HS004",
-      disease: "Rougeole",
-      location: "Korhogo",
-      severity: "modéré",
-      timestamp: "Il y a 2h",
-      source: "WhatsApp",
-      verified: false
-    }
-  ]);
+  // Utiliser les vraies données de Supabase
+  const { alerts: healthAlerts, loading } = useHealthSurveillanceData();
 
   const handleRefresh = () => {
     setIsLoading(true);
@@ -81,9 +35,27 @@ export const HealthDashboard = ({ healthRole, healthPermissions }: HealthDashboa
     ? healthAlerts.filter(alert => alert.verified)
     : healthAlerts;
 
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="animate-pulse">
+          <div className="h-8 bg-gray-200 rounded w-1/3 mb-4"></div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-24 bg-gray-200 rounded"></div>
+            ))}
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="h-64 bg-gray-200 rounded"></div>
+            <div className="h-64 bg-gray-200 rounded"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      {/* Header avec actions */}
       <HealthDashboardHeader
         healthRole={healthRole}
         healthPermissions={healthPermissions}
@@ -92,16 +64,13 @@ export const HealthDashboard = ({ healthRole, healthPermissions }: HealthDashboa
         onRefresh={handleRefresh}
       />
 
-      {/* Métriques principales */}
       <HealthMetrics />
 
-      {/* Carte et alertes */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <HealthMapPanel alerts={visibleAlerts} />
         <HealthAlertsPanel alerts={visibleAlerts} />
       </div>
 
-      {/* Graphiques de tendances */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center">

@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertTriangle, BarChart3, TrendingUp } from "lucide-react";
@@ -9,6 +10,7 @@ import { AlertsList } from "./AlertsList";
 import { CreateAlertDialog } from "./CreateAlertDialog";
 import { AlertDetailsDialog } from "./AlertDetailsDialog";
 import { AlertsMetrics } from "./AlertsMetrics";
+import { useHealthSurveillanceData } from "@/hooks/useHealthSurveillanceData";
 
 interface Alert {
   id: string;
@@ -39,73 +41,34 @@ export const HealthAlerts = ({ healthRole, healthPermissions }: HealthAlertsProp
   const [selectedAlert, setSelectedAlert] = useState<Alert | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
 
-  // État des alertes - simulé avec possibilité d'ajout/modification
-  const [alerts, setAlerts] = useState<Alert[]>([
-    {
-      id: "HS001",
-      disease: "COVID-19",
-      location: "Abidjan, Cocody",
-      severity: "modéré",
-      status: "en_cours",
-      timestamp: "2024-01-15 14:30",
-      source: "Twitter",
-      description: "Plusieurs mentions de symptômes respiratoires dans le quartier de Riviera",
-      verified: true,
-      assignedTo: "Dr. Kouassi",
-      rawText: "Beaucoup de cas de toux et fièvre dans notre quartier. Les pharmacies manquent de médicaments #COVID #Abidjan",
-      reporterName: "Jean Kouame",
-      reporterContact: "+225 07 12 34 56",
-      createdAt: "2024-01-15T14:30:00Z"
-    },
-    {
-      id: "HS002",
-      disease: "Paludisme", 
-      location: "Bouaké",
-      severity: "critique",
-      status: "nouveau",
-      timestamp: "2024-01-15 13:45",
-      source: "Facebook",
-      description: "Signalement d'une augmentation des cas de paludisme dans plusieurs quartiers",
-      verified: false,
-      assignedTo: null,
-      rawText: "Le dispensaire de Bouaké est saturé, trop de cas de palu cette semaine",
-      reporterName: "Marie Diabaté",
-      reporterContact: "marie.diabate@email.com",
-      createdAt: "2024-01-15T13:45:00Z"
-    },
-    {
-      id: "HS003",
-      disease: "Dengue",
-      location: "San Pedro",
-      severity: "faible",
-      status: "resolu",
-      timestamp: "2024-01-15 10:20",
-      source: "WhatsApp",
-      description: "Cas isolés de dengue signalés, situation sous contrôle",
-      verified: true,
-      assignedTo: "Dr. Traore",
-      rawText: "Quelques cas de dengue dans le port mais rien d'alarmant selon les autorités",
-      reporterName: "Infirmière Chef",
-      reporterContact: "+225 05 98 76 54",
-      createdAt: "2024-01-15T10:20:00Z"
-    },
-    {
-      id: "HS004",
-      disease: "Rougeole",
-      location: "Korhogo",
-      severity: "modéré",
-      status: "en_cours",
-      timestamp: "2024-01-14 16:15",
-      source: "Centre de santé",
-      description: "Plusieurs enfants présentent des symptômes de rougeole dans l'école primaire",
-      verified: true,
-      assignedTo: "Dr. Diabaté",
-      rawText: "Éruption cutanée et fièvre chez 8 enfants de l'école primaire de Korhogo centre",
-      reporterName: "Dr. Soro",
-      reporterContact: "dr.soro@santekorhogo.ci",
-      createdAt: "2024-01-14T16:15:00Z"
+  // Utiliser les vraies données de Supabase
+  const { alerts: realAlerts, loading } = useHealthSurveillanceData();
+
+  // Convertir les données réelles au format attendu
+  const [alerts, setAlerts] = useState<Alert[]>([]);
+
+  // Mettre à jour les alertes quand les données réelles arrivent
+  React.useEffect(() => {
+    if (realAlerts.length > 0) {
+      const formattedAlerts: Alert[] = realAlerts.map(alert => ({
+        id: alert.id,
+        disease: alert.disease,
+        location: alert.location,
+        severity: alert.severity,
+        status: alert.status,
+        timestamp: alert.timestamp,
+        source: alert.source,
+        description: alert.description,
+        verified: alert.verified,
+        assignedTo: alert.assignedTo,
+        rawText: alert.rawText,
+        reporterName: alert.reporterName,
+        reporterContact: alert.reporterContact,
+        createdAt: alert.createdAt
+      }));
+      setAlerts(formattedAlerts);
     }
-  ]);
+  }, [realAlerts]);
 
   const filteredAlerts = alerts.filter(alert => {
     const matchesSearch = alert.disease.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -133,6 +96,21 @@ export const HealthAlerts = ({ healthRole, healthPermissions }: HealthAlertsProp
     setSelectedAlert(alert);
     setDetailsOpen(true);
   };
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="animate-pulse">
+          <div className="h-8 bg-gray-200 rounded w-1/3 mb-4"></div>
+          <div className="space-y-4">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-24 bg-gray-200 rounded"></div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -190,7 +168,6 @@ export const HealthAlerts = ({ healthRole, healthPermissions }: HealthAlertsProp
         </TabsContent>
       </Tabs>
 
-      {/* Dialog pour les détails de l'alerte */}
       <AlertDetailsDialog
         alert={selectedAlert}
         open={detailsOpen}
