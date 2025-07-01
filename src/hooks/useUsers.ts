@@ -28,7 +28,12 @@ export const useUsers = () => {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      console.log('Fetching users from Supabase...');
+      console.log('🔍 Début de la récupération des utilisateurs...');
+      
+      // Vérifier les utilisateurs dans auth.users (pour debug)
+      const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
+      console.log('👥 Utilisateurs dans auth.users:', authUsers?.users?.length || 0);
+      console.log('📧 Emails dans auth.users:', authUsers?.users?.map(u => u.email) || []);
       
       // Récupérer tous les profils utilisateurs
       const { data: profiles, error: profilesError } = await supabase
@@ -36,17 +41,30 @@ export const useUsers = () => {
         .select('*')
         .order('created_at', { ascending: false });
 
-      console.log('Profiles fetched:', profiles);
-      console.log('Profiles error:', profilesError);
+      console.log('📊 Profils récupérés:', profiles?.length || 0);
+      console.log('📧 Emails dans profiles:', profiles?.map(p => p.email) || []);
+      console.log('❌ Erreur profiles:', profilesError);
 
       if (profilesError) {
-        console.error('Error fetching profiles:', profilesError);
+        console.error('Erreur lors de la récupération des profils:', profilesError);
         toast({
           title: "Erreur",
-          description: "Impossible de charger les profils utilisateurs",
+          description: "Impossible de charger les profils utilisateurs: " + profilesError.message,
           variant: "destructive"
         });
         return;
+      }
+
+      // Récupérer les rôles utilisateurs
+      const { data: userRoles, error: rolesError } = await supabase
+        .from('user_roles')
+        .select('user_id, role');
+
+      console.log('🔑 Rôles récupérés:', userRoles?.length || 0);
+      console.log('🔑 Détails des rôles:', userRoles);
+      
+      if (rolesError) {
+        console.error('Erreur lors de la récupération des rôles:', rolesError);
       }
 
       // Récupérer les sessions utilisateurs pour déterminer le statut
@@ -55,22 +73,26 @@ export const useUsers = () => {
         .select('user_id, session_start, session_end, is_active')
         .order('session_start', { ascending: false });
 
-      console.log('Sessions fetched:', sessions);
+      console.log('🔄 Sessions récupérées:', sessions?.length || 0);
       if (sessionsError) {
-        console.error('Error fetching sessions:', sessionsError);
+        console.error('Erreur lors de la récupération des sessions:', sessionsError);
       }
 
-      // Combiner les données des profils avec les informations de session
+      // Combiner les données des profils avec les informations de session et rôles
       const usersWithStatus = profiles?.map(profile => {
+        // Trouver le rôle de l'utilisateur dans user_roles
+        const userRole = userRoles?.find(r => r.user_id === profile.id);
+        const finalRole = userRole?.role || profile.role;
+        
         const userSessions = sessions?.filter(s => s.user_id === profile.id) || [];
         const latestSession = userSessions[0];
         const hasActiveSession = userSessions.some(s => s.is_active);
         
         return {
           id: profile.id,
-          name: profile.name,
+          name: profile.name || 'Utilisateur sans nom',
           email: profile.email,
-          role: profile.role,
+          role: finalRole,
           created_at: profile.created_at,
           updated_at: profile.updated_at,
           status: hasActiveSession ? 'active' as const : 'inactive' as const,
@@ -78,10 +100,11 @@ export const useUsers = () => {
         };
       }) || [];
 
-      console.log('Users with status:', usersWithStatus);
+      console.log('✅ Utilisateurs finaux avec statut:', usersWithStatus.length);
+      console.log('📊 Utilisateurs détaillés:', usersWithStatus);
       setUsers(usersWithStatus);
     } catch (error) {
-      console.error('Error in fetchUsers:', error);
+      console.error('💥 Erreur générale dans fetchUsers:', error);
       toast({
         title: "Erreur",
         description: "Impossible de charger les utilisateurs",
@@ -254,6 +277,7 @@ export const useUsers = () => {
     const admins = users.filter(u => u.role === 'admin').length;
     const analysts = users.filter(u => u.role === 'analyste').length;
 
+    console.log('📈 Statistiques calculées:', { total, active, admins, analysts });
     return { total, active, admins, analysts };
   };
 
