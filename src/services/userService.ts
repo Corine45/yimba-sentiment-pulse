@@ -1,5 +1,16 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import type { User, NewUser } from '@/types/user';
+
+// Type pour les utilisateurs d'authentification Supabase
+interface AuthUser {
+  id: string;
+  email?: string;
+  email_confirmed_at?: string | null;
+  last_sign_in_at?: string | null;
+  user_metadata?: any;
+  app_metadata?: any;
+}
 
 export const userService = {
   async fetchUsers(): Promise<User[]> {
@@ -39,9 +50,10 @@ export const userService = {
       }
 
       // Récupérer les informations d'authentification pour le statut de vérification d'email
-      const { data: { users: authUsers }, error: authError } = await supabase.auth.admin.listUsers();
+      const { data: authResponse, error: authError } = await supabase.auth.admin.listUsers();
+      const authUsers: AuthUser[] = authResponse?.users || [];
       
-      console.log('🔐 Utilisateurs auth récupérés:', authUsers?.length || 0);
+      console.log('🔐 Utilisateurs auth récupérés:', authUsers.length);
       if (authError) {
         console.error('Erreur lors de la récupération des utilisateurs auth:', authError);
       }
@@ -63,7 +75,7 @@ export const userService = {
         }
         
         // Trouver les informations d'authentification pour cet utilisateur
-        const authUser = authUsers?.find(u => u.id === profile.id);
+        const authUser = authUsers.find(u => u.id === profile.id);
         const emailConfirmed = authUser?.email_confirmed_at !== null;
         
         console.log(`📧 Utilisateur ${profile.email}: email confirmé = ${emailConfirmed}`);
