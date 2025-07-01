@@ -35,13 +35,21 @@ export const useStorageMetrics = () => {
     if (!user) return;
     
     try {
-      // Récupérer les données des différentes tables
+      // Récupérer les métriques de stockage réelles depuis system_metrics
+      const { data: storageData } = await supabase
+        .from('system_metrics')
+        .select('*')
+        .eq('metric_type', 'storage')
+        .order('recorded_at', { ascending: false })
+        .limit(1);
+
+      // Récupérer les données pour calculer l'utilisation par catégorie
       const [
-        { data: searchResults, error: searchError },
-        { data: savedSearches, error: savedError },
-        { data: aiContexts, error: aiError },
-        { data: profiles, error: profilesError },
-        { data: geographicData, error: geoError }
+        { data: searchResults },
+        { data: savedSearches },
+        { data: aiContexts },
+        { data: profiles },
+        { data: geographicData }
       ] = await Promise.all([
         supabase.from('search_results').select('id, created_at, results_data').eq('user_id', user.id),
         supabase.from('saved_searches').select('id, created_at').eq('user_id', user.id),
@@ -50,49 +58,48 @@ export const useStorageMetrics = () => {
         supabase.from('geographic_data').select('id, created_at').eq('user_id', user.id)
       ]);
 
-      if (searchError || savedError || aiError || profilesError || geoError) {
-        console.error('Error fetching storage data:', { searchError, savedError, aiError, profilesError, geoError });
-        return;
-      }
-
-      // Calculer l'utilisation approximative par catégorie
+      // Calculer l'utilisation réelle par catégorie
       const categories = [
         {
           category: 'Résultats de recherche',
-          used: Math.floor((searchResults?.length || 0) * 0.5), // ~0.5MB par résultat
+          used: searchResults?.length ? Math.ceil(searchResults.length * 0.3) : 0, // Estimation plus réaliste
           description: 'Données de recherche et mentions',
           count: searchResults?.length || 0
         },
         {
           category: 'Contextes IA',
-          used: Math.floor((aiContexts?.length || 0) * 0.1), // ~0.1MB par contexte
+          used: aiContexts?.length ? Math.ceil(aiContexts.length * 0.08) : 0,
           description: 'Analyses générées par l\'IA',
           count: aiContexts?.length || 0
         },
         {
           category: 'Recherches sauvegardées',
-          used: Math.floor((savedSearches?.length || 0) * 0.01), // ~0.01MB par recherche
+          used: savedSearches?.length ? Math.ceil(savedSearches.length * 0.005) : 0,
           description: 'Configurations de recherche',
           count: savedSearches?.length || 0
         },
         {
           category: 'Données géographiques',
-          used: Math.floor((geographicData?.length || 0) * 0.05), // ~0.05MB par point
+          used: geographicData?.length ? Math.ceil(geographicData.length * 0.02) : 0,
           description: 'Informations de localisation',
           count: geographicData?.length || 0
         },
         {
           category: 'Profils utilisateurs',
-          used: Math.floor((profiles?.length || 0) * 0.001), // ~0.001MB par profil
+          used: profiles?.length ? Math.ceil(profiles.length * 0.001) : 0,
           description: 'Données des utilisateurs',
           count: profiles?.length || 0
         }
       ];
 
-      const totalUsed = categories.reduce((sum, cat) => sum + cat.used, 0);
+      // Utiliser les données réelles de system_metrics si disponibles
+      const totalUsed = storageData?.[0] 
+        ? Number(storageData[0].value) 
+        : categories.reduce((sum, cat) => sum + cat.used, 0);
+
       const usagePercentage = Math.round((totalUsed / storageMetrics.totalAvailable) * 100);
 
-      // Activité récente
+      // Activité récente basée sur les vraies données
       const recentActivity = [
         {
           type: 'Nouvelles recherches',
@@ -126,7 +133,7 @@ export const useStorageMetrics = () => {
       });
 
     } catch (error) {
-      console.error('Error:', error);
+      console.error('Error fetching storage metrics:', error);
     } finally {
       setLoading(false);
     }

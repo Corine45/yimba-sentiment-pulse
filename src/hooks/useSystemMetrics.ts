@@ -36,78 +36,63 @@ export const useSystemMetrics = () => {
     if (!user) return;
     
     try {
-      // Récupérer les métriques système depuis realtime_data
-      const { data: realtimeData, error } = await supabase
-        .from('realtime_data')
+      // Récupérer les métriques système réelles
+      const { data: systemMetrics } = await supabase
+        .from('system_metrics')
         .select('*')
-        .in('metric_name', ['cpu_usage', 'memory_usage', 'storage_used', 'db_connections', 'response_time'])
-        .order('timestamp', { ascending: false })
-        .limit(5);
+        .order('recorded_at', { ascending: false });
 
-      if (error) {
-        console.error('Error fetching system metrics:', error);
-        return;
-      }
-
-      // Calculer les utilisateurs actifs depuis les profils
-      const { data: profilesData, error: profilesError } = await supabase
-        .from('profiles')
-        .select('id, updated_at')
-        .gte('updated_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
-
-      if (profilesError) {
-        console.error('Error fetching active users:', profilesError);
-      }
+      // Calculer les utilisateurs actifs depuis les sessions
+      const { data: activeSessions } = await supabase
+        .from('user_sessions')
+        .select('user_id')
+        .eq('is_active', true);
 
       // Calculer les requêtes totales depuis search_results
-      const { data: searchData, error: searchError } = await supabase
+      const { data: searchData } = await supabase
         .from('search_results')
         .select('id, created_at')
         .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString());
 
-      if (searchError) {
-        console.error('Error fetching search data:', searchError);
-      }
-
       // Traiter les données de métriques système
       const processedMetrics = { ...metrics };
       
-      if (realtimeData) {
-        realtimeData.forEach(item => {
-          switch (item.metric_name) {
-            case 'cpu_usage':
-              processedMetrics.cpuUsage = Number(item.metric_value) || Math.floor(Math.random() * 60) + 20;
+      if (systemMetrics) {
+        systemMetrics.forEach(item => {
+          switch (item.metric_type) {
+            case 'cpu':
+              processedMetrics.cpuUsage = Number(item.value);
               break;
-            case 'memory_usage':
-              processedMetrics.memoryUsage = Number(item.metric_value) || Math.floor(Math.random() * 40) + 30;
+            case 'memory':
+              processedMetrics.memoryUsage = Number(item.value);
               break;
-            case 'storage_used':
-              processedMetrics.storageUsed = Number(item.metric_value) || Math.floor(Math.random() * 3000) + 1000;
+            case 'storage':
+              processedMetrics.storageUsed = Number(item.value);
               break;
-            case 'db_connections':
-              processedMetrics.dbConnections = Number(item.metric_value) || Math.floor(Math.random() * 20) + 5;
+            case 'database':
+              processedMetrics.dbConnections = Number(item.value);
               break;
-            case 'response_time':
-              processedMetrics.averageResponseTime = Number(item.metric_value) || Math.floor(Math.random() * 100) + 50;
+            case 'network':
+              processedMetrics.averageResponseTime = Number(item.value);
               break;
           }
         });
-      } else {
-        // Données de fallback réalistes
-        processedMetrics.cpuUsage = Math.floor(Math.random() * 60) + 20;
-        processedMetrics.memoryUsage = Math.floor(Math.random() * 40) + 30;
-        processedMetrics.storageUsed = Math.floor(Math.random() * 3000) + 1000;
-        processedMetrics.dbConnections = Math.floor(Math.random() * 20) + 5;
-        processedMetrics.averageResponseTime = Math.floor(Math.random() * 100) + 50;
       }
 
-      processedMetrics.activeUsers = profilesData?.length || 0;
+      processedMetrics.activeUsers = activeSessions?.length || 0;
       processedMetrics.totalRequests = searchData?.length || 0;
-      processedMetrics.uptime = `${Math.floor(Math.random() * 30) + 1} days`;
+      
+      // Calculer l'uptime basé sur la première métrique enregistrée
+      if (systemMetrics && systemMetrics.length > 0) {
+        const oldestMetric = systemMetrics[systemMetrics.length - 1];
+        const startTime = new Date(oldestMetric.recorded_at);
+        const uptimeDays = Math.floor((Date.now() - startTime.getTime()) / (1000 * 60 * 60 * 24));
+        processedMetrics.uptime = `${uptimeDays} days`;
+      }
 
       setMetrics(processedMetrics);
     } catch (error) {
-      console.error('Error:', error);
+      console.error('Error fetching system metrics:', error);
     } finally {
       setLoading(false);
     }

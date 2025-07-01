@@ -42,32 +42,29 @@ export const useUserActivity = () => {
     
     try {
       // Récupérer tous les profils utilisateurs
-      const { data: profiles, error: profilesError } = await supabase
+      const { data: profiles } = await supabase
         .from('profiles')
         .select('id, name, email, role, updated_at, created_at')
         .order('updated_at', { ascending: false });
 
-      if (profilesError) {
-        console.error('Error fetching profiles:', profilesError);
-        return;
-      }
+      // Récupérer les sessions utilisateurs actives
+      const { data: activeSessions } = await supabase
+        .from('user_sessions')
+        .select('user_id, session_start, session_end, duration_minutes, is_active')
+        .eq('is_active', true);
 
-      // Récupérer les rôles utilisateurs
-      const { data: userRoles, error: rolesError } = await supabase
-        .from('user_roles')
-        .select('user_id, role');
-
-      if (rolesError) {
-        console.error('Error fetching user roles:', rolesError);
-      }
+      // Récupérer toutes les sessions pour calculer la durée moyenne
+      const { data: allSessions } = await supabase
+        .from('user_sessions')
+        .select('duration_minutes')
+        .not('duration_minutes', 'is', null);
 
       const now = new Date();
       const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
-      // Calculer les utilisateurs actifs (connectés dans les dernières 24h)
-      const activeUsers = profiles?.filter(profile => 
-        new Date(profile.updated_at || profile.created_at) > oneDayAgo
-      ) || [];
+      // Calculer les utilisateurs actifs
+      const activeUserIds = new Set(activeSessions?.map(s => s.user_id) || []);
+      const activeUsers = activeUserIds.size;
 
       // Compter les utilisateurs par rôle
       const roleCount = {
@@ -89,22 +86,24 @@ export const useUserActivity = () => {
         email: profile.email,
         role: profile.role,
         lastActivity: getRelativeTime(new Date(profile.updated_at || profile.created_at)),
-        status: (new Date(profile.updated_at || profile.created_at) > oneDayAgo) ? 'active' as const : 'inactive' as const
+        status: activeUserIds.has(profile.id) ? 'active' as const : 'inactive' as const
       })) || [];
 
-      // Calculer le temps de session moyen (simulation basée sur l'activité)
-      const averageSessionMinutes = Math.floor(Math.random() * 60) + 30;
+      // Calculer le temps de session moyen réel
+      const averageSessionMinutes = allSessions?.length 
+        ? Math.round(allSessions.reduce((sum, s) => sum + (s.duration_minutes || 0), 0) / allSessions.length)
+        : 0;
 
       setUserActivity({
         totalUsers: profiles?.length || 0,
-        activeUsers: activeUsers.length,
+        activeUsers,
         averageSessionTime: `${averageSessionMinutes}min`,
         recentUsers,
         usersByRole: roleCount
       });
 
     } catch (error) {
-      console.error('Error:', error);
+      console.error('Error fetching user activity:', error);
     } finally {
       setLoading(false);
     }

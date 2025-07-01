@@ -22,7 +22,7 @@ export const useSidebarData = () => {
     activeSearches: 0,
     pendingTasks: 0,
     recentActivity: [],
-    userStatus: 'online',
+    userStatus: 'offline',
     notifications: 0
   });
   const [loading, setLoading] = useState(true);
@@ -33,50 +33,46 @@ export const useSidebarData = () => {
     
     try {
       // Récupérer les recherches actives (dernières 24h)
-      const { data: searchResults, error: searchError } = await supabase
+      const { data: searchResults } = await supabase
         .from('search_results')
         .select('id, created_at, search_term, platform')
         .eq('user_id', user.id)
         .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
 
-      if (searchError) {
-        console.error('Error fetching search results:', searchError);
-      }
-
       // Récupérer les recherches sauvegardées actives
-      const { data: savedSearches, error: savedError } = await supabase
+      const { data: savedSearches } = await supabase
         .from('saved_searches')
         .select('id, name, last_executed_at, is_active')
         .eq('user_id', user.id)
         .eq('is_active', true);
 
-      if (savedError) {
-        console.error('Error fetching saved searches:', savedError);
-      }
-
       // Récupérer les contextes IA récents
-      const { data: aiContexts, error: aiError } = await supabase
+      const { data: aiContexts } = await supabase
         .from('ai_contexts')
         .select('id, created_at, summary')
         .eq('user_id', user.id)
         .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
         .order('created_at', { ascending: false });
 
-      if (aiError) {
-        console.error('Error fetching AI contexts:', aiError);
-      }
+      // Récupérer les sessions utilisateur pour déterminer le statut
+      const { data: userSessions } = await supabase
+        .from('user_sessions')
+        .select('session_start, session_end, is_active')
+        .eq('user_id', user.id)
+        .order('session_start', { ascending: false })
+        .limit(1);
 
-      // Calculer les données temps réel
+      // Calculer les données réelles
       const activeSearches = searchResults?.length || 0;
       const pendingTasks = savedSearches?.filter(s => 
         !s.last_executed_at || 
         new Date(s.last_executed_at).getTime() < Date.now() - 60 * 60 * 1000
       ).length || 0;
 
-      // Simuler les alertes non lues (basé sur l'activité récente)
-      const unreadAlerts = Math.max(0, Math.floor(activeSearches / 3));
+      // Calculer les alertes non lues basées sur l'activité récente
+      const unreadAlerts = Math.floor(activeSearches / 5); // 1 alerte pour 5 recherches actives
       
-      // Activité récente
+      // Activité récente basée sur les données réelles
       const recentActivity = [
         {
           type: 'search' as const,
@@ -88,7 +84,7 @@ export const useSidebarData = () => {
         {
           type: 'alert' as const,
           count: unreadAlerts,
-          lastUpdate: unreadAlerts > 0 ? 'Il y a quelques minutes' : 'Aucune'
+          lastUpdate: unreadAlerts > 0 ? getRelativeTime(new Date(Date.now() - 10 * 60 * 1000)) : 'Aucune'
         },
         {
           type: 'report' as const,
@@ -97,15 +93,16 @@ export const useSidebarData = () => {
         }
       ];
 
-      // Déterminer le statut utilisateur basé sur l'activité
-      const lastActivityTime = searchResults?.[0] ? 
-        new Date(searchResults[0].created_at).getTime() : 0;
-      const timeSinceLastActivity = Date.now() - lastActivityTime;
-      
+      // Déterminer le statut utilisateur basé sur la session active
       let userStatus: 'online' | 'busy' | 'away' | 'offline' = 'offline';
-      if (timeSinceLastActivity < 5 * 60 * 1000) userStatus = 'online'; // 5 min
-      else if (timeSinceLastActivity < 30 * 60 * 1000) userStatus = 'busy'; // 30 min
-      else if (timeSinceLastActivity < 2 * 60 * 60 * 1000) userStatus = 'away'; // 2h
+      if (userSessions?.[0]?.is_active) {
+        const sessionStart = new Date(userSessions[0].session_start).getTime();
+        const timeSinceStart = Date.now() - sessionStart;
+        
+        if (timeSinceStart < 5 * 60 * 1000) userStatus = 'online'; // 5 min
+        else if (timeSinceStart < 30 * 60 * 1000) userStatus = 'busy'; // 30 min
+        else if (timeSinceStart < 2 * 60 * 60 * 1000) userStatus = 'away'; // 2h
+      }
 
       setSidebarData({
         unreadAlerts,

@@ -353,6 +353,42 @@ export type Database = {
           },
         ]
       }
+      security_events: {
+        Row: {
+          created_at: string
+          event_data: Json | null
+          event_type: string
+          id: string
+          ip_address: unknown | null
+          severity: string
+          status: string
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_data?: Json | null
+          event_type: string
+          id?: string
+          ip_address?: unknown | null
+          severity?: string
+          status?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_data?: Json | null
+          event_type?: string
+          id?: string
+          ip_address?: unknown | null
+          severity?: string
+          status?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       social_media_data: {
         Row: {
           author: string
@@ -422,6 +458,36 @@ export type Database = {
         }
         Relationships: []
       }
+      system_metrics: {
+        Row: {
+          created_at: string
+          id: string
+          metadata: Json | null
+          metric_type: string
+          recorded_at: string
+          unit: string
+          value: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          metric_type: string
+          recorded_at?: string
+          unit: string
+          value: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          metric_type?: string
+          recorded_at?: string
+          unit?: string
+          value?: number
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string | null
@@ -439,6 +505,51 @@ export type Database = {
           created_at?: string | null
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_sessions: {
+        Row: {
+          actions_performed: number | null
+          created_at: string
+          duration_minutes: number | null
+          id: string
+          ip_address: unknown | null
+          is_active: boolean | null
+          pages_visited: number | null
+          session_end: string | null
+          session_start: string
+          updated_at: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          actions_performed?: number | null
+          created_at?: string
+          duration_minutes?: number | null
+          id?: string
+          ip_address?: unknown | null
+          is_active?: boolean | null
+          pages_visited?: number | null
+          session_end?: string | null
+          session_start?: string
+          updated_at?: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          actions_performed?: number | null
+          created_at?: string
+          duration_minutes?: number | null
+          id?: string
+          ip_address?: unknown | null
+          is_active?: boolean | null
+          pages_visited?: number | null
+          session_end?: string | null
+          session_start?: string
+          updated_at?: string
+          user_agent?: string | null
           user_id?: string
         }
         Relationships: []
