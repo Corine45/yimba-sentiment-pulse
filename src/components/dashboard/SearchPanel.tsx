@@ -69,7 +69,7 @@ export const SearchPanel = ({ userRole, permissions }: SearchPanelProps) => {
     includeVerified: false,
   });
 
-  const { saveSearch } = useSavedSearches();
+  const { createSavedSearch } = useSavedSearches();
   const { createSearchResult, fetchSearchResults } = useSearchResults();
   const { toast } = useToast();
 
@@ -103,6 +103,7 @@ export const SearchPanel = ({ userRole, permissions }: SearchPanelProps) => {
       // Créer des résultats simulés pour chaque plateforme
       for (const platform of selectedPlatforms) {
         await createSearchResult({
+          search_id: null,
           search_term: searchTerm,
           platform: platform,
           total_mentions: Math.floor(Math.random() * 1000) + 100,
@@ -143,7 +144,7 @@ export const SearchPanel = ({ userRole, permissions }: SearchPanelProps) => {
       return;
     }
 
-    const result = await saveSearch({
+    const result = await createSavedSearch({
       name: searchName,
       keywords,
       platforms: selectedPlatforms,

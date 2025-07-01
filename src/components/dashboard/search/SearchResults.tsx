@@ -1,11 +1,13 @@
 
 import { useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { MessageSquare, Heart, Share, TrendingUp, Download, Eye } from "lucide-react";
 import { useSearchResults } from "@/hooks/useSearchResults";
 import { useSocialMediaData } from "@/hooks/useSocialMediaData";
+import { SearchLoadingState } from "./SearchLoadingState";
+import { SearchEmptyState } from "./SearchEmptyState";
+import { SearchResultsMetrics } from "./SearchResultsMetrics";
+import { PlatformDistribution } from "./PlatformDistribution";
+import { DetailedMentions } from "./DetailedMentions";
+import { ApiIntegrationNote } from "./ApiIntegrationNote";
 
 interface SearchResultsProps {
   userRole: string;
@@ -41,221 +43,31 @@ export const SearchResults = ({ userRole, permissions, isSearching, searchTerm =
     return acc;
   }, {} as Record<string, number>);
 
-  const getSentimentBadge = (sentiment: string) => {
-    switch (sentiment) {
-      case "positive":
-        return <Badge className="bg-green-100 text-green-800">Positif</Badge>;
-      case "negative":
-        return <Badge className="bg-red-100 text-red-800">Négatif</Badge>;
-      case "neutral":
-        return <Badge className="bg-gray-100 text-gray-800">Neutre</Badge>;
-      default:
-        return <Badge variant="outline">{sentiment}</Badge>;
-    }
-  };
-
-  const getPlatformColor = (platform: string) => {
-    switch (platform.toLowerCase()) {
-      case 'instagram':
-        return 'bg-pink-500';
-      case 'twitter':
-        return 'bg-blue-500';
-      case 'facebook':
-        return 'bg-indigo-500';
-      case 'tiktok':
-        return 'bg-purple-500';
-      case 'youtube':
-        return 'bg-red-500';
-      default:
-        return 'bg-gray-500';
-    }
-  };
-
   if (isSearching || resultsLoading) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Recherche en cours...</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            <span className="ml-3 text-gray-600">
-              Analyse des réseaux sociaux pour "{searchTerm}"...
-            </span>
-          </div>
-        </CardContent>
-      </Card>
-    );
+    return <SearchLoadingState searchTerm={searchTerm} />;
   }
 
   if (!searchTerm && searchResults.length === 0) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <TrendingUp className="w-5 h-5 text-blue-600" />
-            <span>Résultats de recherche</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center py-8">
-            <p className="text-gray-500">
-              Aucune recherche effectuée. Lancez votre première recherche pour voir les résultats ici.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-    );
+    return <SearchEmptyState />;
   }
 
   return (
     <div className="space-y-4">
-      {/* Results Summary */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center space-x-2">
-              <TrendingUp className="w-5 h-5 text-blue-600" />
-              <span>Résultats de recherche {searchTerm && `pour "${searchTerm}"`}</span>
-            </CardTitle>
-            {permissions.canExportData && (
-              <Button variant="outline" size="sm">
-                <Download className="w-4 h-4 mr-2" />
-                Exporter les résultats
-              </Button>
-            )}
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-            <div className="text-center p-4 bg-blue-50 rounded-lg">
-              <div className="text-2xl font-bold text-blue-600">{totalMentions.toLocaleString()}</div>
-              <div className="text-sm text-gray-600">Mentions trouvées</div>
-            </div>
-            <div className="text-center p-4 bg-green-50 rounded-lg">
-              <div className="text-2xl font-bold text-green-600">{positivePercentage}%</div>
-              <div className="text-sm text-gray-600">Sentiment positif</div>
-            </div>
-            <div className="text-center p-4 bg-orange-50 rounded-lg">
-              <div className="text-2xl font-bold text-orange-600">{(totalReach / 1000).toFixed(1)}K</div>
-              <div className="text-sm text-gray-600">Portée totale</div>
-            </div>
-            <div className="text-center p-4 bg-purple-50 rounded-lg">
-              <div className="text-2xl font-bold text-purple-600">{(totalEngagement / 1000).toFixed(1)}K</div>
-              <div className="text-sm text-gray-600">Engagements</div>
-            </div>
-          </div>
-          
-          {userRole === "observateur" && (
-            <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg mb-4">
-              <p className="text-sm text-blue-800">
-                <Eye className="w-4 h-4 inline mr-1" />
-                Mode consultation - Vous visualisez les résultats en lecture seule
-              </p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      <SearchResultsMetrics
+        totalMentions={totalMentions}
+        positivePercentage={positivePercentage}
+        totalReach={totalReach}
+        totalEngagement={totalEngagement}
+        userRole={userRole}
+        canExportData={permissions.canExportData}
+        searchTerm={searchTerm}
+      />
 
-      {/* Platform Distribution */}
-      {Object.keys(platformCounts).length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Répartition par plateforme</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-              {Object.entries(platformCounts).map(([platform, count]) => (
-                <div key={platform} className="text-center p-4 border rounded-lg">
-                  <div className={`w-4 h-4 ${getPlatformColor(platform)} rounded mx-auto mb-2`}></div>
-                  <div className="font-medium">{platform}</div>
-                  <div className="text-lg font-bold text-gray-700">{count.toLocaleString()}</div>
-                  <div className="text-xs text-gray-500">mentions</div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      <PlatformDistribution platformCounts={platformCounts} />
 
-      {/* Individual Results from Social Media Data */}
-      {posts.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Mentions détaillées</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {posts.slice(0, 10).map((post) => {
-                const engagement = post.engagement || { likes: 0, shares: 0, comments: 0 };
-                const timeAgo = new Date(post.created_at).toLocaleDateString('fr-FR');
-                
-                return (
-                  <div key={post.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex items-center space-x-2">
-                        <Badge variant="outline" className={`${getPlatformColor(post.platform)} text-white`}>
-                          {post.platform}
-                        </Badge>
-                        {getSentimentBadge(post.sentiment)}
-                        <span className="text-sm text-gray-500">{timeAgo}</span>
-                      </div>
-                      <div className="text-sm text-gray-500">
-                        Portée: {post.reach.toLocaleString()}
-                      </div>
-                    </div>
-                    
-                    <p className="text-gray-800 mb-3 line-clamp-3">{post.content}</p>
-                    
-                    <div className="flex items-center justify-between">
-                      <div className="text-sm text-gray-600">
-                        Par <span className="font-medium">{post.author}</span>
-                      </div>
-                      
-                      <div className="flex items-center space-x-4 text-sm text-gray-500">
-                        <div className="flex items-center space-x-1">
-                          <Heart className="w-4 h-4 text-red-500" />
-                          <span className="font-medium">{engagement.likes}</span>
-                        </div>
-                        <div className="flex items-center space-x-1">
-                          <MessageSquare className="w-4 h-4 text-blue-500" />
-                          <span className="font-medium">{engagement.comments}</span>
-                        </div>
-                        <div className="flex items-center space-x-1">
-                          <Share className="w-4 h-4 text-green-500" />
-                          <span className="font-medium">{engagement.shares}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      <DetailedMentions posts={posts} />
 
-      {/* API Integration Note */}
-      <Card className="bg-gradient-to-r from-blue-50 to-cyan-50 border-blue-200">
-        <CardContent className="p-4">
-          <div className="flex items-start space-x-3">
-            <div className="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
-            <div>
-              <h4 className="font-medium text-blue-900 mb-1">Points d'intégration API Apify</h4>
-              <p className="text-sm text-blue-800 mb-2">
-                Connectez vos acteurs Apify pour récupérer des données réelles :
-              </p>
-              <ul className="text-sm text-blue-700 space-y-1">
-                <li>• <strong>handleSearch():</strong> Remplacer la simulation par les appels API</li>
-                <li>• <strong>Plateformes:</strong> Configurer les acteurs dans la table social_platforms</li>
-                <li>• <strong>Résultats:</strong> Parser et sauvegarder les données dans search_results</li>
-                <li>• <strong>Temps réel:</strong> Implémenter les webhooks pour les mises à jour</li>
-              </ul>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <ApiIntegrationNote />
     </div>
   );
 };
