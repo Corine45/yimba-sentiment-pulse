@@ -44,6 +44,18 @@ Confiance IA: ${aiContext.confidence}%
     });
   };
 
+  const handleGenerate = async () => {
+    try {
+      await generateNewContext();
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de générer le contexte. Assurez-vous d'être connecté.",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (loading) {
     return (
       <Card>
@@ -73,11 +85,18 @@ Confiance IA: ${aiContext.confidence}%
         </CardHeader>
         <CardContent>
           <div className="text-center p-8">
-            <p className="text-gray-600 mb-4">Aucun contexte IA disponible.</p>
-            <Button onClick={generateNewContext}>
-              <Sparkles className="w-4 h-4 mr-2" />
-              Générer un contexte
+            <Brain className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Aucun contexte IA disponible</h3>
+            <p className="text-gray-600 mb-6">
+              Générez votre premier contexte IA basé sur vos données de recherche pour obtenir des insights intelligents.
+            </p>
+            <Button onClick={handleGenerate} size="lg">
+              <Sparkles className="w-5 h-5 mr-2" />
+              Générer un contexte IA
             </Button>
+            <p className="text-sm text-gray-500 mt-4">
+              Le contexte sera créé à partir de vos recherches sauvegardées et données d'analyse.
+            </p>
           </div>
         </CardContent>
       </Card>
@@ -97,7 +116,7 @@ Confiance IA: ${aiContext.confidence}%
               <Sparkles className="w-3 h-3 mr-1" />
               Confiance: {aiContext.confidence}%
             </Badge>
-            <Button variant="outline" size="sm" onClick={generateNewContext}>
+            <Button variant="outline" size="sm" onClick={handleGenerate}>
               <RefreshCw className="w-4 h-4 mr-1" />
               Actualiser
             </Button>
