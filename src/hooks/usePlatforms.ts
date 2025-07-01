@@ -55,5 +55,25 @@ export const usePlatforms = () => {
     }
   };
 
-  return { platforms, loading, refetch: fetchPlatforms };
+  const updatePlatformActorId = async (platformId: string, actorId: string) => {
+    try {
+      const { error } = await supabase
+        .from('social_platforms')
+        .update({ apify_actor_id: actorId })
+        .eq('id', platformId);
+
+      if (error) {
+        console.error('Error updating platform actor ID:', error);
+        return { success: false, error };
+      }
+
+      await fetchPlatforms(); // Refresh the platforms list
+      return { success: true };
+    } catch (error) {
+      console.error('Error in updatePlatformActorId:', error);
+      return { success: false, error };
+    }
+  };
+
+  return { platforms, loading, refetch: fetchPlatforms, updatePlatformActorId };
 };
