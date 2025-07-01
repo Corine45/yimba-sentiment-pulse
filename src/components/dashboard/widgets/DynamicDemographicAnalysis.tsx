@@ -1,7 +1,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
-import { Users, RefreshCw, Database } from "lucide-react";
+import { Users, RefreshCw, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useDynamicReportsData } from "@/hooks/useDynamicReportsData";
 
@@ -32,8 +32,8 @@ export const DynamicDemographicAnalysis = () => {
       {/* Header avec bouton refresh */}
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold flex items-center gap-2">
-          <Database className="w-6 h-6 text-blue-600" />
-          Analyse démographique - Données Supabase réelles
+          <TrendingUp className="w-6 h-6 text-blue-600" />
+          Analyse démographique
         </h2>
         <Button variant="outline" onClick={refetch} className="flex items-center gap-2">
           <RefreshCw className="w-4 h-4" />
@@ -41,12 +41,12 @@ export const DynamicDemographicAnalysis = () => {
         </Button>
       </div>
 
-      {/* Age Distribution - Données réelles uniquement */}
+      {/* Age Distribution */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <Users className="w-5 h-5 text-blue-600" />
-            <span>Répartition par âge - Table age_demographics</span>
+            <span>Répartition par âge</span>
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -71,17 +71,17 @@ export const DynamicDemographicAnalysis = () => {
           ) : (
             <div className="text-center py-8 text-gray-500">
               <Users className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-              <p className="font-medium text-red-600">Aucune donnée d'âge réelle dans la table age_demographics</p>
-              <p className="text-sm mt-2">Les données apparaîtront ici après avoir inséré des informations démographiques réelles.</p>
+              <p className="font-medium text-gray-600">Aucune donnée d'âge disponible</p>
+              <p className="text-sm mt-2">Les données apparaîtront ici après avoir effectué des analyses démographiques.</p>
             </div>
           )}
         </CardContent>
       </Card>
 
-      {/* Gender Analysis - Données réelles uniquement */}
+      {/* Gender Analysis */}
       <Card>
         <CardHeader>
-          <CardTitle>Analyse par genre - Table gender_demographics</CardTitle>
+          <CardTitle>Analyse par genre</CardTitle>
         </CardHeader>
         <CardContent>
           {demographicData.genders.length > 0 ? (
@@ -90,7 +90,7 @@ export const DynamicDemographicAnalysis = () => {
                 <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                   <div className="flex-1">
                     <div className="font-medium">{item.name}</div>
-                    <div className="text-sm text-gray-600">{item.mentions} mentions réelles</div>
+                    <div className="text-sm text-gray-600">{item.mentions} mentions</div>
                     <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
                       <div 
                         className="bg-blue-600 h-2 rounded-full transition-all duration-500" 
@@ -104,17 +104,17 @@ export const DynamicDemographicAnalysis = () => {
             </div>
           ) : (
             <div className="text-center py-8 text-gray-500">
-              <p className="font-medium text-red-600">Aucune donnée de genre réelle dans la table gender_demographics</p>
-              <p className="text-sm mt-2">Les données apparaîtront ici après avoir inséré des informations démographiques réelles.</p>
+              <p className="font-medium text-gray-600">Aucune donnée de genre disponible</p>
+              <p className="text-sm mt-2">Les données apparaîtront ici après avoir effectué des analyses démographiques.</p>
             </div>
           )}
         </CardContent>
       </Card>
 
-      {/* Location Analysis - Données réelles uniquement */}
+      {/* Location Analysis */}
       <Card>
         <CardHeader>
-          <CardTitle>Répartition géographique - Table geographic_data</CardTitle>
+          <CardTitle>Répartition géographique</CardTitle>
         </CardHeader>
         <CardContent>
           {demographicData.locations.length > 0 ? (
@@ -125,7 +125,7 @@ export const DynamicDemographicAnalysis = () => {
                 <YAxis />
                 <Tooltip 
                   formatter={(value, name) => [
-                    name === 'mentions' ? `${value} mentions réelles` : `Score: ${value}`,
+                    name === 'mentions' ? `${value} mentions` : `Score: ${value}`,
                     name === 'mentions' ? 'Mentions' : 'Sentiment'
                   ]}
                 />
@@ -134,7 +134,7 @@ export const DynamicDemographicAnalysis = () => {
             </ResponsiveContainer>
           ) : (
             <div className="text-center py-8 text-gray-500">
-              <p className="font-medium text-red-600">Aucune donnée géographique réelle dans la table geographic_data</p>
+              <p className="font-medium text-gray-600">Aucune donnée géographique disponible</p>
               <p className="text-sm mt-2">Les données géographiques seront générées automatiquement lors des recherches.</p>
             </div>
           )}
