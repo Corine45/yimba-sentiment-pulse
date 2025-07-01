@@ -1,96 +1,140 @@
 
-import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Settings, Clock, Database, Bell, Download, Upload, RotateCcw } from "lucide-react";
+import { Settings, Clock, Database, Bell, Download, Upload, RotateCcw, RefreshCw, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useSystemSettings } from "@/hooks/useSystemSettings";
 
 export const SystemSettings = () => {
   const { toast } = useToast();
-  const [settings, setSettings] = useState({
-    surveillance: {
-      frequency: 15, // minutes
-      maxConcurrentJobs: 5,
-      retryAttempts: 3,
-      timeout: 30 // secondes
-    },
-    storage: {
-      retentionPeriod: 12, // mois
-      autoArchive: true,
-      compressionEnabled: true,
-      maxStorageSize: 50 // GB
-    },
-    notifications: {
-      emailEnabled: true,
-      smsEnabled: false,
-      webhookEnabled: true,
-      digestFrequency: "daily" // daily, weekly, monthly
-    },
-    performance: {
-      enableCaching: true,
-      cacheExpiry: 60, // minutes
-      enableCompression: true,
-      maxMemoryUsage: 80 // pourcentage
-    }
-  });
-
-  const [systemStats] = useState({
-    uptime: "99.8%",
-    lastRestart: "2024-01-10 14:30:00",
-    version: "2.1.4",
-    database: {
-      size: "12.3 GB",
-      records: "2,450,891",
-      lastBackup: "2024-01-15 02:00:00"
-    },
-    performance: {
-      avgResponseTime: "245ms",
-      memoryUsage: "68%",
-      diskUsage: "42%"
-    }
-  });
+  const { 
+    settings, 
+    stats, 
+    loading, 
+    saveSettings, 
+    refreshStats,
+    insertMetric 
+  } = useSystemSettings();
 
   const handleSettingChange = (section: keyof typeof settings, field: string, value: any) => {
-    setSettings(prev => ({
-      ...prev,
+    const newSettings = {
+      ...settings,
       [section]: {
-        ...prev[section],
+        ...settings[section],
         [field]: value
       }
-    }));
-  };
-
-  const handleSaveSettings = () => {
-    toast({
-      title: "Paramètres sauvegardés",
-      description: "La configuration système a été mise à jour.",
-    });
+    };
+    saveSettings(newSettings);
   };
 
   const handleExportConfig = () => {
+    const configBlob = new Blob([JSON.stringify(settings, null, 2)], {
+      type: 'application/json'
+    });
+    const url = URL.createObjectURL(configBlob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `system-config-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
     toast({
       title: "Configuration exportée",
       description: "Le fichier de configuration a été téléchargé.",
     });
   };
 
-  const handleImportConfig = () => {
-    toast({
-      title: "Configuration importée",
-      description: "Les paramètres ont été restaurés avec succès.",
-    });
+  const handleImportConfig = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const importedSettings = JSON.parse(e.target?.result as string);
+        saveSettings(importedSettings);
+        toast({
+          title: "Configuration importée",
+          description: "Les paramètres ont été restaurés avec succès.",
+        });
+      } catch (error) {
+        toast({
+          title: "Erreur d'importation",
+          description: "Le fichier de configuration n'est pas valide.",
+          variant: "destructive"
+        });
+      }
+    };
+    reader.readAsText(file);
   };
 
   const handleResetDefaults = () => {
+    const defaultSettings = {
+      surveillance: {
+        frequency: 15,
+        maxConcurrentJobs: 5,
+        retryAttempts: 3,
+        timeout: 30
+      },
+      storage: {
+        retentionPeriod: 12,
+        autoArchive: true,
+        compressionEnabled: true,
+        maxStorageSize: 50
+      },
+      notifications: {
+        emailEnabled: true,
+        smsEnabled: false,
+        webhookEnabled: true,
+        digestFrequency: "daily"
+      },
+      performance: {
+        enableCaching: true,
+        cacheExpiry: 60,
+        enableCompression: true,
+        maxMemoryUsage: 80
+      }
+    };
+
+    saveSettings(defaultSettings);
     toast({
       title: "Paramètres réinitialisés",
       description: "La configuration par défaut a été restaurée.",
     });
   };
+
+  const simulateMetrics = async () => {
+    // Simuler l'insertion de nouvelles métriques
+    await insertMetric('uptime', Math.random() * 100, '%');
+    await insertMetric('memory_usage', Math.random() * 100, '%');
+    await insertMetric('disk_usage', Math.random() * 100, '%');
+    await insertMetric('avg_response_time', Math.random() * 1000, 'ms');
+    
+    toast({
+      title: "Métriques simulées",
+      description: "De nouvelles métriques ont été générées.",
+    });
+    
+    // Rafraîchir les statistiques
+    refreshStats();
+  };
+
+  if (loading) {
+    return (
+      <Card>
+        <CardContent className="flex items-center justify-center p-8">
+          <Loader2 className="w-8 h-8 animate-spin mr-2" />
+          <span>Chargement des paramètres système...</span>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
@@ -101,38 +145,54 @@ export const SystemSettings = () => {
             Paramètres système
           </span>
           <div className="flex space-x-2">
+            <Button variant="outline" size="sm" onClick={refreshStats}>
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Actualiser
+            </Button>
+            <Button variant="outline" size="sm" onClick={simulateMetrics}>
+              <Database className="w-4 h-4 mr-2" />
+              Simuler métriques
+            </Button>
             <Button variant="outline" size="sm" onClick={handleExportConfig}>
               <Download className="w-4 h-4 mr-2" />
               Exporter
             </Button>
-            <Button variant="outline" size="sm" onClick={handleImportConfig}>
-              <Upload className="w-4 h-4 mr-2" />
-              Importer
-            </Button>
-            <Button onClick={handleSaveSettings}>
-              Sauvegarder
-            </Button>
+            <label htmlFor="import-config">
+              <Button variant="outline" size="sm" asChild>
+                <span>
+                  <Upload className="w-4 h-4 mr-2" />
+                  Importer
+                </span>
+              </Button>
+            </label>
+            <input
+              id="import-config"
+              type="file"
+              accept=".json"
+              style={{ display: 'none' }}
+              onChange={handleImportConfig}
+            />
           </div>
         </CardTitle>
       </CardHeader>
       <CardContent>
         <div className="space-y-6">
-          {/* Statistiques système */}
+          {/* Statistiques système - données réelles */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 bg-gray-50 rounded-lg">
             <div className="text-center">
-              <div className="text-lg font-bold text-green-600">{systemStats.uptime}</div>
+              <div className="text-lg font-bold text-green-600">{stats.uptime}</div>
               <div className="text-sm text-gray-600">Disponibilité</div>
             </div>
             <div className="text-center">
-              <div className="text-lg font-bold">{systemStats.performance.avgResponseTime}</div>
+              <div className="text-lg font-bold">{stats.performance.avgResponseTime}</div>
               <div className="text-sm text-gray-600">Temps de réponse</div>
             </div>
             <div className="text-center">
-              <div className="text-lg font-bold">{systemStats.database.size}</div>
+              <div className="text-lg font-bold">{stats.database.size}</div>
               <div className="text-sm text-gray-600">Données stockées</div>
             </div>
             <div className="text-center">
-              <div className="text-lg font-bold">{systemStats.database.records}</div>
+              <div className="text-lg font-bold">{stats.database.records}</div>
               <div className="text-sm text-gray-600">Enregistrements</div>
             </div>
           </div>
@@ -328,36 +388,36 @@ export const SystemSettings = () => {
             </div>
           </div>
 
-          {/* Informations système */}
+          {/* Informations système - données réelles */}
           <div className="border rounded-lg p-4 bg-gray-50">
             <h4 className="font-medium mb-4">Informations système</h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
               <div>
                 <div className="flex justify-between mb-2">
                   <span>Version:</span>
-                  <Badge variant="outline">{systemStats.version}</Badge>
+                  <Badge variant="outline">{stats.version}</Badge>
                 </div>
                 <div className="flex justify-between mb-2">
                   <span>Dernier redémarrage:</span>
-                  <span>{systemStats.lastRestart}</span>
+                  <span>{stats.lastRestart}</span>
                 </div>
                 <div className="flex justify-between mb-2">
                   <span>Dernière sauvegarde:</span>
-                  <span>{systemStats.database.lastBackup}</span>
+                  <span>{stats.database.lastBackup}</span>
                 </div>
               </div>
               <div>
                 <div className="flex justify-between mb-2">
                   <span>Utilisation mémoire:</span>
-                  <span>{systemStats.performance.memoryUsage}</span>
+                  <span>{stats.performance.memoryUsage}</span>
                 </div>
                 <div className="flex justify-between mb-2">
                   <span>Utilisation disque:</span>
-                  <span>{systemStats.performance.diskUsage}</span>
+                  <span>{stats.performance.diskUsage}</span>
                 </div>
                 <div className="flex justify-between mb-2">
                   <span>Enregistrements totaux:</span>
-                  <span>{systemStats.database.records}</span>
+                  <span>{stats.database.records}</span>
                 </div>
               </div>
             </div>
