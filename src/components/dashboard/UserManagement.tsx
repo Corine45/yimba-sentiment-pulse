@@ -7,11 +7,13 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
 import { Users, Plus, Edit, Trash2, Search, Loader2, RefreshCw, AlertTriangle, CheckCircle, UserCheck } from "lucide-react";
 import { useUsers, type User, type NewUser } from "@/hooks/useUsers";
 
 export const UserManagement = () => {
   const { users, loading, addUser, updateUser, deleteUser, activateUser, getStats, refetch } = useUsers();
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
