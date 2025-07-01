@@ -50,6 +50,11 @@ export const UserManagement = () => {
     }
   };
 
+  const handleRefresh = () => {
+    console.log('🔄 Rafraîchissement manuel des utilisateurs...');
+    refetch();
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -61,7 +66,7 @@ export const UserManagement = () => {
 
   return (
     <div className="space-y-6">
-      <UserDebugInfo users={users} stats={stats} />
+      <UserDebugInfo users={users} stats={stats} onRefresh={handleRefresh} />
       <UserStats stats={stats} />
 
       <Card>
@@ -72,7 +77,7 @@ export const UserManagement = () => {
               <span>Gestion des utilisateurs</span>
             </CardTitle>
             <div className="flex space-x-2">
-              <Button variant="outline" onClick={refetch}>
+              <Button variant="outline" onClick={handleRefresh}>
                 <RefreshCw className="w-4 h-4 mr-2" />
                 Actualiser
               </Button>
