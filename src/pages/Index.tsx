@@ -13,11 +13,19 @@ const Index = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!loading && !user) {
-      console.log('Utilisateur non connecté, redirection vers /auth');
-      navigate('/auth', { replace: true });
+    if (!loading && !profileLoading) {
+      if (!user || !profile) {
+        console.log('Utilisateur non connecté, redirection vers /auth');
+        navigate('/auth', { replace: true });
+      } else {
+        // Si l'utilisateur est connecté et qu'on est sur /login, rediriger vers /dashboard
+        if (window.location.pathname === '/login') {
+          console.log('Redirection de /login vers /dashboard');
+          navigate('/dashboard', { replace: true });
+        }
+      }
     }
-  }, [user, loading, navigate]);
+  }, [user, profile, loading, profileLoading, navigate]);
 
   if (loading || profileLoading) {
     return (
@@ -28,8 +36,6 @@ const Index = () => {
   }
 
   if (!user || !profile) {
-    console.log('Pas d\'utilisateur ou de profil, redirection vers /auth');
-    navigate('/auth', { replace: true });
     return null;
   }
 
