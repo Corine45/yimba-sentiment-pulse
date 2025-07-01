@@ -1,23 +1,20 @@
 
+import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { AlertTriangle } from "lucide-react";
-
-interface HealthAlert {
-  id: string;
-  disease: string;
-  location: string;
-  severity: 'faible' | 'modéré' | 'critique';
-  timestamp: string;
-  source: string;
-  verified: boolean;
-}
+import { AlertTriangle, MapPin, Clock } from "lucide-react";
+import { useHealthSurveillanceData } from "@/hooks/useHealthSurveillanceData";
 
 interface HealthAlertsPanelProps {
-  alerts: HealthAlert[];
+  alerts?: any[];
 }
 
-export const HealthAlertsPanel = ({ alerts }: HealthAlertsPanelProps) => {
+export const HealthAlertsPanel = ({ alerts: propAlerts }: HealthAlertsPanelProps) => {
+  const { alerts: supabaseAlerts, loading } = useHealthSurveillanceData();
+  
+  // Utiliser les alertes passées en props ou celles de Supabase
+  const alerts = propAlerts || supabaseAlerts;
+
   const getSeverityColor = (severity: string) => {
     switch (severity) {
       case 'critique': return 'bg-red-100 text-red-800 border-red-200';
@@ -27,60 +24,70 @@ export const HealthAlertsPanel = ({ alerts }: HealthAlertsPanelProps) => {
     }
   };
 
-  const getDiseaseIcon = (disease: string) => {
-    const icons: Record<string, string> = {
-      'COVID-19': '🦠',
-      'Paludisme': '🦟',
-      'Dengue': '🦟',
-      'Rougeole': '🔴',
-      'VIH': '⚕️'
-    };
-    return icons[disease] || '⚕️';
-  };
+  if (loading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <AlertTriangle className="w-5 h-5 mr-2 text-orange-600" />
+            Alertes récentes
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="animate-pulse">
+                <div className="h-16 bg-gray-200 rounded"></div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const recentAlerts = alerts.slice(0, 5);
 
   return (
-    <Card className="lg:col-span-1">
+    <Card>
       <CardHeader>
-        <CardTitle className="flex items-center justify-between">
-          <div className="flex items-center">
-            <AlertTriangle className="w-5 h-5 mr-2 text-yellow-600" />
-            Alertes récentes
-          </div>
-          <Badge variant="outline" className="text-xs">
-            {alerts.length} visibles
-          </Badge>
+        <CardTitle className="flex items-center">
+          <AlertTriangle className="w-5 h-5 mr-2 text-orange-600" />
+          Alertes récentes
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="space-y-3 max-h-80 overflow-y-auto">
-          {alerts.map((alert) => (
-            <div key={alert.id} className={`p-3 rounded-lg border ${getSeverityColor(alert.severity)}`}>
-              <div className="flex items-start justify-between">
-                <div className="flex items-start space-x-3">
-                  <span className="text-lg">{getDiseaseIcon(alert.disease)}</span>
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-2">
-                      <h4 className="font-medium">{alert.disease}</h4>
-                      {alert.verified && (
-                        <Badge variant="outline" className="text-xs bg-green-50 text-green-700">
-                          Vérifié
-                        </Badge>
-                      )}
-                    </div>
-                    <p className="text-sm opacity-80 mt-1">{alert.location}</p>
-                    <div className="flex items-center space-x-2 mt-2 text-xs opacity-75">
-                      <span>{alert.timestamp}</span>
-                      <span>•</span>
-                      <span>{alert.source}</span>
-                    </div>
+        <div className="space-y-3">
+          {recentAlerts.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              <AlertTriangle className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+              <p>Aucune alerte récente</p>
+              <p className="text-sm">Les nouvelles alertes apparaîtront ici</p>
+            </div>
+          ) : (
+            recentAlerts.map((alert) => (
+              <div key={alert.id} className="flex items-start space-x-3 p-3 border rounded-lg hover:bg-gray-50">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between mb-1">
+                    <h4 className="text-sm font-medium text-gray-900 truncate">
+                      {alert.disease}
+                    </h4>
+                    <Badge className={getSeverityColor(alert.severity)}>
+                      {alert.severity}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center text-xs text-gray-500 mb-1">
+                    <MapPin className="w-3 h-3 mr-1" />
+                    <span className="truncate">{alert.location}</span>
+                  </div>
+                  <div className="flex items-center text-xs text-gray-500">
+                    <Clock className="w-3 h-3 mr-1" />
+                    <span>{alert.timestamp}</span>
                   </div>
                 </div>
-                <Badge variant="outline" className="text-xs">
-                  {alert.severity}
-                </Badge>
               </div>
-            </div>
-          ))}
+            ))
+          )}
         </div>
       </CardContent>
     </Card>

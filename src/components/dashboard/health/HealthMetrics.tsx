@@ -1,106 +1,88 @@
 
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Activity, AlertTriangle, TrendingUp, Globe, Users, Clock } from "lucide-react";
+import React from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Activity, AlertTriangle, Users, TrendingUp } from "lucide-react";
+import { useHealthSurveillanceData } from "@/hooks/useHealthSurveillanceData";
 
 export const HealthMetrics = () => {
-  const metrics = [
-    {
-      title: "Alertes actives",
-      value: "24",
-      change: "+3",
-      changeType: "increase" as const,
-      icon: AlertTriangle,
-      color: "text-yellow-600",
-      bgColor: "bg-yellow-50"
-    },
-    {
-      title: "Signaux détectés",
-      value: "156",
-      change: "+12",
-      changeType: "increase" as const,
-      icon: Activity,
-      color: "text-blue-600",
-      bgColor: "bg-blue-50"
-    },
-    {
-      title: "Régions surveillées",
-      value: "19",
-      change: "0",
-      changeType: "stable" as const,
-      icon: Globe,
-      color: "text-green-600",
-      bgColor: "bg-green-50"
-    },
-    {
-      title: "Population couverte",
-      value: "26.4M",
-      change: "+0.2M",
-      changeType: "increase" as const,
-      icon: Users,
-      color: "text-purple-600",
-      bgColor: "bg-purple-50"
-    },
-    {
-      title: "Temps de réponse",
-      value: "8 min",
-      change: "-2 min",
-      changeType: "decrease" as const,
-      icon: Clock,
-      color: "text-indigo-600",
-      bgColor: "bg-indigo-50"
-    },
-    {
-      title: "Taux de vérification",
-      value: "87%",
-      change: "+5%",
-      changeType: "increase" as const,
-      icon: TrendingUp,
-      color: "text-cyan-600",
-      bgColor: "bg-cyan-50"
-    }
-  ];
+  const { alerts, cases, loading } = useHealthSurveillanceData();
 
-  const getChangeColor = (changeType: string) => {
-    switch (changeType) {
-      case 'increase': return 'text-green-600';
-      case 'decrease': return 'text-red-600';
-      case 'stable': return 'text-gray-600';
-      default: return 'text-gray-600';
-    }
-  };
+  if (loading) {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        {[1, 2, 3, 4].map((i) => (
+          <Card key={i} className="animate-pulse">
+            <CardContent className="p-4">
+              <div className="h-6 bg-gray-200 rounded mb-2"></div>
+              <div className="h-8 bg-gray-200 rounded"></div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    );
+  }
 
-  const getChangeIcon = (changeType: string) => {
-    switch (changeType) {
-      case 'increase': return '↗';
-      case 'decrease': return '↘';
-      case 'stable': return '→';
-      default: return '';
-    }
-  };
+  // Calculer les métriques réelles
+  const totalAlerts = alerts.length;
+  const criticalAlerts = alerts.filter(alert => alert.severity === 'critique').length;
+  const activeCases = cases.filter(c => c.status !== 'resolu').length;
+  const verifiedAlerts = alerts.filter(alert => alert.verified).length;
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-      {metrics.map((metric, index) => (
-        <Card key={index} className="hover:shadow-md transition-shadow">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div className={`p-2 rounded-lg ${metric.bgColor}`}>
-                <metric.icon className={`w-5 h-5 ${metric.color}`} />
-              </div>
-              {metric.change !== "0" && (
-                <Badge variant="outline" className={`text-xs ${getChangeColor(metric.changeType)}`}>
-                  {getChangeIcon(metric.changeType)} {metric.change}
-                </Badge>
-              )}
-            </div>
-            <div className="mt-3">
-              <p className="text-2xl font-bold text-gray-900">{metric.value}</p>
-              <p className="text-sm text-gray-600 mt-1">{metric.title}</p>
-            </div>
-          </CardContent>
-        </Card>
-      ))}
+    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Alertes actives</CardTitle>
+          <AlertTriangle className="h-4 w-4 text-orange-500" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">{totalAlerts}</div>
+          <p className="text-xs text-muted-foreground">
+            {criticalAlerts} critiques
+          </p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Cas en cours</CardTitle>
+          <Users className="h-4 w-4 text-blue-500" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">{activeCases}</div>
+          <p className="text-xs text-muted-foreground">
+            En suivi actif
+          </p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Alertes vérifiées</CardTitle>
+          <Activity className="h-4 w-4 text-green-500" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">{verifiedAlerts}</div>
+          <p className="text-xs text-muted-foreground">
+            Confirmées par experts
+          </p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Tendance</CardTitle>
+          <TrendingUp className="h-4 w-4 text-purple-500" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">
+            {totalAlerts > 0 ? '+' + totalAlerts : '0'}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Nouvelles détections
+          </p>
+        </CardContent>
+      </Card>
     </div>
   );
 };
