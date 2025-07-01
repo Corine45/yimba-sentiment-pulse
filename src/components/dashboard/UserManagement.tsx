@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,11 +7,11 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Users, Plus, Edit, Trash2, Search, Loader2, RefreshCw, AlertTriangle } from "lucide-react";
+import { Users, Plus, Edit, Trash2, Search, Loader2, RefreshCw, AlertTriangle, CheckCircle, UserCheck } from "lucide-react";
 import { useUsers, type User, type NewUser } from "@/hooks/useUsers";
 
 export const UserManagement = () => {
-  const { users, loading, addUser, updateUser, deleteUser, getStats, refetch } = useUsers();
+  const { users, loading, addUser, updateUser, deleteUser, activateUser, getStats, refetch } = useUsers();
   const [searchTerm, setSearchTerm] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -44,7 +45,11 @@ export const UserManagement = () => {
 
   const handleAddUser = async () => {
     if (!newUser.name || !newUser.email) {
-      alert("Veuillez remplir tous les champs obligatoires");
+      toast({
+        title: "Erreur de validation",
+        description: "Veuillez remplir tous les champs obligatoires",
+        variant: "destructive"
+      });
       return;
     }
     
@@ -66,6 +71,10 @@ export const UserManagement = () => {
     if (window.confirm("Êtes-vous sûr de vouloir supprimer cet utilisateur ?")) {
       await deleteUser(userId);
     }
+  };
+
+  const handleActivateUser = async (userId: string) => {
+    await activateUser(userId);
   };
 
   const getRoleBadge = (role: string) => {
@@ -113,6 +122,9 @@ export const UserManagement = () => {
           <p>📈 Stats: Total: {stats.total}, Actifs: {stats.active}, Admin: {stats.admins}, Analystes: {stats.analysts}</p>
           {users.length === 0 && (
             <p className="text-red-600 font-medium">⚠️ Aucun utilisateur trouvé - Vérifiez les tables 'profiles' et 'user_roles' dans Supabase</p>
+          )}
+          {users.length > 0 && users.length < 5 && (
+            <p className="text-orange-600 font-medium">⚠️ Nombre d'utilisateurs faible - Certains utilisateurs pourraient manquer dans la table 'profiles'</p>
           )}
         </div>
       </div>
@@ -294,6 +306,16 @@ export const UserManagement = () => {
                       </p>
                     </div>
                     <div className="flex space-x-2">
+                      {user.status === 'inactive' && (
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="text-green-600 hover:text-green-700"
+                          onClick={() => handleActivateUser(user.id)}
+                        >
+                          <UserCheck className="w-4 h-4" />
+                        </Button>
+                      )}
                       <Dialog open={editingUser?.id === user.id} onOpenChange={(open) => !open && setEditingUser(null)}>
                         <DialogTrigger asChild>
                           <Button variant="outline" size="sm" onClick={() => setEditingUser(user)}>

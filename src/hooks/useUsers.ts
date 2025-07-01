@@ -30,11 +30,6 @@ export const useUsers = () => {
       setLoading(true);
       console.log('🔍 Début de la récupération des utilisateurs...');
       
-      // Vérifier les utilisateurs dans auth.users (pour debug)
-      const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
-      console.log('👥 Utilisateurs dans auth.users:', authUsers?.users?.length || 0);
-      console.log('📧 Emails dans auth.users:', authUsers?.users?.map(u => u.email) || []);
-      
       // Récupérer tous les profils utilisateurs
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
@@ -80,9 +75,18 @@ export const useUsers = () => {
 
       // Combiner les données des profils avec les informations de session et rôles
       const usersWithStatus = profiles?.map(profile => {
-        // Trouver le rôle de l'utilisateur dans user_roles
-        const userRole = userRoles?.find(r => r.user_id === profile.id);
-        const finalRole = userRole?.role || profile.role;
+        // Trouver le rôle de l'utilisateur dans user_roles (prendre le plus récent ou le plus élevé)
+        const userRoleEntries = userRoles?.filter(r => r.user_id === profile.id) || [];
+        let finalRole = profile.role; // Rôle par défaut du profil
+        
+        // Si l'utilisateur a des rôles dans user_roles, prendre le plus élevé
+        if (userRoleEntries.length > 0) {
+          const roleHierarchy = { 'admin': 3, 'analyste': 2, 'observateur': 1 };
+          const highestRole = userRoleEntries.reduce((highest, current) => {
+            return roleHierarchy[current.role] > roleHierarchy[highest.role] ? current : highest;
+          });
+          finalRole = highestRole.role;
+        }
         
         const userSessions = sessions?.filter(s => s.user_id === profile.id) || [];
         const latestSession = userSessions[0];
@@ -120,49 +124,49 @@ export const useUsers = () => {
       console.log('Adding new user:', newUser);
       
       // Créer un utilisateur via Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signUp({
+      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
         email: newUser.email,
         password: 'TempPassword123!', // Password temporaire
-        options: {
-          data: {
-            name: newUser.name
-          }
+        email_confirm: true, // Confirmer l'email automatiquement
+        user_metadata: {
+          name: newUser.name
         }
       });
 
-      console.log('Auth signup result:', authData, authError);
+      console.log('Auth creation result:', authData, authError);
 
       if (authError) {
         throw authError;
       }
 
       if (authData.user) {
-        // Mettre à jour le profil avec le rôle spécifique
+        // Créer le profil utilisateur
         const { error: profileError } = await supabase
           .from('profiles')
-          .update({ 
-            role: newUser.role,
-            name: newUser.name 
-          })
-          .eq('id', authData.user.id);
+          .insert({ 
+            id: authData.user.id,
+            name: newUser.name,
+            email: newUser.email,
+            role: newUser.role
+          });
 
-        console.log('Profile update error:', profileError);
+        console.log('Profile creation error:', profileError);
 
         if (profileError) {
           throw profileError;
         }
 
-        // Mettre à jour ou créer le rôle utilisateur
+        // Créer le rôle utilisateur
         const { error: roleError } = await supabase
           .from('user_roles')
-          .upsert({ 
+          .insert({ 
             user_id: authData.user.id,
             role: newUser.role 
           });
 
-        console.log('Role upsert error:', roleError);
+        console.log('Role creation error:', roleError);
         if (roleError) {
-          console.error('Error updating user role:', roleError);
+          console.error('Error creating user role:', roleError);
         }
 
         toast({
@@ -255,6 +259,13 @@ export const useUsers = () => {
         throw error;
       }
 
+      // Optionnel : supprimer aussi de auth.users (nécessite permissions admin)
+      try {
+        await supabase.auth.admin.deleteUser(userId);
+      } catch (authError) {
+        console.warn('Could not delete from auth.users:', authError);
+      }
+
       toast({
         title: "Utilisateur supprimé",
         description: "L'utilisateur a été supprimé avec succès",
@@ -266,6 +277,37 @@ export const useUsers = () => {
       toast({
         title: "Erreur",
         description: error.message || "Impossible de supprimer l'utilisateur",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const activateUser = async (userId: string) => {
+    try {
+      // Créer une session active pour l'utilisateur
+      const { error } = await supabase
+        .from('user_sessions')
+        .upsert({
+          user_id: userId,
+          session_start: new Date().toISOString(),
+          is_active: true
+        });
+
+      if (error) {
+        throw error;
+      }
+
+      toast({
+        title: "Utilisateur activé",
+        description: "L'utilisateur a été activé avec succès",
+      });
+
+      await fetchUsers();
+    } catch (error: any) {
+      console.error('Error activating user:', error);
+      toast({
+        title: "Erreur",
+        description: error.message || "Impossible d'activer l'utilisateur",
         variant: "destructive"
       });
     }
@@ -291,6 +333,7 @@ export const useUsers = () => {
     addUser,
     updateUser,
     deleteUser,
+    activateUser,
     getStats,
     refetch: fetchUsers
   };
