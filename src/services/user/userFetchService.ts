@@ -15,8 +15,6 @@ export const userFetchService = {
         .order('created_at', { ascending: false });
 
       console.log('📊 Profils récupérés:', profiles?.length || 0);
-      console.log('📧 Emails dans profiles:', profiles?.map(p => p.email) || []);
-      console.log('❌ Erreur profiles:', profilesError);
 
       if (profilesError) {
         console.error('Erreur lors de la récupération des profils:', profilesError);
@@ -34,23 +32,40 @@ export const userFetchService = {
         .select('user_id, role');
 
       console.log('🔑 Rôles récupérés:', userRoles?.length || 0);
-      console.log('🔑 Détails des rôles:', userRoles);
       
       if (rolesError) {
         console.error('Erreur lors de la récupération des rôles:', rolesError);
       }
 
-      // Récupérer les informations d'authentification pour le statut de vérification d'email
-      const { data: authResponse, error: authError } = await supabase.auth.admin.listUsers();
-      const authUsers: AuthUser[] = authResponse?.users || [];
+      // Récupérer les sessions utilisateurs pour déterminer l'activité
+      const { data: userSessions, error: sessionsError } = await supabase
+        .from('user_sessions')
+        .select('user_id, session_start, session_end, is_active, updated_at')
+        .order('updated_at', { ascending: false });
+
+      console.log('📱 Sessions récupérées:', userSessions?.length || 0);
       
-      console.log('🔐 Utilisateurs auth récupérés:', authUsers.length);
-      if (authError) {
-        console.error('Erreur lors de la récupération des utilisateurs auth:', authError);
+      if (sessionsError) {
+        console.error('Erreur lors de la récupération des sessions:', sessionsError);
       }
 
-      // Combiner les données des profils avec les informations d'authentification
-      const usersWithEmailStatus = profiles.map(profile => {
+      // Tentative de récupération des informations d'authentification (peut échouer si pas admin)
+      let authUsers: AuthUser[] = [];
+      try {
+        const { data: authResponse, error: authError } = await supabase.auth.admin.listUsers();
+        authUsers = authResponse?.users || [];
+        console.log('🔐 Utilisateurs auth récupérés:', authUsers.length);
+        
+        if (authError) {
+          console.error('Erreur lors de la récupération des utilisateurs auth:', authError);
+        }
+      } catch (authError) {
+        console.warn('⚠️ Impossible de récupérer les données auth (permissions insuffisantes):', authError);
+        // Continuer sans les données auth
+      }
+
+      // Combiner les données des profils avec les informations disponibles
+      const usersWithStatus = profiles.map(profile => {
         // Trouver le rôle de l'utilisateur dans user_roles
         const userRoleEntries = userRoles?.filter(r => r.user_id === profile.id) || [];
         let finalRole = profile.role; // Rôle par défaut du profil
@@ -65,11 +80,47 @@ export const userFetchService = {
           finalRole = highestRole.role;
         }
         
+        // Trouver les sessions de l'utilisateur
+        const userSessionsList = userSessions?.filter(s => s.user_id === profile.id) || [];
+        const activeSession = userSessionsList.find(s => s.is_active);
+        const lastSession = userSessionsList[0]; // La plus récente
+        
         // Trouver les informations d'authentification pour cet utilisateur
         const authUser = authUsers.find(u => u.id === profile.id);
-        const emailConfirmed = authUser?.email_confirmed_at !== null;
         
-        console.log(`📧 Utilisateur ${profile.email}: email confirmé = ${emailConfirmed}`);
+        // Déterminer le statut basé sur plusieurs critères
+        let status: 'active' | 'inactive' = 'inactive';
+        let emailConfirmed = false;
+        let emailConfirmedAt: string | null = null;
+        let lastLogin: string | undefined = undefined;
+        
+        if (authUser) {
+          // Si on a les données auth, les utiliser
+          emailConfirmed = authUser.email_confirmed_at !== null;
+          emailConfirmedAt = authUser.email_confirmed_at;
+          lastLogin = authUser.last_sign_in_at || undefined;
+          
+          // Utilisateur actif si email confirmé ET (session active OU connexion récente)
+          const hasRecentActivity = activeSession || 
+            (lastLogin && new Date(lastLogin) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)); // 30 jours
+          
+          status = emailConfirmed && hasRecentActivity ? 'active' : 'inactive';
+        } else {
+          // Fallback sans données auth : utiliser les sessions et une heuristique
+          // Considérer comme confirmé si l'utilisateur a des sessions (il a pu se connecter)
+          emailConfirmed = userSessionsList.length > 0;
+          emailConfirmedAt = userSessionsList.length > 0 ? (lastSession?.session_start || null) : null;
+          lastLogin = lastSession?.session_start;
+          
+          // Utilisateur actif s'il a une session active ou récente
+          const hasActiveSession = activeSession;
+          const hasRecentSession = lastSession && 
+            new Date(lastSession.updated_at) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000); // 7 jours
+          
+          status = hasActiveSession || hasRecentSession ? 'active' : 'inactive';
+        }
+        
+        console.log(`📧 Utilisateur ${profile.email}: email confirmé = ${emailConfirmed}, status = ${status}`);
         
         return {
           id: profile.id,
@@ -78,17 +129,22 @@ export const userFetchService = {
           role: finalRole,
           created_at: profile.created_at,
           updated_at: profile.updated_at,
-          status: emailConfirmed ? 'active' as const : 'inactive' as const,
-          last_login: authUser?.last_sign_in_at || undefined,
+          status,
+          last_login: lastLogin,
           email_confirmed: emailConfirmed,
-          email_confirmed_at: authUser?.email_confirmed_at || null
+          email_confirmed_at: emailConfirmedAt
         };
       });
 
-      console.log('✅ Utilisateurs finaux avec statut email:', usersWithEmailStatus.length);
-      console.log('📊 Utilisateurs détaillés:', usersWithEmailStatus);
+      console.log('✅ Utilisateurs finaux avec statut email:', usersWithStatus.length);
+      console.log('📊 Répartition des statuts:', {
+        actifs: usersWithStatus.filter(u => u.status === 'active').length,
+        inactifs: usersWithStatus.filter(u => u.status === 'inactive').length,
+        emailsConfirmes: usersWithStatus.filter(u => u.email_confirmed).length,
+        emailsNonConfirmes: usersWithStatus.filter(u => !u.email_confirmed).length
+      });
       
-      return usersWithEmailStatus;
+      return usersWithStatus;
     } catch (error) {
       console.error('💥 Erreur générale dans fetchUsers:', error);
       throw error;

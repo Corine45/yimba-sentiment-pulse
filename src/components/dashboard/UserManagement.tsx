@@ -50,7 +50,36 @@ export const UserManagement = () => {
     const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          user.email.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesRole = roleFilter === "all" || user.role === roleFilter;
-    const matchesStatus = statusFilter === "all" || user.status === statusFilter;
+    
+    // Logique de filtrage améliorée pour le statut
+    let matchesStatus = true;
+    switch (statusFilter) {
+      case "all":
+        matchesStatus = true;
+        break;
+      case "active":
+        matchesStatus = user.status === 'active';
+        break;
+      case "inactive":
+        matchesStatus = user.status === 'inactive';
+        break;
+      case "email_confirmed":
+        matchesStatus = user.email_confirmed === true;
+        break;
+      case "email_not_confirmed":
+        matchesStatus = user.email_confirmed === false;
+        break;
+      case "has_sessions":
+        // Pour ce filtre, on considère qu'un utilisateur avec last_login récent a des sessions
+        matchesStatus = user.last_login && new Date(user.last_login) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+        break;
+      case "no_recent_activity":
+        // Pas d'activité récente (pas de last_login ou très ancien)
+        matchesStatus = !user.last_login || new Date(user.last_login) < new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+        break;
+      default:
+        matchesStatus = true;
+    }
     
     return matchesSearch && matchesRole && matchesStatus;
   });
