@@ -5,8 +5,25 @@ import { Badge } from "@/components/ui/badge";
 import { MapPin, AlertTriangle } from "lucide-react";
 import { useHealthSurveillanceData } from "@/hooks/useHealthSurveillanceData";
 
+interface HealthAlert {
+  id: string;
+  disease: string;
+  location: string;
+  severity: 'faible' | 'modéré' | 'critique';
+  status: string;
+  timestamp: string;
+  source: string;
+  description: string;
+  verified: boolean;
+  assignedTo: string | null;
+  rawText: string;
+  reporterName?: string;
+  reporterContact?: string;
+  createdAt: string;
+}
+
 interface HealthMapPanelProps {
-  alerts?: any[];
+  alerts?: HealthAlert[];
 }
 
 export const HealthMapPanel = ({ alerts: propAlerts }: HealthMapPanelProps) => {
@@ -43,14 +60,14 @@ export const HealthMapPanel = ({ alerts: propAlerts }: HealthMapPanelProps) => {
   }
 
   // Grouper les alertes par localisation
-  const locationGroups = alerts.reduce((acc, alert) => {
+  const locationGroups = alerts.reduce((acc: Record<string, HealthAlert[]>, alert) => {
     const location = alert.location;
     if (!acc[location]) {
       acc[location] = [];
     }
     acc[location].push(alert);
     return acc;
-  }, {} as Record<string, any[]>);
+  }, {});
 
   return (
     <Card>
@@ -80,9 +97,9 @@ export const HealthMapPanel = ({ alerts: propAlerts }: HealthMapPanelProps) => {
               {/* Simulation de points sur la carte */}
               <div className="relative h-48">
                 {Object.entries(locationGroups).map(([location, locationAlerts], index) => {
-                  const criticalCount = locationAlerts.filter(a => a.severity === 'critique').length;
-                  const moderateCount = locationAlerts.filter(a => a.severity === 'modéré').length;
-                  const lowCount = locationAlerts.filter(a => a.severity === 'faible').length;
+                  const criticalCount = locationAlerts.filter((a: HealthAlert) => a.severity === 'critique').length;
+                  const moderateCount = locationAlerts.filter((a: HealthAlert) => a.severity === 'modéré').length;
+                  const lowCount = locationAlerts.filter((a: HealthAlert) => a.severity === 'faible').length;
                   
                   // Position simulée pour chaque localisation
                   const positions = [
@@ -128,8 +145,8 @@ export const HealthMapPanel = ({ alerts: propAlerts }: HealthMapPanelProps) => {
               <div key={location} className="flex items-center justify-between text-sm">
                 <div className="flex items-center space-x-2">
                   <div className={`w-3 h-3 rounded-full ${getSeverityColor(
-                    locationAlerts.some(a => a.severity === 'critique') ? 'critique' : 
-                    locationAlerts.some(a => a.severity === 'modéré') ? 'modéré' : 'faible'
+                    locationAlerts.some((a: HealthAlert) => a.severity === 'critique') ? 'critique' : 
+                    locationAlerts.some((a: HealthAlert) => a.severity === 'modéré') ? 'modéré' : 'faible'
                   )}`}></div>
                   <span className="text-gray-700">{location}</span>
                 </div>
