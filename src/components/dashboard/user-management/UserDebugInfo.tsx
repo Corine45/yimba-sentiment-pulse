@@ -20,6 +20,9 @@ export const UserDebugInfo = ({ users, stats, onRefresh }: UserDebugInfoProps) =
     withoutRecentActivity: users.filter(u => !u.last_login || new Date(u.last_login) < new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)).length
   };
 
+  // Vérifier si on a probablement un problème d'accès aux données auth
+  const suspectedAuthAccessIssue = statusBreakdown.emailNotConfirmed === statusBreakdown.total && statusBreakdown.total > 0;
+
   return (
     <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-lg">
       <div className="flex items-center justify-between mb-2">
@@ -43,7 +46,21 @@ export const UserDebugInfo = ({ users, stats, onRefresh }: UserDebugInfoProps) =
         <p>🔄 <strong>Connexion récente (7j):</strong> {statusBreakdown.withRecentLogin}</p>
         <p>💤 <strong>Sans activité récente (30j):</strong> {statusBreakdown.withoutRecentActivity}</p>
         
-        {statusBreakdown.emailNotConfirmed > 0 && (
+        {suspectedAuthAccessIssue && (
+          <div className="mt-2 p-2 bg-red-100 rounded border-l-4 border-red-400">
+            <p className="text-red-700 font-medium">
+              🚨 PROBLÈME DÉTECTÉ: Tous les emails sont marqués comme non confirmés
+            </p>
+            <p className="text-xs text-red-600 mt-1">
+              Cause probable: Pas d'accès aux données d'authentification Supabase (token anon au lieu de service_role)
+            </p>
+            <p className="text-xs text-red-600">
+              Vérifiez les logs de la console pour plus de détails
+            </p>
+          </div>
+        )}
+        
+        {statusBreakdown.emailNotConfirmed > 0 && !suspectedAuthAccessIssue && (
           <div className="mt-2 p-2 bg-orange-100 rounded border-l-4 border-orange-400">
             <p className="text-orange-700 font-medium">
               ⚠️ {statusBreakdown.emailNotConfirmed} utilisateur(s) ont des emails non confirmés

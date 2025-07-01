@@ -51,13 +51,16 @@ export const userFetchService = {
 
       // Tentative de récupération des informations d'authentification (peut échouer si pas admin)
       let authUsers: AuthUser[] = [];
+      let hasAuthAccess = false;
+      
       try {
         const { data: authResponse, error: authError } = await supabase.auth.admin.listUsers();
-        authUsers = authResponse?.users || [];
-        console.log('🔐 Utilisateurs auth récupérés:', authUsers.length);
-        
         if (authError) {
-          console.error('Erreur lors de la récupération des utilisateurs auth:', authError);
+          console.warn('⚠️ Impossible de récupérer les données auth (permissions insuffisantes):', authError);
+        } else {
+          authUsers = authResponse?.users || [];
+          hasAuthAccess = true;
+          console.log('🔐 Utilisateurs auth récupérés:', authUsers.length);
         }
       } catch (authError) {
         console.warn('⚠️ Impossible de récupérer les données auth (permissions insuffisantes):', authError);
@@ -94,9 +97,9 @@ export const userFetchService = {
         let emailConfirmedAt: string | null = null;
         let lastLogin: string | undefined = undefined;
         
-        if (authUser) {
-          // Si on a les données auth, les utiliser
-          emailConfirmed = authUser.email_confirmed_at !== null;
+        if (hasAuthAccess && authUser) {
+          // Si on a accès aux données auth et qu'on trouve l'utilisateur, les utiliser
+          emailConfirmed = authUser.email_confirmed_at !== null && authUser.email_confirmed_at !== undefined;
           emailConfirmedAt = authUser.email_confirmed_at;
           lastLogin = authUser.last_sign_in_at || undefined;
           
@@ -106,21 +109,25 @@ export const userFetchService = {
           
           status = emailConfirmed && hasRecentActivity ? 'active' : 'inactive';
         } else {
-          // Fallback sans données auth : utiliser les sessions et une heuristique
-          // Considérer comme confirmé si l'utilisateur a des sessions (il a pu se connecter)
-          emailConfirmed = userSessionsList.length > 0;
-          emailConfirmedAt = userSessionsList.length > 0 ? (lastSession?.session_start || null) : null;
+          // Si on n'a pas accès aux données auth OU qu'on ne trouve pas l'utilisateur auth
+          // Être très conservateur : considérer l'email comme NON confirmé par défaut
+          emailConfirmed = false;
+          emailConfirmedAt = null;
           lastLogin = lastSession?.session_start;
           
-          // Utilisateur actif s'il a une session active ou récente
+          // Dans ce cas, on ne peut pas vraiment déterminer si l'utilisateur est actif
+          // On se base uniquement sur les sessions
           const hasActiveSession = activeSession;
           const hasRecentSession = lastSession && 
             new Date(lastSession.updated_at) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000); // 7 jours
           
-          status = hasActiveSession || hasRecentSession ? 'active' : 'inactive';
+          // Sans confirmation d'email, l'utilisateur reste inactif même avec des sessions
+          status = 'inactive';
+          
+          console.warn(`⚠️ Utilisateur ${profile.email}: Impossible de vérifier l'email - considéré comme non confirmé`);
         }
         
-        console.log(`📧 Utilisateur ${profile.email}: email confirmé = ${emailConfirmed}, status = ${status}`);
+        console.log(`📧 Utilisateur ${profile.email}: email confirmé = ${emailConfirmed}, status = ${status}, hasAuthAccess = ${hasAuthAccess}`);
         
         return {
           id: profile.id,
@@ -141,8 +148,14 @@ export const userFetchService = {
         actifs: usersWithStatus.filter(u => u.status === 'active').length,
         inactifs: usersWithStatus.filter(u => u.status === 'inactive').length,
         emailsConfirmes: usersWithStatus.filter(u => u.email_confirmed).length,
-        emailsNonConfirmes: usersWithStatus.filter(u => !u.email_confirmed).length
+        emailsNonConfirmes: usersWithStatus.filter(u => !u.email_confirmed).length,
+        hasAuthAccess: hasAuthAccess
       });
+      
+      if (!hasAuthAccess) {
+        console.warn('⚠️ ATTENTION: Pas d\'accès aux données auth - tous les emails sont considérés comme non confirmés');
+        console.warn('💡 Pour accéder aux vraies données d\'email, utilisez une clé service_role au lieu de la clé anon');
+      }
       
       return usersWithStatus;
     } catch (error) {
