@@ -1,4 +1,3 @@
-
 import { Eye, Bell, TrendingUp, FileText, Users, Settings, Activity, User, BarChart3, RefreshCw } from "lucide-react";
 import {
   Sidebar,
@@ -54,9 +53,9 @@ export const AppSidebar = ({ activeTab, onTabChange, user, permissions }: AppSid
     } else if (user.role === "observateur") {
       tabs.push({
         value: "analysis",
-        label: "Consultation",
+        label: "Analyses",
         icon: TrendingUp,
-        description: "Consultation des analyses"
+        description: "Consultation des analyses de sentiments"
       });
     }
     
@@ -70,9 +69,9 @@ export const AppSidebar = ({ activeTab, onTabChange, user, permissions }: AppSid
     
     tabs.push({
       value: "reports",
-      label: permissions.canGenerateReports ? "Rapports" : "Consultation",
+      label: permissions.canGenerateReports ? "Rapports" : "Documents",
       icon: FileText,
-      description: permissions.canGenerateReports ? "Génération de rapports" : "Consultation des rapports",
+      description: permissions.canGenerateReports ? "Génération de rapports" : "Consultation des documents et rapports",
       indicator: sidebarData.recentActivity.find(a => a.type === 'report')?.count || 0
     });
 
