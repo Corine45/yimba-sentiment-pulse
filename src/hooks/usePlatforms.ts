@@ -21,20 +21,29 @@ export const usePlatforms = () => {
 
   const fetchPlatforms = async () => {
     try {
+      console.log('Starting platform fetch...');
+      
+      // Check if user is authenticated
+      const { data: { user } } = await supabase.auth.getUser();
+      console.log('Current user:', user?.email);
+      
       const { data, error } = await supabase
         .from('social_platforms')
         .select('*')
         .eq('is_active', true)
         .order('name');
 
+      console.log('Platform query result:', { data, error });
+
       if (error) {
         console.error('Error fetching platforms:', error);
         throw error;
       }
       
+      console.log('Setting platforms:', data);
       setPlatforms(data || []);
     } catch (error) {
-      console.error('Error fetching platforms:', error);
+      console.error('Error in fetchPlatforms:', error);
     } finally {
       setLoading(false);
     }
