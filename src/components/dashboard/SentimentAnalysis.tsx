@@ -2,7 +2,7 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Eye } from "lucide-react";
 import { AIContextGenerator } from "./widgets/AIContextGenerator";
-import { InfluencerAnalysis } from "./widgets/InfluencerAnalysis";
+import { DynamicInfluencerAnalysis } from "./widgets/DynamicInfluencerAnalysis";
 import { MediaDistribution } from "./widgets/MediaDistribution";
 import { SourceDiversity } from "./widgets/SourceDiversity";
 import { GeographicDistribution } from "./widgets/GeographicDistribution";
@@ -52,7 +52,7 @@ export const SentimentAnalysis = ({ userRole, permissions }: SentimentAnalysisPr
         </TabsContent>
 
         <TabsContent value="influencers" className="space-y-6">
-          <InfluencerAnalysis />
+          <DynamicInfluencerAnalysis />
         </TabsContent>
 
         <TabsContent value="media" className="space-y-6">

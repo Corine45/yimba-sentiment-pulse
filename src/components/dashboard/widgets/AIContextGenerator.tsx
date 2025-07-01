@@ -3,67 +3,18 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Brain, Sparkles, TrendingUp, AlertTriangle, Copy, RefreshCw } from "lucide-react";
-import { useState } from "react";
-
-interface AIContext {
-  summary: string;
-  triggers: string[];
-  sentiment: {
-    overall: string;
-    details: string;
-  };
-  trends: string[];
-  keywords: string[];
-  recommendations: string[];
-  confidence: number;
-  generatedAt: string;
-}
+import { useAIContext } from "@/hooks/useAIContext";
+import { useToast } from "@/hooks/use-toast";
 
 export const AIContextGenerator = () => {
-  const [isGenerating, setIsGenerating] = useState(false);
-  
-  const aiContext: AIContext = {
-    summary: "Cette semaine, les discussions se concentrent autour des réformes éducatives en Côte d'Ivoire avec un pic d'activité notable suite à l'annonce gouvernementale du 15 janvier. Les réactions sont majoritairement positives (68%) avec une forte mobilisation des acteurs éducatifs et des parents d'élèves.",
-    triggers: [
-      "Annonce officielle des réformes éducatives par le Ministère",
-      "Publication d'un rapport sur l'état de l'éducation",
-      "Témoignages de parents et enseignants sur les réseaux sociaux",
-      "Couverture médiatique intensive du sujet"
-    ],
-    sentiment: {
-      overall: "Majoritairement positif",
-      details: "68% positif, 22% neutre, 10% négatif. Les critiques portent principalement sur les délais de mise en œuvre."
-    },
-    trends: [
-      "Hausse de 45% des mentions 'éducation' depuis 3 jours",
-      "Engagement multiplié par 2.3 sur les publications éducatives",
-      "Émergence du hashtag #ÉducationCI (2.1K mentions)",
-      "Participation croissante des influenceurs éducatifs"
-    ],
-    keywords: [
-      "#ÉducationCI", "réforme", "écoles", "enseignants", "parents", 
-      "programme", "numérique", "formation", "qualité", "avenir"
-    ],
-    recommendations: [
-      "Capitaliser sur l'élan positif avec du contenu éducatif",
-      "Répondre aux inquiétudes sur la mise en œuvre",
-      "Engager davantage avec les communautés de parents",
-      "Surveiller les mentions négatives pour anticipation"
-    ],
-    confidence: 87,
-    generatedAt: new Date().toLocaleString('fr-FR')
-  };
-
-  const handleRegenerate = () => {
-    setIsGenerating(true);
-    setTimeout(() => {
-      setIsGenerating(false);
-    }, 3000);
-  };
+  const { aiContext, loading, generateNewContext } = useAIContext();
+  const { toast } = useToast();
 
   const handleCopy = () => {
+    if (!aiContext) return;
+    
     const contextText = `
-CONTEXTE IA - ${aiContext.generatedAt}
+CONTEXTE IA - ${aiContext.generated_at}
 
 RÉSUMÉ EXÉCUTIF:
 ${aiContext.summary}
@@ -87,7 +38,51 @@ Confiance IA: ${aiContext.confidence}%
     `;
     
     navigator.clipboard.writeText(contextText);
+    toast({
+      title: "Contexte copié",
+      description: "Le contexte IA a été copié dans le presse-papiers.",
+    });
   };
+
+  if (loading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <Brain className="w-5 h-5 mr-2 text-purple-600" />
+            Contexte généré par l'IA
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center p-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!aiContext) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <Brain className="w-5 h-5 mr-2 text-purple-600" />
+            Contexte généré par l'IA
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center p-8">
+            <p className="text-gray-600 mb-4">Aucun contexte IA disponible.</p>
+            <Button onClick={generateNewContext}>
+              <Sparkles className="w-4 h-4 mr-2" />
+              Générer un contexte
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
@@ -102,9 +97,9 @@ Confiance IA: ${aiContext.confidence}%
               <Sparkles className="w-3 h-3 mr-1" />
               Confiance: {aiContext.confidence}%
             </Badge>
-            <Button variant="outline" size="sm" onClick={handleRegenerate} disabled={isGenerating}>
-              <RefreshCw className={`w-4 h-4 mr-1 ${isGenerating ? 'animate-spin' : ''}`} />
-              {isGenerating ? 'Génération...' : 'Actualiser'}
+            <Button variant="outline" size="sm" onClick={generateNewContext}>
+              <RefreshCw className="w-4 h-4 mr-1" />
+              Actualiser
             </Button>
             <Button variant="outline" size="sm" onClick={handleCopy}>
               <Copy className="w-4 h-4 mr-1" />
@@ -113,7 +108,7 @@ Confiance IA: ${aiContext.confidence}%
           </div>
         </div>
         <p className="text-sm text-gray-600">
-          Dernière génération: {aiContext.generatedAt}
+          Dernière génération: {aiContext.generated_at}
         </p>
       </CardHeader>
       

@@ -9,6 +9,165 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      ai_contexts: {
+        Row: {
+          confidence: number
+          created_at: string
+          generated_at: string
+          id: string
+          keywords: Json
+          recommendations: Json
+          sentiment: Json
+          summary: string
+          trends: Json
+          triggers: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          confidence?: number
+          created_at?: string
+          generated_at?: string
+          id?: string
+          keywords?: Json
+          recommendations?: Json
+          sentiment?: Json
+          summary: string
+          trends?: Json
+          triggers?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          confidence?: number
+          created_at?: string
+          generated_at?: string
+          id?: string
+          keywords?: Json
+          recommendations?: Json
+          sentiment?: Json
+          summary?: string
+          trends?: Json
+          triggers?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      geographic_data: {
+        Row: {
+          coordinates: Json | null
+          country: string
+          created_at: string
+          id: string
+          mentions: number
+          region: string
+          sentiment_score: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          coordinates?: Json | null
+          country: string
+          created_at?: string
+          id?: string
+          mentions?: number
+          region: string
+          sentiment_score?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          coordinates?: Json | null
+          country?: string
+          created_at?: string
+          id?: string
+          mentions?: number
+          region?: string
+          sentiment_score?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      influencer_data: {
+        Row: {
+          created_at: string
+          engagement_rate: number
+          followers: number
+          id: string
+          influence_score: number
+          name: string
+          platform: string
+          recent_posts: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          engagement_rate?: number
+          followers?: number
+          id?: string
+          influence_score?: number
+          name: string
+          platform: string
+          recent_posts?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          engagement_rate?: number
+          followers?: number
+          id?: string
+          influence_score?: number
+          name?: string
+          platform?: string
+          recent_posts?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      media_data: {
+        Row: {
+          content_url: string | null
+          created_at: string
+          engagement: Json
+          id: string
+          media_type: string
+          mentions: number
+          platform: string
+          sentiment: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content_url?: string | null
+          created_at?: string
+          engagement?: Json
+          id?: string
+          media_type: string
+          mentions?: number
+          platform: string
+          sentiment?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content_url?: string | null
+          created_at?: string
+          engagement?: Json
+          id?: string
+          media_type?: string
+          mentions?: number
+          platform?: string
+          sentiment?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string | null
@@ -33,6 +192,33 @@ export type Database = {
           name?: string
           role?: Database["public"]["Enums"]["app_role"]
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      realtime_data: {
+        Row: {
+          created_at: string
+          id: string
+          metric_name: string
+          metric_value: Json
+          timestamp: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          metric_name: string
+          metric_value: Json
+          timestamp?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          metric_name?: string
+          metric_value?: Json
+          timestamp?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -265,6 +451,10 @@ export type Database = {
       execute_saved_search: {
         Args: { search_id: string }
         Returns: Json
+      }
+      generate_ai_context: {
+        Args: { user_uuid: string }
+        Returns: string
       }
       has_role: {
         Args: {
