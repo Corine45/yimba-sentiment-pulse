@@ -1,7 +1,9 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Database, Search, Users, Activity, BarChart3 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Database, Search, Users, Activity, BarChart3, RefreshCw } from "lucide-react";
+import { useStorageMetrics } from "@/hooks/useStorageMetrics";
 
 interface DataSummaryProps {
   userRole: string;
@@ -9,90 +11,96 @@ interface DataSummaryProps {
 }
 
 export const DataSummary = ({ userRole, permissions }: DataSummaryProps) => {
-  const dataMetrics = [
-    {
-      name: "Recherches sauvegardées",
-      count: 25,
-      icon: Search,
-      color: "text-blue-600",
-      visible: permissions.canSearch
-    },
-    {
-      name: "Contextes IA générés", 
-      count: 8,
-      icon: Activity,
-      color: "text-purple-600",
-      visible: permissions.canAnalyze
-    },
-    {
-      name: "Données géographiques",
-      count: 156,
-      icon: BarChart3,
-      color: "text-green-600",
-      visible: permissions.canAnalyze
-    },
-    {
-      name: "Profils utilisateurs",
-      count: 8,
-      icon: Users,
-      color: "text-orange-600",
-      visible: permissions.canManageUsers
-    }
-  ];
+  const { storageMetrics, loading, refetch } = useStorageMetrics();
 
-  const storageInfo = [
-    {
-      category: "Résultats de recherche",
-      used: 45,
-      description: "Données de recherche et mentions",
-      visible: permissions.canSearch
-    },
-    {
-      category: "Contextes IA",
-      used: 15,
-      description: "Analyses générées par l'IA",
-      visible: permissions.canAnalyze
-    },
-    {
-      category: "Données géographiques", 
-      used: 25,
-      description: "Informations de localisation",
-      visible: permissions.canAnalyze
-    },
-    {
-      category: "Métadonnées utilisateurs",
-      used: 10,
-      description: "Profils et préférences",
-      visible: true
-    }
-  ];
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
 
-  const visibleMetrics = dataMetrics.filter(metric => metric.visible);
-  const visibleStorage = storageInfo.filter(storage => storage.visible);
+  const getIconForCategory = (category: string) => {
+    if (category.includes('recherche')) return Search;
+    if (category.includes('IA')) return Activity;
+    if (category.includes('géographiques')) return BarChart3;
+    if (category.includes('utilisateurs')) return Users;
+    return Database;
+  };
+
+  const getColorForCategory = (category: string) => {
+    if (category.includes('recherche')) return 'text-blue-600';
+    if (category.includes('IA')) return 'text-purple-600';
+    if (category.includes('géographiques')) return 'text-green-600';
+    if (category.includes('utilisateurs')) return 'text-orange-600';
+    return 'text-gray-600';
+  };
 
   return (
     <div className="space-y-6">
+      {/* Header avec bouton de rafraîchissement */}
+      <div className="flex justify-between items-center">
+        <h2 className="text-xl font-semibold">Résumé des données</h2>
+        <Button variant="outline" size="sm" onClick={refetch} className="flex items-center gap-2">
+          <RefreshCw className="w-4 h-4" />
+          Actualiser
+        </Button>
+      </div>
+
       {/* Métriques de données */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {visibleMetrics.map((metric, index) => (
-          <Card key={index}>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600 flex items-center">
-                <metric.icon className={`w-4 h-4 mr-2 ${metric.color}`} />
-                {metric.name}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center">
-                <span className={`text-2xl font-bold ${metric.color}`}>
-                  {metric.count}
-                </span>
-                <p className="text-xs text-gray-500">Enregistrements</p>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+        {storageMetrics.categories.map((category, index) => {
+          const IconComponent = getIconForCategory(category.category);
+          const colorClass = getColorForCategory(category.category);
+          
+          return (
+            <Card key={index}>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-gray-600 flex items-center">
+                  <IconComponent className={`w-4 h-4 mr-2 ${colorClass}`} />
+                  {category.category}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center">
+                  <span className={`text-2xl font-bold ${colorClass}`}>
+                    {category.count}
+                  </span>
+                  <p className="text-xs text-gray-500">Enregistrements</p>
+                  <p className="text-xs text-gray-500 mt-1">{category.used} MB utilisés</p>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
+
+      {/* Activité récente */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <Activity className="w-5 h-5 mr-2 text-blue-600" />
+            Activité récente des données
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {storageMetrics.recentActivity.map((activity, index) => (
+              <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div>
+                  <h4 className="font-medium text-gray-900">{activity.type}</h4>
+                  <p className="text-sm text-gray-600">{activity.lastUpdate}</p>
+                </div>
+                <div className="text-right">
+                  <span className="text-lg font-semibold text-blue-600">{activity.count}</span>
+                  <p className="text-xs text-gray-500">nouveaux</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Utilisation du stockage */}
       <Card>
@@ -104,7 +112,7 @@ export const DataSummary = ({ userRole, permissions }: DataSummaryProps) => {
         </CardHeader>
         <CardContent>
           <div className="space-y-6">
-            {visibleStorage.map((storage, index) => (
+            {storageMetrics.categories.map((storage, index) => (
               <div key={index} className="space-y-2">
                 <div className="flex justify-between items-center">
                   <div>
@@ -112,10 +120,10 @@ export const DataSummary = ({ userRole, permissions }: DataSummaryProps) => {
                     <p className="text-sm text-gray-600">{storage.description}</p>
                   </div>
                   <span className="text-sm font-medium text-gray-900">
-                    {storage.used}%
+                    {storage.used} MB
                   </span>
                 </div>
-                <Progress value={storage.used} className="h-2" />
+                <Progress value={(storage.used / storageMetrics.totalAvailable) * 100} className="h-2" />
               </div>
             ))}
           </div>
@@ -123,10 +131,14 @@ export const DataSummary = ({ userRole, permissions }: DataSummaryProps) => {
           <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
             <h4 className="font-medium text-blue-900 mb-2">Stockage total utilisé</h4>
             <div className="flex justify-between items-center mb-2">
-              <span className="text-sm text-blue-700">2.1 GB / 10 GB</span>
-              <span className="text-sm font-medium text-blue-900">21%</span>
+              <span className="text-sm text-blue-700">
+                {(storageMetrics.totalUsed / 1000).toFixed(2)} GB / {(storageMetrics.totalAvailable / 1000).toFixed(0)} GB
+              </span>
+              <span className="text-sm font-medium text-blue-900">
+                {storageMetrics.usagePercentage}%
+              </span>
             </div>
-            <Progress value={21} className="h-3" />
+            <Progress value={storageMetrics.usagePercentage} className="h-3" />
           </div>
         </CardContent>
       </Card>

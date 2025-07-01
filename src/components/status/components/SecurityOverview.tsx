@@ -1,7 +1,9 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Shield, Lock, Key, AlertTriangle, CheckCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Shield, Lock, Key, AlertTriangle, CheckCircle, RefreshCw } from "lucide-react";
+import { useSecurityEvents } from "@/hooks/useSecurityEvents";
 
 interface SecurityOverviewProps {
   userRole: string;
@@ -9,62 +11,18 @@ interface SecurityOverviewProps {
 }
 
 export const SecurityOverview = ({ userRole, permissions }: SecurityOverviewProps) => {
-  const securityChecks = [
-    {
-      name: "Authentification Supabase",
-      status: "secure",
-      description: "JWT tokens et RLS activés",
-      icon: Lock
-    },
-    {
-      name: "Chiffrement des données",
-      status: "secure", 
-      description: "SSL/TLS en transit",
-      icon: Shield
-    },
-    {
-      name: "Gestion des rôles",
-      status: "secure",
-      description: "RLS et permissions configurées",
-      icon: Key
-    },
-    {
-      name: "Monitoring sécurité",
-      status: "active",
-      description: "Logs d'authentification actifs",
-      icon: AlertTriangle
-    }
-  ];
-
-  const recentSecurityEvents = [
-    {
-      event: "Connexion admin",
-      user: "admin@yimba.com",
-      timestamp: "Il y a 10 minutes",
-      status: "success"
-    },
-    {
-      event: "Tentative connexion échouée",
-      user: "unknown@test.com", 
-      timestamp: "Il y a 2 heures",
-      status: "warning"
-    },
-    {
-      event: "Changement de rôle",
-      user: "observateur1@yimba.com",
-      timestamp: "Il y a 1 jour",
-      status: "info"
-    }
-  ];
+  const { securityData, loading, refetch } = useSecurityEvents();
 
   const getStatusIcon = (status: string) => {
     switch (status) {
       case "secure":
         return <CheckCircle className="w-5 h-5 text-green-500" />;
-      case "active":
-        return <AlertTriangle className="w-5 h-5 text-blue-500" />;
-      default:
+      case "warning":
         return <AlertTriangle className="w-5 h-5 text-yellow-500" />;
+      case "error":
+        return <AlertTriangle className="w-5 h-5 text-red-500" />;
+      default:
+        return <AlertTriangle className="w-5 h-5 text-gray-500" />;
     }
   };
 
@@ -74,6 +32,8 @@ export const SecurityOverview = ({ userRole, permissions }: SecurityOverviewProp
         return <Badge className="bg-green-100 text-green-800">Succès</Badge>;
       case "warning":
         return <Badge className="bg-yellow-100 text-yellow-800">Attention</Badge>;
+      case "error":
+        return <Badge className="bg-red-100 text-red-800">Erreur</Badge>;
       case "info":
         return <Badge className="bg-blue-100 text-blue-800">Info</Badge>;
       default:
@@ -81,8 +41,45 @@ export const SecurityOverview = ({ userRole, permissions }: SecurityOverviewProp
     }
   };
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
+      {/* Header avec bouton de rafraîchissement */}
+      <div className="flex justify-between items-center">
+        <h2 className="text-xl font-semibold">Aperçu sécurité</h2>
+        <Button variant="outline" size="sm" onClick={refetch} className="flex items-center gap-2">
+          <RefreshCw className="w-4 h-4" />
+          Actualiser
+        </Button>
+      </div>
+
+      {/* Score de sécurité global */}
+      <Card className="border-l-4 border-l-green-500">
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            <div className="flex items-center">
+              <Shield className="w-5 h-5 mr-2 text-green-600" />
+              Score de sécurité global
+            </div>
+            <div className="text-3xl font-bold text-green-600">
+              {securityData.securityScore}%
+            </div>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-gray-600">
+            Basé sur {securityData.securityChecks.length} contrôles de sécurité automatisés
+          </p>
+        </CardContent>
+      </Card>
+
       {/* Contrôles de sécurité */}
       <Card>
         <CardHeader>
@@ -93,13 +90,19 @@ export const SecurityOverview = ({ userRole, permissions }: SecurityOverviewProp
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {securityChecks.map((check, index) => (
-              <div key={index} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+            {securityData.securityChecks.map((check, index) => (
+              <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                 <div className="flex items-center space-x-3">
-                  <check.icon className="w-5 h-5 text-gray-600" />
-                  <div>
-                    <h4 className="font-medium text-gray-900">{check.name}</h4>
-                    <p className="text-sm text-gray-600">{check.description}</p>
+                  <div className="flex items-center space-x-3">
+                    {check.name.includes('Authentification') && <Lock className="w-5 h-5 text-gray-600" />}
+                    {check.name.includes('Chiffrement') && <Shield className="w-5 h-5 text-gray-600" />}
+                    {check.name.includes('rôles') && <Key className="w-5 h-5 text-gray-600" />}
+                    {check.name.includes('Monitoring') && <AlertTriangle className="w-5 h-5 text-gray-600" />}
+                    <div>
+                      <h4 className="font-medium text-gray-900">{check.name}</h4>
+                      <p className="text-sm text-gray-600">{check.description}</p>
+                      <p className="text-xs text-gray-500">Dernière vérification: {check.lastCheck}</p>
+                    </div>
                   </div>
                 </div>
                 <div className="ml-auto">
@@ -114,24 +117,36 @@ export const SecurityOverview = ({ userRole, permissions }: SecurityOverviewProp
       {/* Événements de sécurité récents */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center">
-            <AlertTriangle className="w-5 h-5 mr-2 text-blue-600" />
-            Événements de sécurité récents
+          <CardTitle className="flex items-center justify-between">
+            <div className="flex items-center">
+              <AlertTriangle className="w-5 h-5 mr-2 text-blue-600" />
+              Événements de sécurité récents
+            </div>
+            <Badge className="bg-blue-100 text-blue-800">
+              {securityData.totalEvents} événements
+            </Badge>
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {recentSecurityEvents.map((event, index) => (
-              <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div>
-                  <p className="font-medium text-gray-900">{event.event}</p>
-                  <p className="text-sm text-gray-600">
-                    {event.user} • {event.timestamp}
-                  </p>
+            {securityData.recentEvents.length > 0 ? (
+              securityData.recentEvents.map((event, index) => (
+                <div key={event.id || index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div>
+                    <p className="font-medium text-gray-900">{event.event}</p>
+                    <p className="text-sm text-gray-600">
+                      {event.user} • {event.timestamp}
+                    </p>
+                  </div>
+                  {getEventBadge(event.status)}
                 </div>
-                {getEventBadge(event.status)}
+              ))
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                <Shield className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                <p>Aucun événement de sécurité récent</p>
               </div>
-            ))}
+            )}
           </div>
         </CardContent>
       </Card>

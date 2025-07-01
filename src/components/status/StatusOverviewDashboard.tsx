@@ -26,6 +26,9 @@ import { PlatformStatus } from "./components/PlatformStatus";
 import { SecurityOverview } from "./components/SecurityOverview";
 import { DataSummary } from "./components/DataSummary";
 import { useNavigate } from "react-router-dom";
+import { useSearchResults } from "@/hooks/useSearchResults";
+import { useAlertsData } from "@/hooks/useAlertsData";
+import { useSystemMetrics } from "@/hooks/useSystemMetrics";
 
 interface StatusOverviewDashboardProps {
   user: any;
@@ -36,6 +39,11 @@ export const StatusOverviewDashboard = ({ user, onLogout }: StatusOverviewDashbo
   const [activeTab, setActiveTab] = useState("overview");
   const navigate = useNavigate();
   const permissions = getRolePermissions(user.role);
+  
+  // Hooks pour les données dynamiques
+  const { searchResults } = useSearchResults();
+  const { alerts } = useAlertsData();
+  const { metrics } = useSystemMetrics();
 
   const getAvailableTabs = () => {
     const tabs = [];
@@ -92,6 +100,16 @@ export const StatusOverviewDashboard = ({ user, onLogout }: StatusOverviewDashbo
   };
 
   const availableTabs = getAvailableTabs();
+
+  // Calculer les statistiques dynamiques
+  const activeSearches = searchResults.filter(result => 
+    new Date(result.created_at).getTime() > Date.now() - 24 * 60 * 60 * 1000
+  ).length;
+
+  const totalAlerts = alerts.length;
+  const lastActivityTime = searchResults.length > 0 
+    ? Math.floor((Date.now() - new Date(searchResults[0]?.created_at || Date.now()).getTime()) / (1000 * 60))
+    : 0;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -177,9 +195,9 @@ export const StatusOverviewDashboard = ({ user, onLogout }: StatusOverviewDashbo
                   <CardContent>
                     <div className="flex items-center space-x-2">
                       <Search className="w-5 h-5 text-blue-500" />
-                      <span className="text-lg font-semibold">12</span>
+                      <span className="text-lg font-semibold">{activeSearches}</span>
                     </div>
-                    <p className="text-xs text-gray-500 mt-1">Recherches en cours</p>
+                    <p className="text-xs text-gray-500 mt-1">Recherches récentes (24h)</p>
                   </CardContent>
                 </Card>
               )}
@@ -192,9 +210,9 @@ export const StatusOverviewDashboard = ({ user, onLogout }: StatusOverviewDashbo
                 <CardContent>
                   <div className="flex items-center space-x-2">
                     <AlertTriangle className="w-5 h-5 text-yellow-500" />
-                    <span className="text-lg font-semibold">3</span>
+                    <span className="text-lg font-semibold">{totalAlerts}</span>
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">Alertes non lues</p>
+                  <p className="text-xs text-gray-500 mt-1">Alertes générées</p>
                 </CardContent>
               </Card>
 
@@ -206,9 +224,13 @@ export const StatusOverviewDashboard = ({ user, onLogout }: StatusOverviewDashbo
                 <CardContent>
                   <div className="flex items-center space-x-2">
                     <Clock className="w-5 h-5 text-gray-500" />
-                    <span className="text-lg font-semibold">2min</span>
+                    <span className="text-lg font-semibold">
+                      {lastActivityTime < 60 ? `${lastActivityTime}min` : `${Math.floor(lastActivityTime / 60)}h`}
+                    </span>
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">Il y a 2 minutes</p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Il y a {lastActivityTime < 60 ? `${lastActivityTime} minutes` : `${Math.floor(lastActivityTime / 60)} heures`}
+                  </p>
                 </CardContent>
               </Card>
             </div>
