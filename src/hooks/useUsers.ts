@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { userService } from '@/services/userService';
@@ -103,6 +102,41 @@ export const useUsers = () => {
     }
   };
 
+  const confirmUserEmail = async (userId: string) => {
+    try {
+      await userService.confirmUserEmail(userId);
+      toast({
+        title: "Email confirmé",
+        description: "L'email de l'utilisateur a été confirmé avec succès",
+      });
+      await fetchUsers(); // Rafraîchir la liste
+    } catch (error: any) {
+      console.error('Error confirming email:', error);
+      toast({
+        title: "Erreur",
+        description: error.message || "Impossible de confirmer l'email",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const resendConfirmationEmail = async (email: string) => {
+    try {
+      await userService.resendConfirmationEmail(email);
+      toast({
+        title: "Email renvoyé",
+        description: "L'email de confirmation a été renvoyé avec succès",
+      });
+    } catch (error: any) {
+      console.error('Error resending confirmation email:', error);
+      toast({
+        title: "Erreur",
+        description: error.message || "Impossible de renvoyer l'email de confirmation",
+        variant: "destructive"
+      });
+    }
+  };
+
   const getStats = (): UserStats => calculateUserStats(users);
 
   useEffect(() => {
@@ -116,6 +150,8 @@ export const useUsers = () => {
     updateUser,
     deleteUser,
     activateUser,
+    confirmUserEmail,
+    resendConfirmationEmail,
     getStats,
     refetch: fetchUsers
   };

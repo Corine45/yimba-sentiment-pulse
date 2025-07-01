@@ -8,6 +8,8 @@ export interface User {
   updated_at: string;
   last_login?: string;
   status: 'active' | 'inactive';
+  email_confirmed?: boolean;
+  email_confirmed_at?: string | null;
 }
 
 export interface NewUser {

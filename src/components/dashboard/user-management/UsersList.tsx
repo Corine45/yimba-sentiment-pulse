@@ -8,9 +8,11 @@ interface UsersListProps {
   onEdit: (user: User) => void;
   onDelete: (userId: string) => void;
   onActivate: (userId: string) => void;
+  onConfirmEmail?: (userId: string) => void;
+  onResendEmail?: (email: string) => void;
 }
 
-export const UsersList = ({ users, onEdit, onDelete, onActivate }: UsersListProps) => {
+export const UsersList = ({ users, onEdit, onDelete, onActivate, onConfirmEmail, onResendEmail }: UsersListProps) => {
   if (users.length === 0) {
     return (
       <div className="text-center py-8">
@@ -31,6 +33,8 @@ export const UsersList = ({ users, onEdit, onDelete, onActivate }: UsersListProp
           onEdit={onEdit}
           onDelete={onDelete}
           onActivate={onActivate}
+          onConfirmEmail={onConfirmEmail}
+          onResendEmail={onResendEmail}
         />
       ))}
     </div>

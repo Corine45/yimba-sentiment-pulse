@@ -1,7 +1,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Edit, Trash2, UserCheck } from "lucide-react";
+import { Edit, Trash2, UserCheck, Mail, MailCheck } from "lucide-react";
 import type { User } from "@/types/user";
 
 interface UserListItemProps {
@@ -9,9 +9,11 @@ interface UserListItemProps {
   onEdit: (user: User) => void;
   onDelete: (userId: string) => void;
   onActivate: (userId: string) => void;
+  onConfirmEmail?: (userId: string) => void;
+  onResendEmail?: (email: string) => void;
 }
 
-export const UserListItem = ({ user, onEdit, onDelete, onActivate }: UserListItemProps) => {
+export const UserListItem = ({ user, onEdit, onDelete, onActivate, onConfirmEmail, onResendEmail }: UserListItemProps) => {
   const getRoleBadge = (role: string) => {
     switch (role) {
       case "admin":
@@ -25,12 +27,14 @@ export const UserListItem = ({ user, onEdit, onDelete, onActivate }: UserListIte
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    return status === "active" ? (
-      <Badge className="bg-green-100 text-green-800">Actif</Badge>
-    ) : (
-      <Badge className="bg-gray-100 text-gray-800">Inactif</Badge>
-    );
+  const getStatusBadge = (status: string, emailConfirmed?: boolean) => {
+    if (status === "active" && emailConfirmed) {
+      return <Badge className="bg-green-100 text-green-800">Email confirmé</Badge>;
+    } else if (status === "inactive" && !emailConfirmed) {
+      return <Badge className="bg-orange-100 text-orange-800">Email non confirmé</Badge>;
+    } else {
+      return <Badge className="bg-gray-100 text-gray-800">Inactif</Badge>;
+    }
   };
 
   return (
@@ -42,9 +46,17 @@ export const UserListItem = ({ user, onEdit, onDelete, onActivate }: UserListIte
         <div>
           <h4 className="font-medium">{user.name}</h4>
           <p className="text-sm text-gray-600">{user.email}</p>
-          <p className="text-xs text-gray-500">
-            Créé le {new Date(user.created_at).toLocaleDateString('fr-FR')} - ID: {user.id.slice(0, 8)}...
-          </p>
+          <div className="flex items-center space-x-2 text-xs text-gray-500">
+            <span>Créé le {new Date(user.created_at).toLocaleDateString('fr-FR')}</span>
+            <span>•</span>
+            <span>ID: {user.id.slice(0, 8)}...</span>
+            {user.email_confirmed_at && (
+              <>
+                <span>•</span>
+                <span>Email confirmé le {new Date(user.email_confirmed_at).toLocaleDateString('fr-FR')}</span>
+              </>
+            )}
+          </div>
         </div>
       </div>
       
@@ -52,14 +64,36 @@ export const UserListItem = ({ user, onEdit, onDelete, onActivate }: UserListIte
         <div className="text-right">
           <div className="flex space-x-2 mb-1">
             {getRoleBadge(user.role)}
-            {getStatusBadge(user.status)}
+            {getStatusBadge(user.status, user.email_confirmed)}
           </div>
           <p className="text-xs text-gray-500">
             Dernière connexion: {user.last_login ? new Date(user.last_login).toLocaleDateString('fr-FR') : 'Jamais connecté'}
           </p>
         </div>
         <div className="flex space-x-2">
-          {user.status === 'inactive' && (
+          {!user.email_confirmed && onConfirmEmail && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="text-green-600 hover:text-green-700"
+              onClick={() => onConfirmEmail(user.id)}
+              title="Confirmer l'email manuellement"
+            >
+              <MailCheck className="w-4 h-4" />
+            </Button>
+          )}
+          {!user.email_confirmed && onResendEmail && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="text-blue-600 hover:text-blue-700"
+              onClick={() => onResendEmail(user.email)}
+              title="Renvoyer l'email de confirmation"
+            >
+              <Mail className="w-4 h-4" />
+            </Button>
+          )}
+          {user.status === 'inactive' && user.email_confirmed && (
             <Button 
               variant="outline" 
               size="sm" 

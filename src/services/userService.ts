@@ -38,20 +38,17 @@ export const userService = {
         console.error('Erreur lors de la récupération des rôles:', rolesError);
       }
 
-      // Récupérer les sessions utilisateurs pour déterminer le statut
-      const { data: sessions, error: sessionsError } = await supabase
-        .from('user_sessions')
-        .select('user_id, session_start, session_end, is_active')
-        .order('session_start', { ascending: false });
-
-      console.log('🔄 Sessions récupérées:', sessions?.length || 0);
-      if (sessionsError) {
-        console.error('Erreur lors de la récupération des sessions:', sessionsError);
+      // Récupérer les informations d'authentification pour le statut de vérification d'email
+      const { data: { users: authUsers }, error: authError } = await supabase.auth.admin.listUsers();
+      
+      console.log('🔐 Utilisateurs auth récupérés:', authUsers?.length || 0);
+      if (authError) {
+        console.error('Erreur lors de la récupération des utilisateurs auth:', authError);
       }
 
-      // Combiner les données des profils avec les informations de session et rôles
-      const usersWithStatus = profiles.map(profile => {
-        // Trouver le rôle de l'utilisateur dans user_roles (prendre le plus récent ou le plus élevé)
+      // Combiner les données des profils avec les informations d'authentification
+      const usersWithEmailStatus = profiles.map(profile => {
+        // Trouver le rôle de l'utilisateur dans user_roles
         const userRoleEntries = userRoles?.filter(r => r.user_id === profile.id) || [];
         let finalRole = profile.role; // Rôle par défaut du profil
         
@@ -65,9 +62,11 @@ export const userService = {
           finalRole = highestRole.role;
         }
         
-        const userSessions = sessions?.filter(s => s.user_id === profile.id) || [];
-        const latestSession = userSessions[0];
-        const hasActiveSession = userSessions.some(s => s.is_active);
+        // Trouver les informations d'authentification pour cet utilisateur
+        const authUser = authUsers?.find(u => u.id === profile.id);
+        const emailConfirmed = authUser?.email_confirmed_at !== null;
+        
+        console.log(`📧 Utilisateur ${profile.email}: email confirmé = ${emailConfirmed}`);
         
         return {
           id: profile.id,
@@ -76,15 +75,17 @@ export const userService = {
           role: finalRole,
           created_at: profile.created_at,
           updated_at: profile.updated_at,
-          status: hasActiveSession ? 'active' as const : 'inactive' as const,
-          last_login: latestSession?.session_start || undefined
+          status: emailConfirmed ? 'active' as const : 'inactive' as const,
+          last_login: authUser?.last_sign_in_at || undefined,
+          email_confirmed: emailConfirmed,
+          email_confirmed_at: authUser?.email_confirmed_at || null
         };
       });
 
-      console.log('✅ Utilisateurs finaux avec statut:', usersWithStatus.length);
-      console.log('📊 Utilisateurs détaillés:', usersWithStatus);
+      console.log('✅ Utilisateurs finaux avec statut email:', usersWithEmailStatus.length);
+      console.log('📊 Utilisateurs détaillés:', usersWithEmailStatus);
       
-      return usersWithStatus;
+      return usersWithEmailStatus;
     } catch (error) {
       console.error('💥 Erreur générale dans fetchUsers:', error);
       throw error;
@@ -219,6 +220,46 @@ export const userService = {
       });
 
     if (error) {
+      throw error;
+    }
+  },
+
+  async confirmUserEmail(userId: string): Promise<void> {
+    console.log('✅ Confirmation de l\'email pour l\'utilisateur:', userId);
+    
+    try {
+      // Utiliser l'API Admin pour confirmer l'email
+      const { error } = await supabase.auth.admin.updateUserById(userId, {
+        email_confirm: true
+      });
+
+      if (error) {
+        throw error;
+      }
+      
+      console.log('✅ Email confirmé avec succès pour:', userId);
+    } catch (error) {
+      console.error('❌ Erreur lors de la confirmation d\'email:', error);
+      throw error;
+    }
+  },
+
+  async resendConfirmationEmail(email: string): Promise<void> {
+    console.log('📧 Renvoi de l\'email de confirmation pour:', email);
+    
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: email
+      });
+
+      if (error) {
+        throw error;
+      }
+      
+      console.log('📧 Email de confirmation renvoyé avec succès pour:', email);
+    } catch (error) {
+      console.error('❌ Erreur lors du renvoi de l\'email:', error);
       throw error;
     }
   }

@@ -13,7 +13,18 @@ import { UsersList } from "./user-management/UsersList";
 import { RolePermissions } from "./user-management/RolePermissions";
 
 export const UserManagement = () => {
-  const { users, loading, addUser, updateUser, deleteUser, activateUser, getStats, refetch } = useUsers();
+  const { 
+    users, 
+    loading, 
+    addUser, 
+    updateUser, 
+    deleteUser, 
+    activateUser, 
+    confirmUserEmail,
+    resendConfirmationEmail,
+    getStats, 
+    refetch 
+  } = useUsers();
   const [searchTerm, setSearchTerm] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -25,7 +36,12 @@ export const UserManagement = () => {
   useEffect(() => {
     console.log('🔍 [UserManagement] Données des utilisateurs:', {
       count: users.length,
-      users: users.map(u => ({ email: u.email, role: u.role, status: u.status })),
+      users: users.map(u => ({ 
+        email: u.email, 
+        role: u.role, 
+        status: u.status,
+        email_confirmed: u.email_confirmed 
+      })),
       stats
     });
   }, [users, stats]);
@@ -53,6 +69,18 @@ export const UserManagement = () => {
   const handleRefresh = () => {
     console.log('🔄 Rafraîchissement manuel des utilisateurs...');
     refetch();
+  };
+
+  const handleConfirmEmail = async (userId: string) => {
+    if (window.confirm("Êtes-vous sûr de vouloir confirmer l'email de cet utilisateur manuellement ?")) {
+      await confirmUserEmail(userId);
+    }
+  };
+
+  const handleResendEmail = async (email: string) => {
+    if (window.confirm(`Voulez-vous renvoyer l'email de confirmation à ${email} ?`)) {
+      await resendConfirmationEmail(email);
+    }
   };
 
   if (loading) {
@@ -99,6 +127,8 @@ export const UserManagement = () => {
             onEdit={setEditingUser}
             onDelete={handleDeleteUser}
             onActivate={activateUser}
+            onConfirmEmail={handleConfirmEmail}
+            onResendEmail={handleResendEmail}
           />
         </CardContent>
       </Card>

@@ -44,13 +44,13 @@ export const UserFilters = ({
           </SelectContent>
         </Select>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-32">
+          <SelectTrigger className="w-40">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Tous statuts</SelectItem>
-            <SelectItem value="active">Actif</SelectItem>
-            <SelectItem value="inactive">Inactif</SelectItem>
+            <SelectItem value="active">Email confirmé</SelectItem>
+            <SelectItem value="inactive">Email non confirmé</SelectItem>
           </SelectContent>
         </Select>
       </div>
