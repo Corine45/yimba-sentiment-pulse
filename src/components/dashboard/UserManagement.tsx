@@ -5,47 +5,57 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Users, Plus, Edit, Trash2, Search } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Users, Plus, Edit, Trash2, Search, Loader2 } from "lucide-react";
+import { useUsers, type User, type NewUser } from "@/hooks/useUsers";
 
 export const UserManagement = () => {
-  const [users] = useState([
-    {
-      id: 1,
-      name: "Marie Dupont",
-      email: "marie.dupont@example.com",
-      role: "admin",
-      status: "active",
-      lastLogin: "Il y a 2 heures",
-      createdAt: "15 Mars 2024"
-    },
-    {
-      id: 2,
-      name: "Jean Martin",
-      email: "jean.martin@example.com",
-      role: "analyste",
-      status: "active",
-      lastLogin: "Il y a 1 jour",
-      createdAt: "10 Mars 2024"
-    },
-    {
-      id: 3,
-      name: "Sophie Laurent",
-      email: "sophie.laurent@example.com",
-      role: "observateur",
-      status: "inactive",
-      lastLogin: "Il y a 1 semaine",
-      createdAt: "5 Mars 2024"
-    },
-    {
-      id: 4,
-      name: "Paul Durand",
-      email: "paul.durand@example.com",
-      role: "analyste",
-      status: "active",
-      lastLogin: "Il y a 3 heures",
-      createdAt: "1 Mars 2024"
+  const { users, loading, addUser, updateUser, deleteUser, getStats } = useUsers();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [roleFilter, setRoleFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [newUser, setNewUser] = useState<NewUser>({
+    name: "",
+    email: "",
+    role: "observateur"
+  });
+
+  const stats = getStats();
+
+  const filteredUsers = users.filter(user => {
+    const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         user.email.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesRole = roleFilter === "all" || user.role === roleFilter;
+    const matchesStatus = statusFilter === "all" || user.status === statusFilter;
+    
+    return matchesSearch && matchesRole && matchesStatus;
+  });
+
+  const handleAddUser = async () => {
+    if (!newUser.name || !newUser.email) return;
+    
+    const success = await addUser(newUser);
+    if (success) {
+      setNewUser({ name: "", email: "", role: "observateur" });
+      setIsAddDialogOpen(false);
     }
-  ]);
+  };
+
+  const handleUpdateUser = async () => {
+    if (!editingUser) return;
+    
+    await updateUser(editingUser.id, editingUser);
+    setEditingUser(null);
+  };
+
+  const handleDeleteUser = async (userId: string) => {
+    if (window.confirm("Êtes-vous sûr de vouloir supprimer cet utilisateur ?")) {
+      await deleteUser(userId);
+    }
+  };
 
   const getRoleBadge = (role: string) => {
     switch (role) {
@@ -68,31 +78,40 @@ export const UserManagement = () => {
     );
   };
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <Loader2 className="w-8 h-8 animate-spin" />
+        <span className="ml-2">Chargement des utilisateurs...</span>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* User Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card className="text-center">
           <CardContent className="pt-6">
-            <div className="text-2xl font-bold text-blue-600">4</div>
+            <div className="text-2xl font-bold text-blue-600">{stats.total}</div>
             <div className="text-sm text-blue-800">Utilisateurs totaux</div>
           </CardContent>
         </Card>
         <Card className="text-center">
           <CardContent className="pt-6">
-            <div className="text-2xl font-bold text-green-600">3</div>
+            <div className="text-2xl font-bold text-green-600">{stats.active}</div>
             <div className="text-sm text-green-800">Actifs</div>
           </CardContent>
         </Card>
         <Card className="text-center">
           <CardContent className="pt-6">
-            <div className="text-2xl font-bold text-red-600">1</div>
+            <div className="text-2xl font-bold text-red-600">{stats.admins}</div>
             <div className="text-sm text-red-800">Admin</div>
           </CardContent>
         </Card>
         <Card className="text-center">
           <CardContent className="pt-6">
-            <div className="text-2xl font-bold text-blue-600">2</div>
+            <div className="text-2xl font-bold text-blue-600">{stats.analysts}</div>
             <div className="text-sm text-blue-800">Analystes</div>
           </CardContent>
         </Card>
@@ -106,10 +125,61 @@ export const UserManagement = () => {
               <Users className="w-5 h-5 text-blue-600" />
               <span>Gestion des utilisateurs</span>
             </CardTitle>
-            <Button className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700">
-              <Plus className="w-4 h-4 mr-2" />
-              Nouvel utilisateur
-            </Button>
+            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+              <DialogTrigger asChild>
+                <Button className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Nouvel utilisateur
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Ajouter un utilisateur</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="name">Nom complet</Label>
+                    <Input
+                      id="name"
+                      value={newUser.name}
+                      onChange={(e) => setNewUser(prev => ({ ...prev, name: e.target.value }))}
+                      placeholder="Ex: Jean Dupont"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={newUser.email}
+                      onChange={(e) => setNewUser(prev => ({ ...prev, email: e.target.value }))}
+                      placeholder="Ex: jean.dupont@example.com"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="role">Rôle</Label>
+                    <Select value={newUser.role} onValueChange={(value: any) => setNewUser(prev => ({ ...prev, role: value }))}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="admin">Administrateur</SelectItem>
+                        <SelectItem value="analyste">Analyste</SelectItem>
+                        <SelectItem value="observateur">Observateur</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex justify-end space-x-2">
+                    <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+                      Annuler
+                    </Button>
+                    <Button onClick={handleAddUser}>
+                      Ajouter
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
           </div>
         </CardHeader>
         <CardContent>
@@ -120,10 +190,12 @@ export const UserManagement = () => {
               <Input
                 placeholder="Rechercher un utilisateur..."
                 className="pl-10"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
             <div className="flex space-x-2">
-              <Select defaultValue="all">
+              <Select value={roleFilter} onValueChange={setRoleFilter}>
                 <SelectTrigger className="w-32">
                   <SelectValue />
                 </SelectTrigger>
@@ -134,7 +206,7 @@ export const UserManagement = () => {
                   <SelectItem value="observateur">Observateur</SelectItem>
                 </SelectContent>
               </Select>
-              <Select defaultValue="all">
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="w-32">
                   <SelectValue />
                 </SelectTrigger>
@@ -149,38 +221,101 @@ export const UserManagement = () => {
 
           {/* Users Table */}
           <div className="space-y-4">
-            {users.map((user) => (
-              <div key={user.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
-                <div className="flex items-center space-x-4">
-                  <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-full flex items-center justify-center text-white font-medium">
-                    {user.name.split(' ').map(n => n[0]).join('')}
-                  </div>
-                  <div>
-                    <h4 className="font-medium">{user.name}</h4>
-                    <p className="text-sm text-gray-600">{user.email}</p>
-                    <p className="text-xs text-gray-500">Créé le {user.createdAt}</p>
-                  </div>
-                </div>
-                
-                <div className="flex items-center space-x-4">
-                  <div className="text-right">
-                    <div className="flex space-x-2 mb-1">
-                      {getRoleBadge(user.role)}
-                      {getStatusBadge(user.status)}
-                    </div>
-                    <p className="text-xs text-gray-500">Dernière connexion: {user.lastLogin}</p>
-                  </div>
-                  <div className="flex space-x-2">
-                    <Button variant="outline" size="sm">
-                      <Edit className="w-4 h-4" />
-                    </Button>
-                    <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
+            {filteredUsers.length === 0 ? (
+              <div className="text-center py-8">
+                <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-600">
+                  {users.length === 0 ? "Aucun utilisateur trouvé" : "Aucun utilisateur ne correspond aux filtres"}
+                </p>
               </div>
-            ))}
+            ) : (
+              filteredUsers.map((user) => (
+                <div key={user.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                  <div className="flex items-center space-x-4">
+                    <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-full flex items-center justify-center text-white font-medium">
+                      {user.name.split(' ').map(n => n[0]).join('')}
+                    </div>
+                    <div>
+                      <h4 className="font-medium">{user.name}</h4>
+                      <p className="text-sm text-gray-600">{user.email}</p>
+                      <p className="text-xs text-gray-500">
+                        Créé le {new Date(user.created_at).toLocaleDateString('fr-FR')}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center space-x-4">
+                    <div className="text-right">
+                      <div className="flex space-x-2 mb-1">
+                        {getRoleBadge(user.role)}
+                        {getStatusBadge(user.status)}
+                      </div>
+                      <p className="text-xs text-gray-500">
+                        Dernière connexion: {user.last_login ? new Date(user.last_login).toLocaleDateString('fr-FR') : 'Jamais connecté'}
+                      </p>
+                    </div>
+                    <div className="flex space-x-2">
+                      <Dialog open={editingUser?.id === user.id} onOpenChange={(open) => !open && setEditingUser(null)}>
+                        <DialogTrigger asChild>
+                          <Button variant="outline" size="sm" onClick={() => setEditingUser(user)}>
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                          <DialogHeader>
+                            <DialogTitle>Modifier l'utilisateur</DialogTitle>
+                          </DialogHeader>
+                          {editingUser && (
+                            <div className="space-y-4">
+                              <div>
+                                <Label htmlFor="editName">Nom complet</Label>
+                                <Input
+                                  id="editName"
+                                  value={editingUser.name}
+                                  onChange={(e) => setEditingUser({ ...editingUser, name: e.target.value })}
+                                />
+                              </div>
+                              <div>
+                                <Label htmlFor="editEmail">Email</Label>
+                                <Input
+                                  id="editEmail"
+                                  value={editingUser.email}
+                                  onChange={(e) => setEditingUser({ ...editingUser, email: e.target.value })}
+                                />
+                              </div>
+                              <div>
+                                <Label htmlFor="editRole">Rôle</Label>
+                                <Select value={editingUser.role} onValueChange={(value: any) => setEditingUser({ ...editingUser, role: value })}>
+                                  <SelectTrigger>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="admin">Administrateur</SelectItem>
+                                    <SelectItem value="analyste">Analyste</SelectItem>
+                                    <SelectItem value="observateur">Observateur</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div className="flex justify-end space-x-2">
+                                <Button variant="outline" onClick={() => setEditingUser(null)}>
+                                  Annuler
+                                </Button>
+                                <Button onClick={handleUpdateUser}>
+                                  Sauvegarder
+                                </Button>
+                              </div>
+                            </div>
+                          )}
+                        </DialogContent>
+                      </Dialog>
+                      <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700" onClick={() => handleDeleteUser(user.id)}>
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </CardContent>
       </Card>
