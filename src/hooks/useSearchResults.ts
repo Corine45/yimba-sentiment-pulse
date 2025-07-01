@@ -5,6 +5,8 @@ import { useAuth } from './useAuth';
 
 interface SearchResult {
   id: string;
+  search_id: string | null;
+  user_id: string;
   search_term: string;
   platform: string;
   total_mentions: number;
@@ -15,6 +17,7 @@ interface SearchResult {
   total_engagement: number;
   results_data: any[];
   executed_at: string;
+  created_at: string;
 }
 
 export const useSearchResults = () => {
@@ -22,11 +25,16 @@ export const useSearchResults = () => {
   const [loading, setLoading] = useState(false);
   const { user } = useAuth();
 
-  const createSearchResult = async (resultData: Omit<SearchResult, 'id' | 'executed_at'>) => {
+  const createSearchResult = async (resultData: Omit<SearchResult, 'id' | 'executed_at' | 'created_at' | 'user_id'>) => {
+    if (!user) return { success: false, error: 'User not authenticated' };
+
     try {
       const { data, error } = await supabase
         .from('search_results')
-        .insert([resultData])
+        .insert([{
+          ...resultData,
+          user_id: user.id
+        }])
         .select()
         .single();
 
@@ -39,11 +47,14 @@ export const useSearchResults = () => {
   };
 
   const fetchSearchResults = async (searchTerm?: string) => {
+    if (!user) return { success: false, error: 'User not authenticated' };
+
     setLoading(true);
     try {
       let query = supabase
         .from('search_results')
         .select('*')
+        .eq('user_id', user.id)
         .order('executed_at', { ascending: false });
 
       if (searchTerm) {
@@ -53,8 +64,15 @@ export const useSearchResults = () => {
       const { data, error } = await query;
 
       if (error) throw error;
-      setSearchResults(data || []);
-      return { success: true, data };
+      
+      // Transform the data to match our interface
+      const transformedData = (data || []).map(item => ({
+        ...item,
+        results_data: Array.isArray(item.results_data) ? item.results_data : []
+      }));
+      
+      setSearchResults(transformedData);
+      return { success: true, data: transformedData };
     } catch (error) {
       console.error('Error fetching search results:', error);
       return { success: false, error };

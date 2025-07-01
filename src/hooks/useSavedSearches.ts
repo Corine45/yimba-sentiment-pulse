@@ -5,6 +5,7 @@ import { useAuth } from './useAuth';
 
 interface SavedSearch {
   id: string;
+  user_id: string;
   name: string;
   keywords: string[];
   platforms: string[];
@@ -12,26 +13,46 @@ interface SavedSearch {
   period: string;
   filters: any;
   is_active: boolean;
-  last_executed_at?: string;
+  last_executed_at: string | null;
   created_at: string;
+  updated_at: string;
 }
 
 export const useSavedSearches = () => {
   const [savedSearches, setSavedSearches] = useState<SavedSearch[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const { user } = useAuth();
 
-  useEffect(() => {
-    if (user) {
-      fetchSavedSearches();
+  const createSavedSearch = async (searchData: Omit<SavedSearch, 'id' | 'created_at' | 'updated_at' | 'last_executed_at' | 'user_id'>) => {
+    if (!user) return { success: false, error: 'User not authenticated' };
+
+    try {
+      const { data, error } = await supabase
+        .from('saved_searches')
+        .insert([{
+          ...searchData,
+          user_id: user.id
+        }])
+        .select()
+        .single();
+
+      if (error) throw error;
+      return { success: true, data };
+    } catch (error) {
+      console.error('Error creating saved search:', error);
+      return { success: false, error };
     }
-  }, [user]);
+  };
 
   const fetchSavedSearches = async () => {
+    if (!user) return;
+
+    setLoading(true);
     try {
       const { data, error } = await supabase
         .from('saved_searches')
         .select('*')
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -43,35 +64,21 @@ export const useSavedSearches = () => {
     }
   };
 
-  const saveSearch = async (searchData: Omit<SavedSearch, 'id' | 'created_at' | 'last_executed_at'>) => {
+  const executeSavedSearch = async (searchId: string) => {
     try {
-      const { error } = await supabase
-        .from('saved_searches')
-        .insert([searchData]);
+      const { data, error } = await supabase.rpc('execute_saved_search', {
+        search_id: searchId
+      });
 
       if (error) throw error;
-      await fetchSavedSearches();
-      return { success: true };
-    } catch (error) {
-      console.error('Error saving search:', error);
-      return { success: false, error };
-    }
-  };
-
-  const executeSearch = async (searchId: string) => {
-    try {
-      const { data, error } = await supabase.rpc('execute_saved_search', { search_id: searchId });
-      
-      if (error) throw error;
-      await fetchSavedSearches();
       return { success: true, data };
     } catch (error) {
-      console.error('Error executing search:', error);
+      console.error('Error executing saved search:', error);
       return { success: false, error };
     }
   };
 
-  const deleteSearch = async (searchId: string) => {
+  const deleteSavedSearch = async (searchId: string) => {
     try {
       const { error } = await supabase
         .from('saved_searches')
@@ -79,20 +86,25 @@ export const useSavedSearches = () => {
         .eq('id', searchId);
 
       if (error) throw error;
-      await fetchSavedSearches();
       return { success: true };
     } catch (error) {
-      console.error('Error deleting search:', error);
+      console.error('Error deleting saved search:', error);
       return { success: false, error };
     }
   };
 
-  return { 
-    savedSearches, 
-    loading, 
-    saveSearch, 
-    executeSearch, 
-    deleteSearch, 
-    refetch: fetchSavedSearches 
+  useEffect(() => {
+    if (user) {
+      fetchSavedSearches();
+    }
+  }, [user]);
+
+  return {
+    savedSearches,
+    loading,
+    createSavedSearch,
+    fetchSavedSearches,
+    executeSavedSearch,
+    deleteSavedSearch
   };
 };
