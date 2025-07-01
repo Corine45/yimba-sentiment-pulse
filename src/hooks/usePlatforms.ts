@@ -27,6 +27,12 @@ export const usePlatforms = () => {
       const { data: { user } } = await supabase.auth.getUser();
       console.log('Current user:', user?.email);
       
+      if (!user) {
+        console.log('No authenticated user found');
+        setPlatforms([]);
+        return;
+      }
+      
       const { data, error } = await supabase
         .from('social_platforms')
         .select('*')
