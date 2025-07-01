@@ -36,6 +36,51 @@ export type Database = {
         }
         Relationships: []
       }
+      saved_searches: {
+        Row: {
+          created_at: string | null
+          filters: Json | null
+          id: string
+          is_active: boolean | null
+          keywords: string[]
+          language: string | null
+          last_executed_at: string | null
+          name: string
+          period: string | null
+          platforms: string[]
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          filters?: Json | null
+          id?: string
+          is_active?: boolean | null
+          keywords: string[]
+          language?: string | null
+          last_executed_at?: string | null
+          name: string
+          period?: string | null
+          platforms: string[]
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          filters?: Json | null
+          id?: string
+          is_active?: boolean | null
+          keywords?: string[]
+          language?: string | null
+          last_executed_at?: string | null
+          name?: string
+          period?: string | null
+          platforms?: string[]
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       search_history: {
         Row: {
           created_at: string | null
@@ -62,6 +107,65 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      search_results: {
+        Row: {
+          created_at: string | null
+          executed_at: string | null
+          id: string
+          negative_sentiment: number | null
+          neutral_sentiment: number | null
+          platform: string
+          positive_sentiment: number | null
+          results_data: Json | null
+          search_id: string | null
+          search_term: string
+          total_engagement: number | null
+          total_mentions: number | null
+          total_reach: number | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          executed_at?: string | null
+          id?: string
+          negative_sentiment?: number | null
+          neutral_sentiment?: number | null
+          platform: string
+          positive_sentiment?: number | null
+          results_data?: Json | null
+          search_id?: string | null
+          search_term: string
+          total_engagement?: number | null
+          total_mentions?: number | null
+          total_reach?: number | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          executed_at?: string | null
+          id?: string
+          negative_sentiment?: number | null
+          neutral_sentiment?: number | null
+          platform?: string
+          positive_sentiment?: number | null
+          results_data?: Json | null
+          search_id?: string | null
+          search_term?: string
+          total_engagement?: number | null
+          total_mentions?: number | null
+          total_reach?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "search_results_search_id_fkey"
+            columns: ["search_id"]
+            isOneToOne: false
+            referencedRelation: "saved_searches"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       social_media_data: {
         Row: {
@@ -99,6 +203,39 @@ export type Database = {
         }
         Relationships: []
       }
+      social_platforms: {
+        Row: {
+          api_key: string | null
+          apify_actor_id: string | null
+          configuration: Json | null
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          api_key?: string | null
+          apify_actor_id?: string | null
+          configuration?: Json | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          api_key?: string | null
+          apify_actor_id?: string | null
+          configuration?: Json | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string | null
@@ -125,6 +262,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      execute_saved_search: {
+        Args: { search_id: string }
+        Returns: Json
+      }
       has_role: {
         Args: {
           _user_id: string

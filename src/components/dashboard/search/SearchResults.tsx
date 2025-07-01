@@ -1,7 +1,10 @@
+
+import { useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { MessageSquare, Heart, Share, TrendingUp, Download, Eye } from "lucide-react";
+import { useSearchResults } from "@/hooks/useSearchResults";
 import { useSocialMediaData } from "@/hooks/useSocialMediaData";
 
 interface SearchResultsProps {
@@ -13,8 +16,30 @@ interface SearchResultsProps {
   searchTerm?: string;
 }
 
-export const SearchResults = ({ userRole, permissions, isSearching, searchTerm = "woubi" }: SearchResultsProps) => {
-  const { posts, loading } = useSocialMediaData(searchTerm);
+export const SearchResults = ({ userRole, permissions, isSearching, searchTerm = "" }: SearchResultsProps) => {
+  const { searchResults, loading: resultsLoading } = useSearchResults();
+  const { posts, loading: postsLoading } = useSocialMediaData(searchTerm);
+
+  // Calculate metrics from search results
+  const totalMentions = searchResults.reduce((sum, result) => sum + result.total_mentions, 0);
+  const totalReach = searchResults.reduce((sum, result) => sum + result.total_reach, 0);
+  const totalEngagement = searchResults.reduce((sum, result) => sum + result.total_engagement, 0);
+  
+  const totalSentiment = searchResults.reduce((acc, result) => ({
+    positive: acc.positive + result.positive_sentiment,
+    negative: acc.negative + result.negative_sentiment,
+    neutral: acc.neutral + result.neutral_sentiment
+  }), { positive: 0, negative: 0, neutral: 0 });
+
+  const positivePercentage = totalMentions > 0 
+    ? Math.round((totalSentiment.positive / totalMentions) * 100) 
+    : 0;
+
+  // Platform distribution from search results
+  const platformCounts = searchResults.reduce((acc, result) => {
+    acc[result.platform] = (acc[result.platform] || 0) + result.total_mentions;
+    return acc;
+  }, {} as Record<string, number>);
 
   const getSentimentBadge = (sentiment: string) => {
     switch (sentiment) {
@@ -32,21 +57,21 @@ export const SearchResults = ({ userRole, permissions, isSearching, searchTerm =
   const getPlatformColor = (platform: string) => {
     switch (platform.toLowerCase()) {
       case 'instagram':
-        return 'bg-pink-100 text-pink-800';
+        return 'bg-pink-500';
       case 'twitter':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-blue-500';
       case 'facebook':
-        return 'bg-indigo-100 text-indigo-800';
+        return 'bg-indigo-500';
       case 'tiktok':
-        return 'bg-purple-100 text-purple-800';
+        return 'bg-purple-500';
       case 'youtube':
-        return 'bg-red-100 text-red-800';
+        return 'bg-red-500';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-gray-500';
     }
   };
 
-  if (isSearching || loading) {
+  if (isSearching || resultsLoading) {
     return (
       <Card>
         <CardHeader>
@@ -55,28 +80,34 @@ export const SearchResults = ({ userRole, permissions, isSearching, searchTerm =
         <CardContent>
           <div className="flex items-center justify-center py-8">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            <span className="ml-3 text-gray-600">Analyse des réseaux sociaux pour "{searchTerm}"...</span>
+            <span className="ml-3 text-gray-600">
+              Analyse des réseaux sociaux pour "{searchTerm}"...
+            </span>
           </div>
         </CardContent>
       </Card>
     );
   }
 
-  // Calculate metrics from real data
-  const totalMentions = posts.length;
-  const positiveCount = posts.filter(p => p.sentiment === 'positive').length;
-  const positivePercentage = totalMentions > 0 ? Math.round((positiveCount / totalMentions) * 100) : 0;
-  const totalReach = posts.reduce((sum, p) => sum + p.reach, 0);
-  const totalEngagements = posts.reduce((sum, p) => {
-    const engagement = p.engagement || { likes: 0, shares: 0, comments: 0 };
-    return sum + engagement.likes + engagement.shares + engagement.comments;
-  }, 0);
-
-  // Platform distribution
-  const platformCounts = posts.reduce((acc, post) => {
-    acc[post.platform] = (acc[post.platform] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
+  if (!searchTerm && searchResults.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <TrendingUp className="w-5 h-5 text-blue-600" />
+            <span>Résultats de recherche</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-8">
+            <p className="text-gray-500">
+              Aucune recherche effectuée. Lancez votre première recherche pour voir les résultats ici.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -86,7 +117,7 @@ export const SearchResults = ({ userRole, permissions, isSearching, searchTerm =
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center space-x-2">
               <TrendingUp className="w-5 h-5 text-blue-600" />
-              <span>Résultats de recherche pour "{searchTerm}"</span>
+              <span>Résultats de recherche {searchTerm && `pour "${searchTerm}"`}</span>
             </CardTitle>
             {permissions.canExportData && (
               <Button variant="outline" size="sm">
@@ -98,20 +129,20 @@ export const SearchResults = ({ userRole, permissions, isSearching, searchTerm =
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">{totalMentions}</div>
+            <div className="text-center p-4 bg-blue-50 rounded-lg">
+              <div className="text-2xl font-bold text-blue-600">{totalMentions.toLocaleString()}</div>
               <div className="text-sm text-gray-600">Mentions trouvées</div>
             </div>
-            <div className="text-center">
+            <div className="text-center p-4 bg-green-50 rounded-lg">
               <div className="text-2xl font-bold text-green-600">{positivePercentage}%</div>
               <div className="text-sm text-gray-600">Sentiment positif</div>
             </div>
-            <div className="text-center">
+            <div className="text-center p-4 bg-orange-50 rounded-lg">
               <div className="text-2xl font-bold text-orange-600">{(totalReach / 1000).toFixed(1)}K</div>
               <div className="text-sm text-gray-600">Portée totale</div>
             </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-purple-600">{(totalEngagements / 1000).toFixed(1)}K</div>
+            <div className="text-center p-4 bg-purple-50 rounded-lg">
+              <div className="text-2xl font-bold text-purple-600">{(totalEngagement / 1000).toFixed(1)}K</div>
               <div className="text-sm text-gray-600">Engagements</div>
             </div>
           </div>
@@ -128,75 +159,100 @@ export const SearchResults = ({ userRole, permissions, isSearching, searchTerm =
       </Card>
 
       {/* Platform Distribution */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Répartition par plateforme</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            {Object.entries(platformCounts).map(([platform, count]) => (
-              <div key={platform} className="text-center p-3 border rounded-lg">
-                <div className={`w-4 h-4 ${getPlatformColor(platform).split(' ')[0]} rounded mx-auto mb-2`}></div>
-                <div className="font-medium">{platform}</div>
-                <div className="text-lg font-bold text-gray-700">{count}</div>
-                <div className="text-xs text-gray-500">mentions</div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+      {Object.keys(platformCounts).length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Répartition par plateforme</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+              {Object.entries(platformCounts).map(([platform, count]) => (
+                <div key={platform} className="text-center p-4 border rounded-lg">
+                  <div className={`w-4 h-4 ${getPlatformColor(platform)} rounded mx-auto mb-2`}></div>
+                  <div className="font-medium">{platform}</div>
+                  <div className="text-lg font-bold text-gray-700">{count.toLocaleString()}</div>
+                  <div className="text-xs text-gray-500">mentions</div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
-      {/* Individual Results */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Mentions détaillées</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {posts.map((post) => {
-              const engagement = post.engagement || { likes: 0, shares: 0, comments: 0 };
-              const timeAgo = new Date(post.created_at).toLocaleDateString('fr-FR');
-              
-              return (
-                <div key={post.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="flex items-center space-x-2">
-                      <Badge variant="outline" className={getPlatformColor(post.platform)}>
-                        {post.platform}
-                      </Badge>
-                      {getSentimentBadge(post.sentiment)}
-                      <span className="text-sm text-gray-500">{timeAgo}</span>
-                    </div>
-                    <div className="text-sm text-gray-500">
-                      Portée: {post.reach.toLocaleString()}
-                    </div>
-                  </div>
-                  
-                  <p className="text-gray-800 mb-3">{post.content}</p>
-                  
-                  <div className="flex items-center justify-between">
-                    <div className="text-sm text-gray-600">
-                      Par <span className="font-medium">{post.author}</span>
+      {/* Individual Results from Social Media Data */}
+      {posts.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Mentions détaillées</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {posts.slice(0, 10).map((post) => {
+                const engagement = post.engagement || { likes: 0, shares: 0, comments: 0 };
+                const timeAgo = new Date(post.created_at).toLocaleDateString('fr-FR');
+                
+                return (
+                  <div key={post.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex items-center space-x-2">
+                        <Badge variant="outline" className={`${getPlatformColor(post.platform)} text-white`}>
+                          {post.platform}
+                        </Badge>
+                        {getSentimentBadge(post.sentiment)}
+                        <span className="text-sm text-gray-500">{timeAgo}</span>
+                      </div>
+                      <div className="text-sm text-gray-500">
+                        Portée: {post.reach.toLocaleString()}
+                      </div>
                     </div>
                     
-                    <div className="flex items-center space-x-4 text-sm text-gray-500">
-                      <div className="flex items-center space-x-1">
-                        <Heart className="w-4 h-4 text-red-500" />
-                        <span className="font-medium">{engagement.likes}</span>
+                    <p className="text-gray-800 mb-3 line-clamp-3">{post.content}</p>
+                    
+                    <div className="flex items-center justify-between">
+                      <div className="text-sm text-gray-600">
+                        Par <span className="font-medium">{post.author}</span>
                       </div>
-                      <div className="flex items-center space-x-1">
-                        <MessageSquare className="w-4 h-4 text-blue-500" />
-                        <span className="font-medium">{engagement.comments}</span>
-                      </div>
-                      <div className="flex items-center space-x-1">
-                        <Share className="w-4 h-4 text-green-500" />
-                        <span className="font-medium">{engagement.shares}</span>
+                      
+                      <div className="flex items-center space-x-4 text-sm text-gray-500">
+                        <div className="flex items-center space-x-1">
+                          <Heart className="w-4 h-4 text-red-500" />
+                          <span className="font-medium">{engagement.likes}</span>
+                        </div>
+                        <div className="flex items-center space-x-1">
+                          <MessageSquare className="w-4 h-4 text-blue-500" />
+                          <span className="font-medium">{engagement.comments}</span>
+                        </div>
+                        <div className="flex items-center space-x-1">
+                          <Share className="w-4 h-4 text-green-500" />
+                          <span className="font-medium">{engagement.shares}</span>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* API Integration Note */}
+      <Card className="bg-gradient-to-r from-blue-50 to-cyan-50 border-blue-200">
+        <CardContent className="p-4">
+          <div className="flex items-start space-x-3">
+            <div className="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
+            <div>
+              <h4 className="font-medium text-blue-900 mb-1">Points d'intégration API Apify</h4>
+              <p className="text-sm text-blue-800 mb-2">
+                Connectez vos acteurs Apify pour récupérer des données réelles :
+              </p>
+              <ul className="text-sm text-blue-700 space-y-1">
+                <li>• <strong>handleSearch():</strong> Remplacer la simulation par les appels API</li>
+                <li>• <strong>Plateformes:</strong> Configurer les acteurs dans la table social_platforms</li>
+                <li>• <strong>Résultats:</strong> Parser et sauvegarder les données dans search_results</li>
+                <li>• <strong>Temps réel:</strong> Implémenter les webhooks pour les mises à jour</li>
+              </ul>
+            </div>
           </div>
         </CardContent>
       </Card>
