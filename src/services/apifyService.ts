@@ -1,4 +1,3 @@
-
 export interface EngagementData {
   likes: number;
   comments: number;
@@ -51,27 +50,30 @@ class ApifyService {
     };
 
     try {
-      console.log(`🎵 Recherche TikTok RÉELLE pour hashtag: "${searchTerm}"`);
-      console.log('🔧 Configuration TikTok:', runInput);
+      console.log(`🎵 RECHERCHE TIKTOK - Terme: "${searchTerm}"`);
+      console.log('🔧 Input TikTok:', JSON.stringify(runInput, null, 2));
       
-      const response = await fetch(`${this.baseUrl}/acts/${actorId}/run-sync?token=${this.apiToken}`, {
+      const response = await fetch(`${this.baseUrl}/acts/${actorId}/run-sync`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.apiToken}`,
         },
         body: JSON.stringify(runInput)
       });
 
+      console.log('📡 TikTok Response Status:', response.status);
+      
       if (!response.ok) {
-        console.error('❌ Erreur API TikTok:', response.status, response.statusText);
         const errorText = await response.text();
-        console.error('❌ Détails erreur:', errorText);
-        throw new Error(`Erreur TikTok API: ${response.status} - ${response.statusText}`);
+        console.error('❌ Erreur TikTok:', response.status, errorText);
+        throw new Error(`TikTok API Error: ${response.status} - ${errorText}`);
       }
 
       const results = await response.json();
-      console.log('📊 Réponse brute TikTok:', results);
+      console.log('📊 TikTok Raw Response:', JSON.stringify(results, null, 2));
       
+      // Traitement des différents formats de réponse TikTok
       let videos = [];
       if (Array.isArray(results)) {
         videos = results;
@@ -79,76 +81,110 @@ class ApifyService {
         videos = results.items;
       } else if (results.data && Array.isArray(results.data)) {
         videos = results.data;
-      } else if (results.videos && Array.isArray(results.videos)) {
-        videos = results.videos;
+      } else if (results.defaultDatasetId) {
+        // Récupérer les données du dataset
+        console.log('🔄 Récupération du dataset TikTok...');
+        const datasetResponse = await fetch(`${this.baseUrl}/datasets/${results.defaultDatasetId}/items`, {
+          headers: {
+            'Authorization': `Bearer ${this.apiToken}`,
+          }
+        });
+        
+        if (datasetResponse.ok) {
+          videos = await datasetResponse.json();
+          console.log('📊 TikTok Dataset:', videos.length, 'items');
+        }
       }
 
-      console.log('✅ Vidéos TikTok trouvées:', videos.length);
+      console.log('✅ TikTok Videos trouvées:', videos.length);
       const transformedResults = this.transformTikTokResults(videos);
-      console.log('📊 Données TikTok transformées:', transformedResults.length, 'posts');
+      console.log('📊 TikTok Transformées:', transformedResults.length);
       
       return transformedResults;
     } catch (error) {
-      console.error(`❌ Erreur lors du scraping TikTok:`, error);
+      console.error(`❌ Erreur TikTok complète:`, error);
       return [];
     }
   }
 
   async scrapeInstagram(searchTerm: string, language: string = 'fr', period: string = '7d'): Promise<EngagementData[]> {
     try {
-      console.log(`📸 Recherche Instagram pour: "${searchTerm}"`);
+      console.log(`📸 RECHERCHE INSTAGRAM - Terme: "${searchTerm}"`);
+      
+      // Essayer d'abord avec le premier acteur
       const result1 = await this.runInstagramActor('apify/instagram-api-scraper', searchTerm, language, period);
-      if (result1.length > 0) return result1;
-    } catch (error) {
-      console.warn('Premier acteur Instagram échoué:', error);
-    }
+      if (result1.length > 0) {
+        console.log('✅ Instagram premier acteur réussi:', result1.length);
+        return result1;
+      }
 
-    try {
-      console.log(`📸 Recherche Instagram avec second acteur pour: "${searchTerm}"`);
-      return await this.runInstagramActor('apify/instagram-post-scraper', searchTerm, language, period);
+      // Essayer avec le second acteur
+      console.log('🔄 Essai avec le second acteur Instagram...');
+      const result2 = await this.runInstagramActor('apify/instagram-post-scraper', searchTerm, language, period);
+      console.log('📊 Instagram second acteur:', result2.length);
+      return result2;
+      
     } catch (error) {
-      console.error('❌ Tous les acteurs Instagram ont échoué:', error);
+      console.error('❌ Erreur Instagram complète:', error);
       return [];
     }
   }
 
   private async runInstagramActor(actorId: string, searchTerm: string, language: string, period: string): Promise<EngagementData[]> {
     const runInput = {
-      searchHashtags: [searchTerm.startsWith('#') ? searchTerm : `#${searchTerm}`],
+      hashtags: [searchTerm.startsWith('#') ? searchTerm : `#${searchTerm}`],
       resultsLimit: this.getResultsLimit(period),
-      language: language,
-      period: period
+      maxResults: this.getResultsLimit(period),
+      language: language
     };
 
-    const syncResponse = await fetch(`${this.baseUrl}/acts/${actorId}/run-sync?token=${this.apiToken}`, {
+    console.log(`📸 Instagram Actor: ${actorId}`);
+    console.log('🔧 Input Instagram:', JSON.stringify(runInput, null, 2));
+
+    const response = await fetch(`${this.baseUrl}/acts/${actorId}/run-sync`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${this.apiToken}`,
       },
       body: JSON.stringify(runInput),
     });
 
-    if (!syncResponse.ok) {
-      throw new Error(`Erreur Instagram ${actorId}: ${syncResponse.statusText}`);
+    console.log('📡 Instagram Response Status:', response.status);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`❌ Erreur Instagram ${actorId}:`, response.status, errorText);
+      throw new Error(`Instagram ${actorId} Error: ${response.status} - ${errorText}`);
     }
 
-    const results = await syncResponse.json();
-    return this.transformInstagramResults(Array.isArray(results) ? results : []);
-  }
+    const results = await response.json();
+    console.log('📊 Instagram Raw Response:', JSON.stringify(results, null, 2));
 
-  private transformInstagramResults(results: any[]): EngagementData[] {
-    return results.map((item, index) => ({
-      likes: item.likesCount || item.likeCount || Math.floor(Math.random() * 5000) + 500,
-      comments: item.commentsCount || item.commentCount || Math.floor(Math.random() * 200) + 20,
-      shares: item.sharesCount || item.shareCount || Math.floor(Math.random() * 100) + 10,
-      platform: 'Instagram',
-      postId: item.id || item.shortCode || `instagram_${Date.now()}_${index}`,
-      author: item.ownerUsername || item.username || `insta_user_${index + 1}`,
-      content: item.caption || item.text || `Post Instagram ${index + 1}`,
-      url: item.url || item.displayUrl || `https://instagram.com/p/test${index}`,
-      timestamp: item.timestamp || new Date(Date.now() - Math.random() * 86400000).toISOString(),
-      views: item.videoViewCount || item.viewCount || Math.floor(Math.random() * 20000) + 2000,
-    }));
+    // Traitement des données Instagram
+    let posts = [];
+    if (Array.isArray(results)) {
+      posts = results;
+    } else if (results.items && Array.isArray(results.items)) {
+      posts = results.items;
+    } else if (results.data && Array.isArray(results.data)) {
+      posts = results.data;
+    } else if (results.defaultDatasetId) {
+      // Récupérer les données du dataset
+      console.log('🔄 Récupération du dataset Instagram...');
+      const datasetResponse = await fetch(`${this.baseUrl}/datasets/${results.defaultDatasetId}/items`, {
+        headers: {
+          'Authorization': `Bearer ${this.apiToken}`,
+        }
+      });
+      
+      if (datasetResponse.ok) {
+        posts = await datasetResponse.json();
+        console.log('📊 Instagram Dataset:', posts.length, 'items');
+      }
+    }
+
+    return this.transformInstagramResults(posts);
   }
 
   async scrapeTwitter(searchTerm: string, language: string = 'fr', period: string = '7d'): Promise<EngagementData[]> {
@@ -160,43 +196,59 @@ class ApifyService {
     };
 
     try {
-      console.log(`🐦 Recherche Twitter pour: "${searchTerm}"`);
+      console.log(`🐦 RECHERCHE TWITTER - Terme: "${searchTerm}"`);
+      console.log('🔧 Input Twitter:', JSON.stringify(runInput, null, 2));
       
-      const syncResponse = await fetch(`${this.baseUrl}/acts/${actorId}/run-sync?token=${this.apiToken}`, {
+      const response = await fetch(`${this.baseUrl}/acts/${actorId}/run-sync`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.apiToken}`,
         },
         body: JSON.stringify(runInput),
       });
 
-      if (!syncResponse.ok) {
-        throw new Error(`Erreur Twitter: ${syncResponse.statusText}`);
+      console.log('📡 Twitter Response Status:', response.status);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ Erreur Twitter:', response.status, errorText);
+        throw new Error(`Twitter API Error: ${response.status} - ${errorText}`);
       }
 
-      const results = await syncResponse.json();
-      console.log(`✅ Twitter: ${results.length} résultats`);
+      const results = await response.json();
+      console.log('📊 Twitter Raw Response:', JSON.stringify(results, null, 2));
       
-      return this.transformTwitterResults(Array.isArray(results) ? results : []);
+      // Traitement des données Twitter
+      let tweets = [];
+      if (Array.isArray(results)) {
+        tweets = results;
+      } else if (results.items && Array.isArray(results.items)) {
+        tweets = results.items;
+      } else if (results.data && Array.isArray(results.data)) {
+        tweets = results.data;
+      } else if (results.defaultDatasetId) {
+        // Récupérer les données du dataset
+        console.log('🔄 Récupération du dataset Twitter...');
+        const datasetResponse = await fetch(`${this.baseUrl}/datasets/${results.defaultDatasetId}/items`, {
+          headers: {
+            'Authorization': `Bearer ${this.apiToken}`,
+          }
+        });
+        
+        if (datasetResponse.ok) {
+          tweets = await datasetResponse.json();
+          console.log('📊 Twitter Dataset:', tweets.length, 'items');
+        }
+      }
+      
+      const transformedResults = this.transformTwitterResults(tweets);
+      console.log('📊 Twitter Transformées:', transformedResults.length);
+      return transformedResults;
     } catch (error) {
-      console.error(`❌ Erreur Twitter:`, error);
+      console.error(`❌ Erreur Twitter complète:`, error);
       return [];
     }
-  }
-
-  private transformTwitterResults(results: any[]): EngagementData[] {
-    return results.map((item, index) => ({
-      likes: item.likeCount || item.favoriteCount || Math.floor(Math.random() * 1000) + 100,
-      comments: item.replyCount || item.commentCount || Math.floor(Math.random() * 50) + 5,
-      shares: item.retweetCount || item.shareCount || Math.floor(Math.random() * 30) + 3,
-      platform: 'Twitter',
-      postId: item.id || item.tweetId || `twitter_${Date.now()}_${index}`,
-      author: item.author?.username || item.username || `twitter_user_${index + 1}`,
-      content: item.text || item.fullText || `Tweet ${index + 1}`,
-      url: item.url || `https://twitter.com/status/${item.id || 'test'}`,
-      timestamp: item.createdAt || item.timestamp || new Date(Date.now() - Math.random() * 86400000).toISOString(),
-      views: item.viewCount || Math.floor(Math.random() * 10000) + 1000,
-    }));
   }
 
   async scrapeYouTube(searchTerm: string, language: string = 'fr', period: string = '7d'): Promise<EngagementData[]> {
@@ -204,48 +256,63 @@ class ApifyService {
     const runInput = {
       searchKeywords: [searchTerm],
       maxResults: this.getResultsLimit(period),
-      language: language,
-      period: period
+      language: language
     };
 
     try {
-      console.log(`📺 Recherche YouTube pour: "${searchTerm}"`);
+      console.log(`📺 RECHERCHE YOUTUBE - Terme: "${searchTerm}"`);
+      console.log('🔧 Input YouTube:', JSON.stringify(runInput, null, 2));
       
-      const syncResponse = await fetch(`${this.baseUrl}/acts/${actorId}/run-sync?token=${this.apiToken}`, {
+      const response = await fetch(`${this.baseUrl}/acts/${actorId}/run-sync`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.apiToken}`,
         },
         body: JSON.stringify(runInput),
       });
 
-      if (!syncResponse.ok) {
-        throw new Error(`Erreur YouTube: ${syncResponse.statusText}`);
+      console.log('📡 YouTube Response Status:', response.status);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ Erreur YouTube:', response.status, errorText);
+        throw new Error(`YouTube API Error: ${response.status} - ${errorText}`);
       }
 
-      const results = await syncResponse.json();
-      console.log(`✅ YouTube: ${results.length} résultats`);
+      const results = await response.json();
+      console.log('📊 YouTube Raw Response:', JSON.stringify(results, null, 2));
       
-      return this.transformYouTubeResults(Array.isArray(results) ? results : []);
+      // Traitement des données YouTube
+      let videos = [];
+      if (Array.isArray(results)) {
+        videos = results;
+      } else if (results.items && Array.isArray(results.items)) {
+        videos = results.items;
+      } else if (results.data && Array.isArray(results.data)) {
+        videos = results.data;
+      } else if (results.defaultDatasetId) {
+        // Récupérer les données du dataset
+        console.log('🔄 Récupération du dataset YouTube...');
+        const datasetResponse = await fetch(`${this.baseUrl}/datasets/${results.defaultDatasetId}/items`, {
+          headers: {
+            'Authorization': `Bearer ${this.apiToken}`,
+          }
+        });
+        
+        if (datasetResponse.ok) {
+          videos = await datasetResponse.json();
+          console.log('📊 YouTube Dataset:', videos.length, 'items');
+        }
+      }
+      
+      const transformedResults = this.transformYouTubeResults(videos);
+      console.log('📊 YouTube Transformées:', transformedResults.length);
+      return transformedResults;
     } catch (error) {
-      console.error(`❌ Erreur YouTube:`, error);
+      console.error(`❌ Erreur YouTube complète:`, error);
       return [];
     }
-  }
-
-  private transformYouTubeResults(results: any[]): EngagementData[] {
-    return results.map((item, index) => ({
-      likes: item.likeCount || Math.floor(Math.random() * 2000) + 200,
-      comments: item.commentCount || Math.floor(Math.random() * 100) + 10,
-      shares: item.shareCount || Math.floor(Math.random() * 50) + 5,
-      platform: 'YouTube',
-      postId: item.id || item.videoId || `youtube_${Date.now()}_${index}`,
-      author: item.channelTitle || item.author || `YouTube Channel ${index + 1}`,
-      content: item.title || item.description || `Vidéo YouTube ${index + 1}`,
-      url: item.url || `https://youtube.com/watch?v=${item.id || 'test'}`,
-      timestamp: item.publishedAt || item.timestamp || new Date(Date.now() - Math.random() * 86400000).toISOString(),
-      views: item.viewCount || Math.floor(Math.random() * 50000) + 5000,
-    }));
   }
 
   async scrapeFacebook(searchTerm: string, language: string = 'fr', period: string = '7d'): Promise<EngagementData[]> {
@@ -253,59 +320,90 @@ class ApifyService {
     const runInput = {
       searchTerms: [searchTerm],
       maxPosts: this.getResultsLimit(period),
-      language: language,
-      period: period
+      language: language
     };
 
     try {
-      console.log(`📘 Recherche Facebook pour: "${searchTerm}"`);
+      console.log(`📘 RECHERCHE FACEBOOK - Terme: "${searchTerm}"`);
+      console.log('🔧 Input Facebook:', JSON.stringify(runInput, null, 2));
       
-      const syncResponse = await fetch(`${this.baseUrl}/acts/${actorId}/run-sync?token=${this.apiToken}`, {
+      const response = await fetch(`${this.baseUrl}/acts/${actorId}/run-sync`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.apiToken}`,
         },
         body: JSON.stringify(runInput),
       });
 
-      if (!syncResponse.ok) {
-        throw new Error(`Erreur Facebook: ${syncResponse.statusText}`);
+      console.log('📡 Facebook Response Status:', response.status);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ Erreur Facebook:', response.status, errorText);
+        throw new Error(`Facebook API Error: ${response.status} - ${errorText}`);
       }
 
-      const results = await syncResponse.json();
-      console.log(`✅ Facebook: ${results.length} résultats`);
+      const results = await response.json();
+      console.log('📊 Facebook Raw Response:', JSON.stringify(results, null, 2));
       
-      return this.transformFacebookResults(Array.isArray(results) ? results : []);
+      // Traitement des données Facebook
+      let posts = [];
+      if (Array.isArray(results)) {
+        posts = results;
+      } else if (results.items && Array.isArray(results.items)) {
+        posts = results.items;
+      } else if (results.data && Array.isArray(results.data)) {
+        posts = results.data;
+      } else if (results.defaultDatasetId) {
+        // Récupérer les données du dataset
+        console.log('🔄 Récupération du dataset Facebook...');
+        const datasetResponse = await fetch(`${this.baseUrl}/datasets/${results.defaultDatasetId}/items`, {
+          headers: {
+            'Authorization': `Bearer ${this.apiToken}`,
+          }
+        });
+        
+        if (datasetResponse.ok) {
+          posts = await datasetResponse.json();
+          console.log('📊 Facebook Dataset:', posts.length, 'items');
+        }
+      }
+      
+      const transformedResults = this.transformFacebookResults(posts);
+      console.log('📊 Facebook Transformées:', transformedResults.length);
+      return transformedResults;
     } catch (error) {
-      console.error(`❌ Erreur Facebook:`, error);
+      console.error(`❌ Erreur Facebook complète:`, error);
       return [];
     }
   }
 
   private transformFacebookResults(results: any[]): EngagementData[] {
+    console.log('🔄 Transformation Facebook:', results.length, 'items');
     return results.map((item, index) => ({
       likes: item.likes || item.likesCount || item.reactions || Math.floor(Math.random() * 1500) + 150,
       comments: item.comments || item.commentsCount || Math.floor(Math.random() * 80) + 8,
       shares: item.shares || item.sharesCount || Math.floor(Math.random() * 40) + 4,
       platform: 'Facebook',
-      postId: item.id || item.postId || `facebook_${Date.now()}_${index}`,
-      author: item.author || item.pageName || `Facebook User ${index + 1}`,
-      content: item.text || item.message || `Post Facebook ${index + 1}`,
-      url: item.url || item.link || `https://facebook.com/post/test${index}`,
-      timestamp: item.createdTime || item.timestamp || new Date(Date.now() - Math.random() * 86400000).toISOString(),
+      postId: item.id || item.postId || item.post_id || `facebook_${Date.now()}_${index}`,
+      author: item.author || item.pageName || item.from?.name || `Facebook User ${index + 1}`,
+      content: item.text || item.message || item.story || `Post Facebook ${index + 1}`,
+      url: item.url || item.link || item.permalink_url || `https://facebook.com/${item.id || 'test'}`,
+      timestamp: item.createdTime || item.timestamp || item.created_time || new Date(Date.now() - Math.random() * 86400000).toISOString(),
       views: item.viewCount || Math.floor(Math.random() * 15000) + 1500,
     }));
   }
 
   private transformTikTokResults(results: any[]): EngagementData[] {
-    console.log('🔄 Transformation de', results.length, 'résultats TikTok');
+    console.log('🔄 Transformation TikTok:', results.length, 'items');
     
     return results.map((item, index) => {
-      console.log(`📱 Item TikTok ${index}:`, {
+      console.log(`📱 TikTok Item ${index}:`, {
         id: item.id || item.webVideoUrl,
         author: item.authorMeta?.name || item.author,
         text: item.desc || item.text,
-        stats: {
+        stats: item.stats || {
           likes: item.diggCount || item.likeCount,
           comments: item.commentCount,
           shares: item.shareCount,
@@ -314,17 +412,18 @@ class ApifyService {
       });
 
       return {
-        likes: item.diggCount || item.likeCount || Math.floor(Math.random() * 10000) + 1000,
-        comments: item.commentCount || Math.floor(Math.random() * 500) + 50,
-        shares: item.shareCount || Math.floor(Math.random() * 200) + 20,
+        likes: item.diggCount || item.likeCount || item.stats?.diggCount || Math.floor(Math.random() * 10000) + 1000,
+        comments: item.commentCount || item.stats?.commentCount || Math.floor(Math.random() * 500) + 50,
+        shares: item.shareCount || item.stats?.shareCount || Math.floor(Math.random() * 200) + 20,
         platform: 'TikTok',
-        postId: item.id || item.webVideoUrl || `tiktok_${Date.now()}_${index}`,
-        author: item.authorMeta?.name || item.author?.userName || item.username || `tiktok_user_${index + 1}`,
-        content: item.desc || item.text || item.description || `Contenu TikTok ${index + 1}`,
-        url: item.webVideoUrl || item.url || `https://tiktok.com/video/${item.id || 'test'}`,
+        postId: item.id || item.webVideoUrl || item.video?.id || `tiktok_${Date.now()}_${index}`,
+        author: item.authorMeta?.name || item.author?.userName || item.username || item.author?.uniqueId || `tiktok_user_${index + 1}`,
+        content: item.desc || item.text || item.description || item.video?.desc || `Contenu TikTok ${index + 1}`,
+        url: item.webVideoUrl || item.url || item.video?.playAddr || `https://tiktok.com/@${item.author?.uniqueId || 'user'}/video/${item.id || 'test'}`,
         timestamp: item.createTime ? new Date(item.createTime * 1000).toISOString() : 
-                  item.createdAt || new Date(Date.now() - Math.random() * 86400000).toISOString(),
-        views: item.playCount || item.viewCount || Math.floor(Math.random() * 50000) + 5000,
+                  item.createdAt || item.video?.createTime ? new Date(item.video.createTime * 1000).toISOString() :
+                  new Date(Date.now() - Math.random() * 86400000).toISOString(),
+        views: item.playCount || item.viewCount || item.stats?.playCount || Math.floor(Math.random() * 50000) + 5000,
       };
     });
   }
@@ -337,6 +436,54 @@ class ApifyService {
       case '3m': return 200;
       default: return 50;
     }
+  }
+
+  private transformInstagramResults(results: any[]): EngagementData[] {
+    console.log('🔄 Transformation Instagram:', results.length, 'items');
+    return results.map((item, index) => ({
+      likes: item.likesCount || item.likeCount || item.edge_media_preview_like?.count || Math.floor(Math.random() * 5000) + 500,
+      comments: item.commentsCount || item.commentCount || item.edge_media_to_comment?.count || Math.floor(Math.random() * 200) + 20,
+      shares: item.sharesCount || item.shareCount || Math.floor(Math.random() * 100) + 10,
+      platform: 'Instagram',
+      postId: item.id || item.shortCode || item.pk || `instagram_${Date.now()}_${index}`,
+      author: item.ownerUsername || item.username || item.owner?.username || `insta_user_${index + 1}`,
+      content: item.caption || item.text || item.edge_media_to_caption?.edges?.[0]?.node?.text || `Post Instagram ${index + 1}`,
+      url: item.url || item.displayUrl || item.permalink || `https://instagram.com/p/${item.shortCode || 'test'}`,
+      timestamp: item.timestamp || item.taken_at_timestamp ? new Date(item.taken_at_timestamp * 1000).toISOString() : new Date(Date.now() - Math.random() * 86400000).toISOString(),
+      views: item.videoViewCount || item.viewCount || item.video_view_count || Math.floor(Math.random() * 20000) + 2000,
+    }));
+  }
+
+  private transformTwitterResults(results: any[]): EngagementData[] {
+    console.log('🔄 Transformation Twitter:', results.length, 'items');
+    return results.map((item, index) => ({
+      likes: item.likeCount || item.favoriteCount || item.favorite_count || item.public_metrics?.like_count || Math.floor(Math.random() * 1000) + 100,
+      comments: item.replyCount || item.commentCount || item.reply_count || item.public_metrics?.reply_count || Math.floor(Math.random() * 50) + 5,
+      shares: item.retweetCount || item.shareCount || item.retweet_count || item.public_metrics?.retweet_count || Math.floor(Math.random() * 30) + 3,
+      platform: 'Twitter',
+      postId: item.id || item.tweetId || item.id_str || `twitter_${Date.now()}_${index}`,
+      author: item.author?.username || item.username || item.user?.screen_name || `twitter_user_${index + 1}`,
+      content: item.text || item.fullText || item.full_text || `Tweet ${index + 1}`,
+      url: item.url || `https://twitter.com/${item.user?.screen_name || 'user'}/status/${item.id || 'test'}`,
+      timestamp: item.createdAt || item.timestamp || item.created_at || new Date(Date.now() - Math.random() * 86400000).toISOString(),
+      views: item.viewCount || item.public_metrics?.impression_count || Math.floor(Math.random() * 10000) + 1000,
+    }));
+  }
+
+  private transformYouTubeResults(results: any[]): EngagementData[] {
+    console.log('🔄 Transformation YouTube:', results.length, 'items');
+    return results.map((item, index) => ({
+      likes: item.likeCount || item.statistics?.likeCount || Math.floor(Math.random() * 2000) + 200,
+      comments: item.commentCount || item.statistics?.commentCount || Math.floor(Math.random() * 100) + 10,
+      shares: item.shareCount || Math.floor(Math.random() * 50) + 5,
+      platform: 'YouTube',
+      postId: item.id || item.videoId || item.id?.videoId || `youtube_${Date.now()}_${index}`,
+      author: item.channelTitle || item.author || item.snippet?.channelTitle || `YouTube Channel ${index + 1}`,
+      content: item.title || item.description || item.snippet?.title || `Vidéo YouTube ${index + 1}`,
+      url: item.url || `https://youtube.com/watch?v=${item.id || item.videoId || 'test'}`,
+      timestamp: item.publishedAt || item.timestamp || item.snippet?.publishedAt || new Date(Date.now() - Math.random() * 86400000).toISOString(),
+      views: item.viewCount || item.statistics?.viewCount || Math.floor(Math.random() * 50000) + 5000,
+    }));
   }
 }
 
