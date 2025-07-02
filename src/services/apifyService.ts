@@ -39,7 +39,26 @@ class ApifyService {
   }
 
   async scrapeInstagram(searchTerm: string, language: string = 'fr', period: string = '7d'): Promise<EngagementData[]> {
-    const actorId = 'apify/instagram-api-scraper';
+    // Premier acteur Instagram
+    try {
+      console.log(`📸 Recherche Instagram avec premier acteur pour: "${searchTerm}"`);
+      const result1 = await this.runInstagramActor('apify/instagram-api-scraper', searchTerm, language, period);
+      if (result1.length > 0) return result1;
+    } catch (error) {
+      console.warn('Premier acteur Instagram échoué, tentative avec le second:', error);
+    }
+
+    // Deuxième acteur Instagram en fallback
+    try {
+      console.log(`📸 Recherche Instagram avec second acteur pour: "${searchTerm}"`);
+      return await this.runInstagramActor('apify/instagram-post-scraper', searchTerm, language, period);
+    } catch (error) {
+      console.error('❌ Tous les acteurs Instagram ont échoué:', error);
+      throw error;
+    }
+  }
+
+  private async runInstagramActor(actorId: string, searchTerm: string, language: string, period: string): Promise<EngagementData[]> {
     const runInput = {
       searchHashtags: [searchTerm],
       resultsLimit: this.getResultsLimit(period),
@@ -47,8 +66,32 @@ class ApifyService {
       period: period
     };
 
+    const syncResponse = await fetch(`${this.baseUrl}/acts/${actorId}/run-sync?token=${this.apiToken}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(runInput),
+    });
+
+    if (!syncResponse.ok) {
+      throw new Error(`Erreur lors du scraping Instagram ${actorId}: ${syncResponse.statusText}`);
+    }
+
+    const results = await syncResponse.json();
+    return this.transformInstagramResults(Array.isArray(results) ? results : []);
+  }
+
+  async scrapeTwitter(searchTerm: string, language: string = 'fr', period: string = '7d'): Promise<EngagementData[]> {
+    const actorId = 'apidojo/twitter-scraper-lite';
+    const runInput = {
+      searchTerms: [searchTerm],
+      maxTweets: this.getResultsLimit(period),
+      language: language
+    };
+
     try {
-      console.log(`📸 Démarrage du scraping Instagram RÉEL pour: "${searchTerm}"`);
+      console.log(`🐦 Démarrage du scraping Twitter RÉEL pour: "${searchTerm}"`);
       
       const syncResponse = await fetch(`${this.baseUrl}/acts/${actorId}/run-sync?token=${this.apiToken}`, {
         method: 'POST',
@@ -59,34 +102,53 @@ class ApifyService {
       });
 
       if (!syncResponse.ok) {
-        console.error('❌ Erreur réponse Apify Instagram:', syncResponse.status, syncResponse.statusText);
-        throw new Error(`Erreur lors du scraping Instagram: ${syncResponse.statusText}`);
+        console.error('❌ Erreur réponse Apify Twitter:', syncResponse.status, syncResponse.statusText);
+        throw new Error(`Erreur lors du scraping Twitter: ${syncResponse.statusText}`);
       }
 
       const results = await syncResponse.json();
-      console.log(`✅ Scraping Instagram RÉEL terminé, ${results.length} résultats trouvés`);
+      console.log(`✅ Scraping Twitter RÉEL terminé, ${results.length} résultats trouvés`);
       
-      if (!Array.isArray(results)) {
-        console.warn('⚠️ Format de réponse Instagram inattendu:', results);
-        return [];
-      }
-      
-      return this.transformInstagramResults(results);
+      return this.transformTwitterResults(Array.isArray(results) ? results : []);
     } catch (error) {
-      console.error(`❌ Erreur lors du scraping Instagram RÉEL:`, error);
+      console.error(`❌ Erreur lors du scraping Twitter RÉEL:`, error);
       throw error;
     }
   }
 
-  async scrapeTwitter(searchTerm: string, language: string = 'fr', period: string = '7d'): Promise<EngagementData[]> {
-    const actorId = 'apify/twitter-scraper';
+  async scrapeYouTube(searchTerm: string, language: string = 'fr', period: string = '7d'): Promise<EngagementData[]> {
+    const actorId = 'streamers/youtube-scraper';
     const runInput = {
-      searchTerms: [searchTerm],
-      maxTweets: this.getResultsLimit(period),
-      language: language
+      searchKeywords: [searchTerm],
+      maxResults: this.getResultsLimit(period),
+      language: language,
+      period: period
     };
 
-    return this.runActorSync(actorId, runInput, 'twitter');
+    try {
+      console.log(`📺 Démarrage du scraping YouTube RÉEL pour: "${searchTerm}"`);
+      
+      const syncResponse = await fetch(`${this.baseUrl}/acts/${actorId}/run-sync?token=${this.apiToken}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(runInput),
+      });
+
+      if (!syncResponse.ok) {
+        console.error('❌ Erreur réponse Apify YouTube:', syncResponse.status, syncResponse.statusText);
+        throw new Error(`Erreur lors du scraping YouTube: ${syncResponse.statusText}`);
+      }
+
+      const results = await syncResponse.json();
+      console.log(`✅ Scraping YouTube RÉEL terminé, ${results.length} résultats trouvés`);
+      
+      return this.transformYouTubeResults(Array.isArray(results) ? results : []);
+    } catch (error) {
+      console.error(`❌ Erreur lors du scraping YouTube RÉEL:`, error);
+      throw error;
+    }
   }
 
   async scrapeFacebook(searchTerm: string, language: string = 'fr', period: string = '7d'): Promise<EngagementData[]> {
@@ -117,12 +179,7 @@ class ApifyService {
       const results = await syncResponse.json();
       console.log(`✅ Scraping Facebook RÉEL terminé, ${results.length} résultats trouvés`);
       
-      if (!Array.isArray(results)) {
-        console.warn('⚠️ Format de réponse Facebook inattendu:', results);
-        return [];
-      }
-      
-      return this.transformFacebookResults(results);
+      return this.transformFacebookResults(Array.isArray(results) ? results : []);
     } catch (error) {
       console.error(`❌ Erreur lors du scraping Facebook RÉEL:`, error);
       throw error;
@@ -160,12 +217,7 @@ class ApifyService {
       const results = await syncResponse.json();
       console.log(`✅ Scraping TikTok RÉEL terminé, ${results.length} résultats trouvés`);
       
-      if (!Array.isArray(results)) {
-        console.warn('⚠️ Format de réponse TikTok inattendu:', results);
-        return [];
-      }
-      
-      const transformedResults = this.transformTikTokResults(results);
+      const transformedResults = this.transformTikTokResults(Array.isArray(results) ? results : []);
       console.log('📊 Données TikTok RÉELLES transformées:', transformedResults.length, 'posts');
       
       return transformedResults;
@@ -182,32 +234,6 @@ class ApifyService {
       case '30d': return 50;
       case '3m': return 100;
       default: return 20;
-    }
-  }
-
-  private async runActorSync(actorId: string, runInput: any, platform: string): Promise<EngagementData[]> {
-    try {
-      console.log(`Démarrage du scraping ${platform} avec Apify...`);
-      
-      const syncResponse = await fetch(`${this.baseUrl}/acts/${actorId}/run-sync?token=${this.apiToken}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(runInput),
-      });
-
-      if (!syncResponse.ok) {
-        throw new Error(`Erreur lors du scraping ${platform}: ${syncResponse.statusText}`);
-      }
-
-      const results = await syncResponse.json();
-      console.log(`✅ Scraping ${platform} terminé, ${results.length} résultats trouvés`);
-      
-      return this.transformResults(results, platform);
-    } catch (error) {
-      console.error(`Erreur lors du scraping ${platform}:`, error);
-      throw error;
     }
   }
 
@@ -268,28 +294,34 @@ class ApifyService {
     }));
   }
 
-  private transformResults(results: any[], platform: string): EngagementData[] {
-    switch (platform.toLowerCase()) {
-      case 'tiktok':
-        return this.transformTikTokResults(results);
-      case 'instagram':
-        return this.transformInstagramResults(results);
-      case 'facebook':
-        return this.transformFacebookResults(results);
-      default:
-        return results.map((item, index) => ({
-          likes: item.likeCount || item.likesCount || item.reactions || item.diggCount || 0,
-          comments: item.commentCount || item.commentsCount || 0,
-          shares: item.shareCount || item.sharesCount || item.retweetCount || 0,
-          platform,
-          postId: item.id || item.postId || item.webVideoUrl || `${platform}_${index}`,
-          author: item.author?.userName || item.username || item.author || item.authorMeta?.name || `Utilisateur ${platform}`,
-          content: item.text || item.caption || item.description || item.desc || `Contenu ${platform}`,
-          url: item.url || item.link || item.webVideoUrl || '',
-          timestamp: item.createdAt || item.timestamp || item.createTime || new Date().toISOString(),
-          views: item.viewCount || item.playCount || 0,
-        }));
-    }
+  private transformTwitterResults(results: any[]): EngagementData[] {
+    return results.map((item, index) => ({
+      likes: item.likeCount || item.favoriteCount || 0,
+      comments: item.replyCount || item.commentCount || 0,
+      shares: item.retweetCount || item.shareCount || 0,
+      platform: 'Twitter',
+      postId: item.id || item.tweetId || `twitter_${index}`,
+      author: item.author?.username || item.username || 'Utilisateur Twitter',
+      content: item.text || item.fullText || 'Tweet',
+      url: item.url || `https://twitter.com/status/${item.id}` || '',
+      timestamp: item.createdAt || item.timestamp || new Date().toISOString(),
+      views: item.viewCount || 0,
+    }));
+  }
+
+  private transformYouTubeResults(results: any[]): EngagementData[] {
+    return results.map((item, index) => ({
+      likes: item.likeCount || 0,
+      comments: item.commentCount || 0,
+      shares: item.shareCount || 0,
+      platform: 'YouTube',
+      postId: item.id || item.videoId || `youtube_${index}`,
+      author: item.channelTitle || item.author || 'Chaîne YouTube',
+      content: item.title || item.description || 'Vidéo YouTube',
+      url: item.url || `https://youtube.com/watch?v=${item.id}` || '',
+      timestamp: item.publishedAt || item.timestamp || new Date().toISOString(),
+      views: item.viewCount || 0,
+    }));
   }
 }
 

@@ -12,6 +12,15 @@ interface DynamicPlatformSelectorProps {
 export const DynamicPlatformSelector = ({ selectedPlatforms, onPlatformChange }: DynamicPlatformSelectorProps) => {
   const { platforms, loading } = usePlatforms();
 
+  // Plateformes par défaut avec APIs intégrées
+  const defaultPlatforms = [
+    { id: 'tiktok', name: 'TikTok', icon: '🎵' },
+    { id: 'instagram', name: 'Instagram', icon: '📸' },
+    { id: 'facebook', name: 'Facebook', icon: '📘' },
+    { id: 'twitter', name: 'Twitter', icon: '🐦' },
+    { id: 'youtube', name: 'YouTube', icon: '📺' }
+  ];
+
   const handlePlatformToggle = (platformName: string, checked: boolean) => {
     console.log(`🎯 Filtre plateforme: ${platformName} ${checked ? 'sélectionné' : 'désélectionné'}`);
     
@@ -42,25 +51,36 @@ export const DynamicPlatformSelector = ({ selectedPlatforms, onPlatformChange }:
     );
   }
 
+  // Utiliser les plateformes de la base ou les plateformes par défaut
+  const availablePlatforms = platforms.length > 0 ? platforms : defaultPlatforms.map(p => ({
+    id: p.id,
+    name: p.name,
+    is_active: true
+  }));
+
   return (
     <div className="space-y-3">
       <Label>Plateformes sociales disponibles</Label>
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-        {platforms.map((platform) => (
-          <div key={platform.id} className="flex items-center space-x-2">
-            <Checkbox 
-              id={platform.id}
-              checked={selectedPlatforms.includes(platform.name)}
-              onCheckedChange={(checked) => handlePlatformToggle(platform.name, !!checked)}
-            />
-            <Label htmlFor={platform.id} className="text-sm flex items-center space-x-2">
-              <span>{platform.name}</span>
-              <Badge variant="outline" className="text-xs bg-green-100 text-green-800">
-                API ✓
-              </Badge>
-            </Label>
-          </div>
-        ))}
+        {availablePlatforms.map((platform) => {
+          const defaultPlatform = defaultPlatforms.find(p => p.name.toLowerCase() === platform.name.toLowerCase());
+          return (
+            <div key={platform.id} className="flex items-center space-x-2">
+              <Checkbox 
+                id={platform.id}
+                checked={selectedPlatforms.includes(platform.name)}
+                onCheckedChange={(checked) => handlePlatformToggle(platform.name, !!checked)}
+              />
+              <Label htmlFor={platform.id} className="text-sm flex items-center space-x-2">
+                <span>{defaultPlatform?.icon || '📱'}</span>
+                <span>{platform.name}</span>
+                <Badge variant="outline" className="text-xs bg-green-100 text-green-800">
+                  API ✓
+                </Badge>
+              </Label>
+            </div>
+          );
+        })}
       </div>
       
       {selectedPlatforms.length > 0 && (
@@ -74,7 +94,7 @@ export const DynamicPlatformSelector = ({ selectedPlatforms, onPlatformChange }:
         </div>
       )}
       
-      {platforms.length === 0 && (
+      {availablePlatforms.length === 0 && (
         <p className="text-sm text-gray-500">Aucune plateforme disponible</p>
       )}
     </div>

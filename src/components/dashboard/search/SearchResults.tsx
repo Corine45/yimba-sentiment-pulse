@@ -7,7 +7,7 @@ import { SearchEmptyState } from "./SearchEmptyState";
 import { SearchResultsMetrics } from "./SearchResultsMetrics";
 import { PlatformDistribution } from "./PlatformDistribution";
 import { DetailedMentions } from "./DetailedMentions";
-import { TikTokDetailedResults } from "./TikTokDetailedResults";
+import { PlatformDetailedResults } from "./PlatformDetailedResults";
 import { ApiIntegrationNote } from "./ApiIntegrationNote";
 
 interface SearchResultsProps {
@@ -68,30 +68,24 @@ export const SearchResults = ({ userRole, permissions, isSearching, searchTerm =
     return acc;
   }, {} as Record<string, number>);
 
-  // Résultats TikTok spécifiques avec données détaillées - CORRECTION ICI
-  const tikTokResults = searchResults.filter(result => {
-    const isTikTok = result.platform.toLowerCase() === 'tiktok';
-    const hasData = result.results_data && Array.isArray(result.results_data) && result.results_data.length > 0;
-    
-    console.log(`🔍 Vérification TikTok pour ${result.platform}:`, {
-      isTikTok,
-      hasData,
-      dataLength: result.results_data?.length || 0,
-      totalMentions: result.total_mentions
+  // Résultats par plateforme avec données détaillées
+  const platformsWithData = ['TikTok', 'Instagram', 'Facebook', 'Twitter', 'YouTube'];
+  
+  const getPlatformResults = (platformName: string) => {
+    return searchResults.filter(result => {
+      const isPlatform = result.platform.toLowerCase() === platformName.toLowerCase();
+      const hasData = result.results_data && Array.isArray(result.results_data) && result.results_data.length > 0;
+      
+      console.log(`🔍 Vérification ${platformName} pour ${result.platform}:`, {
+        isPlatform,
+        hasData,
+        dataLength: result.results_data?.length || 0,
+        totalMentions: result.total_mentions
+      });
+      
+      return isPlatform && (hasData || result.total_mentions > 0);
     });
-    
-    return isTikTok && (hasData || result.total_mentions > 0);
-  });
-
-  console.log('🎵 Résultats TikTok trouvés:', tikTokResults.length);
-  tikTokResults.forEach((result, index) => {
-    console.log(`TikTok ${index + 1}:`, {
-      mentions: result.total_mentions,
-      dataLength: result.results_data?.length || 0,
-      searchTerm: result.search_term,
-      hasValidData: result.results_data && Array.isArray(result.results_data)
-    });
-  });
+  };
 
   if (isSearching || resultsLoading) {
     return <SearchLoadingState searchTerm={searchTerm} />;
@@ -139,15 +133,22 @@ export const SearchResults = ({ userRole, permissions, isSearching, searchTerm =
         <PlatformDistribution platformCounts={platformCounts} />
       )}
 
-      {/* SECTION TIKTOK DÉTAILLÉE - TOUJOURS AFFICHER SI DES RÉSULTATS TIKTOK */}
-      {tikTokResults.length > 0 && (
-        <div className="mt-6">
-          <TikTokDetailedResults 
-            tikTokResults={tikTokResults}
-            canExportData={permissions.canExportData}
-          />
-        </div>
-      )}
+      {/* SECTIONS DÉTAILLÉES PAR PLATEFORME */}
+      {platformsWithData.map(platformName => {
+        const platformResults = getPlatformResults(platformName);
+        if (platformResults.length > 0) {
+          return (
+            <div key={platformName} className="mt-6">
+              <PlatformDetailedResults 
+                platformResults={platformResults}
+                platformName={platformName}
+                canExportData={permissions.canExportData}
+              />
+            </div>
+          );
+        }
+        return null;
+      })}
 
       {posts.length > 0 && (
         <DetailedMentions posts={posts} />

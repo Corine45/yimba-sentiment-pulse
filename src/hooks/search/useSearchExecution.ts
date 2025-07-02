@@ -109,6 +109,12 @@ export const useSearchExecution = () => {
             console.log('📊 Données Twitter RÉELLES récupérées:', engagementData.length, 'posts');
             break;
             
+          case 'youtube':
+            console.log('📺 Recherche YouTube RÉELLE avec terme:', searchTerm);
+            engagementData = await apifyService.scrapeYouTube(searchTerm, language, period);
+            console.log('📊 Données YouTube RÉELLES récupérées:', engagementData.length, 'posts');
+            break;
+            
           default:
             console.log(`⚠️ Plateforme ${platformName} non supportée`);
             continue;
