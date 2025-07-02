@@ -50,10 +50,10 @@ class ApifyService {
     };
 
     try {
-      console.log(`🎵 RECHERCHE TIKTOK - Terme: "${searchTerm}"`);
-      console.log('🔧 Input TikTok:', JSON.stringify(runInput, null, 2));
+      console.log(`🎵 RECHERCHE TIKTOK RÉELLE - Terme: "${searchTerm}"`);
+      console.log('🔧 Configuration TikTok:', JSON.stringify(runInput, null, 2));
       
-      const response = await fetch(`${this.baseUrl}/acts/${actorId}/run-sync`, {
+      const response = await fetch(`${this.baseUrl}/acts/${actorId}/run-sync-get-dataset-items`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -66,39 +66,36 @@ class ApifyService {
       
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('❌ Erreur TikTok:', response.status, errorText);
+        console.error('❌ Erreur TikTok Response:', response.status, errorText);
         throw new Error(`TikTok API Error: ${response.status} - ${errorText}`);
       }
 
       const results = await response.json();
-      console.log('📊 TikTok Raw Response:', JSON.stringify(results, null, 2));
+      console.log('📊 TikTok Réponse brute complète:', JSON.stringify(results, null, 2));
       
       // Traitement des différents formats de réponse TikTok
       let videos = [];
       if (Array.isArray(results)) {
         videos = results;
+        console.log('✅ TikTok - Format tableau direct');
       } else if (results.items && Array.isArray(results.items)) {
         videos = results.items;
+        console.log('✅ TikTok - Format items');
       } else if (results.data && Array.isArray(results.data)) {
         videos = results.data;
-      } else if (results.defaultDatasetId) {
-        // Récupérer les données du dataset
-        console.log('🔄 Récupération du dataset TikTok...');
-        const datasetResponse = await fetch(`${this.baseUrl}/datasets/${results.defaultDatasetId}/items`, {
-          headers: {
-            'Authorization': `Bearer ${this.apiToken}`,
-          }
-        });
-        
-        if (datasetResponse.ok) {
-          videos = await datasetResponse.json();
-          console.log('📊 TikTok Dataset:', videos.length, 'items');
-        }
+        console.log('✅ TikTok - Format data');
+      } else {
+        console.log('⚠️ TikTok - Format de réponse non reconnu:', Object.keys(results));
+        videos = [];
       }
 
       console.log('✅ TikTok Videos trouvées:', videos.length);
+      if (videos.length > 0) {
+        console.log('🔍 Premier élément TikTok:', JSON.stringify(videos[0], null, 2));
+      }
+      
       const transformedResults = this.transformTikTokResults(videos);
-      console.log('📊 TikTok Transformées:', transformedResults.length);
+      console.log('📊 TikTok Données transformées:', transformedResults.length);
       
       return transformedResults;
     } catch (error) {
@@ -109,10 +106,10 @@ class ApifyService {
 
   async scrapeInstagram(searchTerm: string, language: string = 'fr', period: string = '7d'): Promise<EngagementData[]> {
     try {
-      console.log(`📸 RECHERCHE INSTAGRAM - Terme: "${searchTerm}"`);
+      console.log(`📸 RECHERCHE INSTAGRAM RÉELLE - Terme: "${searchTerm}"`);
       
       // Essayer d'abord avec le premier acteur
-      const result1 = await this.runInstagramActor('apify/instagram-api-scraper', searchTerm, language, period);
+      const result1 = await this.runInstagramActor('apify/instagram-scraper', searchTerm, language, period);
       if (result1.length > 0) {
         console.log('✅ Instagram premier acteur réussi:', result1.length);
         return result1;
@@ -139,9 +136,9 @@ class ApifyService {
     };
 
     console.log(`📸 Instagram Actor: ${actorId}`);
-    console.log('🔧 Input Instagram:', JSON.stringify(runInput, null, 2));
+    console.log('🔧 Configuration Instagram:', JSON.stringify(runInput, null, 2));
 
-    const response = await fetch(`${this.baseUrl}/acts/${actorId}/run-sync`, {
+    const response = await fetch(`${this.baseUrl}/acts/${actorId}/run-sync-get-dataset-items`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -159,29 +156,26 @@ class ApifyService {
     }
 
     const results = await response.json();
-    console.log('📊 Instagram Raw Response:', JSON.stringify(results, null, 2));
+    console.log('📊 Instagram Réponse brute:', JSON.stringify(results, null, 2));
 
     // Traitement des données Instagram
     let posts = [];
     if (Array.isArray(results)) {
       posts = results;
+      console.log('✅ Instagram - Format tableau direct');
     } else if (results.items && Array.isArray(results.items)) {
       posts = results.items;
+      console.log('✅ Instagram - Format items');
     } else if (results.data && Array.isArray(results.data)) {
       posts = results.data;
-    } else if (results.defaultDatasetId) {
-      // Récupérer les données du dataset
-      console.log('🔄 Récupération du dataset Instagram...');
-      const datasetResponse = await fetch(`${this.baseUrl}/datasets/${results.defaultDatasetId}/items`, {
-        headers: {
-          'Authorization': `Bearer ${this.apiToken}`,
-        }
-      });
-      
-      if (datasetResponse.ok) {
-        posts = await datasetResponse.json();
-        console.log('📊 Instagram Dataset:', posts.length, 'items');
-      }
+      console.log('✅ Instagram - Format data');
+    } else {
+      console.log('⚠️ Instagram - Format de réponse non reconnu:', Object.keys(results));
+      posts = [];
+    }
+
+    if (posts.length > 0) {
+      console.log('🔍 Premier élément Instagram:', JSON.stringify(posts[0], null, 2));
     }
 
     return this.transformInstagramResults(posts);
@@ -196,10 +190,10 @@ class ApifyService {
     };
 
     try {
-      console.log(`🐦 RECHERCHE TWITTER - Terme: "${searchTerm}"`);
-      console.log('🔧 Input Twitter:', JSON.stringify(runInput, null, 2));
+      console.log(`🐦 RECHERCHE TWITTER RÉELLE - Terme: "${searchTerm}"`);
+      console.log('🔧 Configuration Twitter:', JSON.stringify(runInput, null, 2));
       
-      const response = await fetch(`${this.baseUrl}/acts/${actorId}/run-sync`, {
+      const response = await fetch(`${this.baseUrl}/acts/${actorId}/run-sync-get-dataset-items`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -217,33 +211,30 @@ class ApifyService {
       }
 
       const results = await response.json();
-      console.log('📊 Twitter Raw Response:', JSON.stringify(results, null, 2));
+      console.log('📊 Twitter Réponse brute:', JSON.stringify(results, null, 2));
       
       // Traitement des données Twitter
       let tweets = [];
       if (Array.isArray(results)) {
         tweets = results;
+        console.log('✅ Twitter - Format tableau direct');
       } else if (results.items && Array.isArray(results.items)) {
         tweets = results.items;
+        console.log('✅ Twitter - Format items');
       } else if (results.data && Array.isArray(results.data)) {
         tweets = results.data;
-      } else if (results.defaultDatasetId) {
-        // Récupérer les données du dataset
-        console.log('🔄 Récupération du dataset Twitter...');
-        const datasetResponse = await fetch(`${this.baseUrl}/datasets/${results.defaultDatasetId}/items`, {
-          headers: {
-            'Authorization': `Bearer ${this.apiToken}`,
-          }
-        });
-        
-        if (datasetResponse.ok) {
-          tweets = await datasetResponse.json();
-          console.log('📊 Twitter Dataset:', tweets.length, 'items');
-        }
+        console.log('✅ Twitter - Format data');
+      } else {
+        console.log('⚠️ Twitter - Format de réponse non reconnu:', Object.keys(results));
+        tweets = [];
+      }
+
+      if (tweets.length > 0) {
+        console.log('🔍 Premier élément Twitter:', JSON.stringify(tweets[0], null, 2));
       }
       
       const transformedResults = this.transformTwitterResults(tweets);
-      console.log('📊 Twitter Transformées:', transformedResults.length);
+      console.log('📊 Twitter Données transformées:', transformedResults.length);
       return transformedResults;
     } catch (error) {
       console.error(`❌ Erreur Twitter complète:`, error);
@@ -260,10 +251,10 @@ class ApifyService {
     };
 
     try {
-      console.log(`📺 RECHERCHE YOUTUBE - Terme: "${searchTerm}"`);
-      console.log('🔧 Input YouTube:', JSON.stringify(runInput, null, 2));
+      console.log(`📺 RECHERCHE YOUTUBE RÉELLE - Terme: "${searchTerm}"`);
+      console.log('🔧 Configuration YouTube:', JSON.stringify(runInput, null, 2));
       
-      const response = await fetch(`${this.baseUrl}/acts/${actorId}/run-sync`, {
+      const response = await fetch(`${this.baseUrl}/acts/${actorId}/run-sync-get-dataset-items`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -281,33 +272,30 @@ class ApifyService {
       }
 
       const results = await response.json();
-      console.log('📊 YouTube Raw Response:', JSON.stringify(results, null, 2));
+      console.log('📊 YouTube Réponse brute:', JSON.stringify(results, null, 2));
       
       // Traitement des données YouTube
       let videos = [];
       if (Array.isArray(results)) {
         videos = results;
+        console.log('✅ YouTube - Format tableau direct');
       } else if (results.items && Array.isArray(results.items)) {
         videos = results.items;
+        console.log('✅ YouTube - Format items');
       } else if (results.data && Array.isArray(results.data)) {
         videos = results.data;
-      } else if (results.defaultDatasetId) {
-        // Récupérer les données du dataset
-        console.log('🔄 Récupération du dataset YouTube...');
-        const datasetResponse = await fetch(`${this.baseUrl}/datasets/${results.defaultDatasetId}/items`, {
-          headers: {
-            'Authorization': `Bearer ${this.apiToken}`,
-          }
-        });
-        
-        if (datasetResponse.ok) {
-          videos = await datasetResponse.json();
-          console.log('📊 YouTube Dataset:', videos.length, 'items');
-        }
+        console.log('✅ YouTube - Format data');
+      } else {
+        console.log('⚠️ YouTube - Format de réponse non reconnu:', Object.keys(results));
+        videos = [];
+      }
+
+      if (videos.length > 0) {
+        console.log('🔍 Premier élément YouTube:', JSON.stringify(videos[0], null, 2));
       }
       
       const transformedResults = this.transformYouTubeResults(videos);
-      console.log('📊 YouTube Transformées:', transformedResults.length);
+      console.log('📊 YouTube Données transformées:', transformedResults.length);
       return transformedResults;
     } catch (error) {
       console.error(`❌ Erreur YouTube complète:`, error);
@@ -324,10 +312,10 @@ class ApifyService {
     };
 
     try {
-      console.log(`📘 RECHERCHE FACEBOOK - Terme: "${searchTerm}"`);
-      console.log('🔧 Input Facebook:', JSON.stringify(runInput, null, 2));
+      console.log(`📘 RECHERCHE FACEBOOK RÉELLE - Terme: "${searchTerm}"`);
+      console.log('🔧 Configuration Facebook:', JSON.stringify(runInput, null, 2));
       
-      const response = await fetch(`${this.baseUrl}/acts/${actorId}/run-sync`, {
+      const response = await fetch(`${this.baseUrl}/acts/${actorId}/run-sync-get-dataset-items`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -345,33 +333,30 @@ class ApifyService {
       }
 
       const results = await response.json();
-      console.log('📊 Facebook Raw Response:', JSON.stringify(results, null, 2));
+      console.log('📊 Facebook Réponse brute:', JSON.stringify(results, null, 2));
       
       // Traitement des données Facebook
       let posts = [];
       if (Array.isArray(results)) {
         posts = results;
+        console.log('✅ Facebook - Format tableau direct');
       } else if (results.items && Array.isArray(results.items)) {
         posts = results.items;
+        console.log('✅ Facebook - Format items');
       } else if (results.data && Array.isArray(results.data)) {
         posts = results.data;
-      } else if (results.defaultDatasetId) {
-        // Récupérer les données du dataset
-        console.log('🔄 Récupération du dataset Facebook...');
-        const datasetResponse = await fetch(`${this.baseUrl}/datasets/${results.defaultDatasetId}/items`, {
-          headers: {
-            'Authorization': `Bearer ${this.apiToken}`,
-          }
-        });
-        
-        if (datasetResponse.ok) {
-          posts = await datasetResponse.json();
-          console.log('📊 Facebook Dataset:', posts.length, 'items');
-        }
+        console.log('✅ Facebook - Format data');
+      } else {
+        console.log('⚠️ Facebook - Format de réponse non reconnu:', Object.keys(results));
+        posts = [];
+      }
+
+      if (posts.length > 0) {
+        console.log('🔍 Premier élément Facebook:', JSON.stringify(posts[0], null, 2));
       }
       
       const transformedResults = this.transformFacebookResults(posts);
-      console.log('📊 Facebook Transformées:', transformedResults.length);
+      console.log('📊 Facebook Données transformées:', transformedResults.length);
       return transformedResults;
     } catch (error) {
       console.error(`❌ Erreur Facebook complète:`, error);

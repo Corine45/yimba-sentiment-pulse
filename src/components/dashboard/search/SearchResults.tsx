@@ -31,15 +31,18 @@ export const SearchResults = ({ userRole, permissions, isSearching, searchTerm =
     }
   }, [searchTerm, isSearching, fetchSearchResults]);
 
-  console.log('📊 État actuel:', {
+  console.log('📊 État SearchResults complet:', {
     searchTerm,
     isSearching,
     resultsLoading,
     searchResultsCount: searchResults.length,
-    searchResults: searchResults.map(r => ({
+    detailedResults: searchResults.map(r => ({
+      id: r.id,
       platform: r.platform,
       mentions: r.total_mentions,
-      dataLength: r.results_data?.length || 0
+      dataLength: r.results_data?.length || 0,
+      hasActualData: r.results_data && Array.isArray(r.results_data) && r.results_data.length > 0,
+      firstItem: r.results_data?.[0] ? Object.keys(r.results_data[0]) : 'N/A'
     }))
   });
 
@@ -79,18 +82,20 @@ export const SearchResults = ({ userRole, permissions, isSearching, searchTerm =
     const results = searchResults.filter(result => {
       const isPlatform = result.platform.toLowerCase() === platformName.toLowerCase();
       
-      console.log(`🔍 ${platformName} - Vérification:`, {
-        platform: result.platform,
+      console.log(`🎯 ${platformName} - Filtrage:`, {
+        resultPlatform: result.platform,
+        targetPlatform: platformName,
         isPlatform,
         totalMentions: result.total_mentions,
         dataLength: result.results_data?.length || 0,
-        hasData: result.results_data && Array.isArray(result.results_data) && result.results_data.length > 0
+        hasRealData: result.results_data && Array.isArray(result.results_data) && result.results_data.length > 0,
+        sampleData: result.results_data?.[0] ? 'Present' : 'None'
       });
       
       return isPlatform;
     });
     
-    console.log(`📱 ${platformName} - Résultats trouvés:`, results.length);
+    console.log(`📱 ${platformName} - Résultats filtrés:`, results.length, 'avec données réelles:', results.filter(r => r.results_data?.length > 0).length);
     return results;
   };
 
@@ -113,6 +118,9 @@ export const SearchResults = ({ userRole, permissions, isSearching, searchTerm =
     );
   }
 
+  // Calculer le nombre total de posts récupérés
+  const totalPostsRetrieved = searchResults.reduce((sum, r) => sum + (r.results_data?.length || 0), 0);
+
   return (
     <div className="space-y-4">
       {searchTerm && (
@@ -121,8 +129,13 @@ export const SearchResults = ({ userRole, permissions, isSearching, searchTerm =
             <strong>Recherche active :</strong> "{searchTerm}" - {searchResults.length} plateforme(s) analysée(s)
           </p>
           <p className="text-xs text-blue-600 mt-1">
-            Total des posts récupérés : {searchResults.reduce((sum, r) => sum + (r.results_data?.length || 0), 0)}
+            Total des posts récupérés : {totalPostsRetrieved}
           </p>
+          {totalPostsRetrieved === 0 && (
+            <p className="text-xs text-orange-600 mt-1">
+              ⚠️ Aucune donnée récupérée - vérifiez les logs de la console pour plus de détails
+            </p>
+          )}
         </div>
       )}
 
