@@ -12,7 +12,7 @@ export const useSearchExecution = () => {
   const executeSearch = async (
     keywords: string[],
     selectedPlatforms: string[],
-    apifyToken: string,
+    apifyToken: string = 'apify_api_JP5bjoQMQYYZ36blKD7yfm2gDRYNng3W7h69',
     setIsSearching: (searching: boolean) => void,
     setCurrentSearchTerm: (term: string) => void
   ) => {
@@ -41,12 +41,7 @@ export const useSearchExecution = () => {
     try {
       console.log('Démarrage de la recherche avec Apify...');
       
-      if (apifyToken) {
-        await executeRealSearch(searchTerm, selectedPlatforms, apifyToken);
-      } else {
-        await executeSimulatedSearch(searchTerm, selectedPlatforms);
-      }
-
+      await executeRealSearch(searchTerm, selectedPlatforms, apifyToken);
       await fetchSearchResults(searchTerm);
       
       toast({
@@ -71,71 +66,58 @@ export const useSearchExecution = () => {
     for (const platformName of selectedPlatforms) {
       const platform = platforms.find(p => p.name === platformName);
       
-      if (platform?.apify_actor_id) {
-        try {
-          console.log(`Recherche sur ${platformName} avec l'acteur ${platform.apify_actor_id}`);
-          
-          let engagementData = [];
-          
-          switch (platformName.toLowerCase()) {
-            case 'instagram':
-              engagementData = await apifyService.scrapeInstagram(searchTerm);
-              break;
-            case 'twitter':
-              engagementData = await apifyService.scrapeTwitter(searchTerm);
-              break;
-            case 'facebook':
-              engagementData = await apifyService.scrapeFacebook(searchTerm);
-              break;
-            case 'tiktok':
-              engagementData = await apifyService.scrapeTikTok(searchTerm);
-              break;
-            default:
-              console.log(`Plateforme ${platformName} non supportée`);
-              continue;
-          }
-
-          const totalMentions = engagementData.length;
-          const totalEngagement = engagementData.reduce((sum, item) => 
-            sum + item.likes + item.comments + item.shares, 0);
-          const totalReach = engagementData.reduce((sum, item) => 
-            sum + (item.likes * 10), 0);
-          
-          const positiveSentiment = Math.floor(totalMentions * 0.4);
-          const negativeSentiment = Math.floor(totalMentions * 0.2);
-          const neutralSentiment = totalMentions - positiveSentiment - negativeSentiment;
-
-          await createSearchResult({
-            search_id: null,
-            search_term: searchTerm,
-            platform: platformName,
-            total_mentions: totalMentions,
-            positive_sentiment: positiveSentiment,
-            negative_sentiment: negativeSentiment,
-            neutral_sentiment: neutralSentiment,
-            total_reach: totalReach,
-            total_engagement: totalEngagement,
-            results_data: engagementData
-          });
-
-          console.log(`Données récupérées pour ${platformName}: ${totalMentions} mentions`);
-          
-        } catch (platformError) {
-          console.error(`Erreur lors de la recherche sur ${platformName}:`, platformError);
-          await createSimulatedResult(searchTerm, platformName);
+      try {
+        console.log(`Recherche sur ${platformName}`);
+        
+        let engagementData = [];
+        
+        switch (platformName.toLowerCase()) {
+          case 'instagram':
+            engagementData = await apifyService.scrapeInstagram(searchTerm);
+            break;
+          case 'twitter':
+            engagementData = await apifyService.scrapeTwitter(searchTerm);
+            break;
+          case 'facebook':
+            engagementData = await apifyService.scrapeFacebook(searchTerm);
+            break;
+          case 'tiktok':
+            engagementData = await apifyService.scrapeTikTok(searchTerm);
+            break;
+          default:
+            console.log(`Plateforme ${platformName} non supportée`);
+            continue;
         }
-      } else {
-        console.log(`Pas d'acteur Apify configuré pour ${platformName}, utilisation de données simulées`);
+
+        const totalMentions = engagementData.length;
+        const totalEngagement = engagementData.reduce((sum, item) => 
+          sum + item.likes + item.comments + item.shares, 0);
+        const totalReach = engagementData.reduce((sum, item) => 
+          sum + (item.views || item.likes * 10), 0);
+        
+        const positiveSentiment = Math.floor(totalMentions * 0.4);
+        const negativeSentiment = Math.floor(totalMentions * 0.2);
+        const neutralSentiment = totalMentions - positiveSentiment - negativeSentiment;
+
+        await createSearchResult({
+          search_id: null,
+          search_term: searchTerm,
+          platform: platformName,
+          total_mentions: totalMentions,
+          positive_sentiment: positiveSentiment,
+          negative_sentiment: negativeSentiment,
+          neutral_sentiment: neutralSentiment,
+          total_reach: totalReach,
+          total_engagement: totalEngagement,
+          results_data: engagementData
+        });
+
+        console.log(`Données récupérées pour ${platformName}: ${totalMentions} mentions`);
+        
+      } catch (platformError) {
+        console.error(`Erreur lors de la recherche sur ${platformName}:`, platformError);
         await createSimulatedResult(searchTerm, platformName);
       }
-    }
-  };
-
-  const executeSimulatedSearch = async (searchTerm: string, selectedPlatforms: string[]) => {
-    console.log('Pas de token Apify configuré, utilisation de données simulées');
-    
-    for (const platform of selectedPlatforms) {
-      await createSimulatedResult(searchTerm, platform);
     }
   };
 

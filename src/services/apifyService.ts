@@ -9,6 +9,7 @@ export interface EngagementData {
   content: string;
   url: string;
   timestamp: string;
+  views?: number;
 }
 
 export interface ApifyResponse {
@@ -24,6 +25,7 @@ export interface ApifyResponse {
       shareCount: number;
       url: string;
       createdAt: string;
+      viewCount?: number;
     }>;
   };
 }
@@ -32,7 +34,7 @@ class ApifyService {
   private apiToken: string;
   private baseUrl = 'https://api.apify.com/v2';
 
-  constructor(apiToken: string) {
+  constructor(apiToken: string = 'apify_api_JP5bjoQMQYYZ36blKD7yfm2gDRYNng3W7h69') {
     this.apiToken = apiToken;
   }
 
@@ -66,14 +68,17 @@ class ApifyService {
     return this.runActor(actorId, runInput, 'facebook');
   }
 
-  async scrapeTikTok(username: string): Promise<EngagementData[]> {
-    const actorId = 'apify/tiktok-scraper';
+  async scrapeTikTok(keywords: string): Promise<EngagementData[]> {
+    const actorId = 'clockworks/tiktok-scraper';
     const runInput = {
-      profiles: [username],
-      resultsPerPage: 50
+      hashtags: [keywords],
+      resultsPerPage: 50,
+      shouldDownloadCovers: false,
+      shouldDownloadVideos: false,
+      shouldDownloadSubtitles: false
     };
 
-    return this.runActor(actorId, runInput, 'tiktok');
+    return this.runActorSync(actorId, runInput, 'tiktok');
   }
 
   private async runActor(actorId: string, runInput: any, platform: string): Promise<EngagementData[]> {
@@ -147,17 +152,45 @@ class ApifyService {
     }
   }
 
+  private async runActorSync(actorId: string, runInput: any, platform: string): Promise<EngagementData[]> {
+    try {
+      console.log(`Démarrage du scraping synchrone ${platform} avec Apify...`);
+      
+      // Utiliser l'endpoint synchrone pour TikTok
+      const syncResponse = await fetch(`${this.baseUrl}/acts/${actorId}/run-sync?token=${this.apiToken}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(runInput),
+      });
+
+      if (!syncResponse.ok) {
+        throw new Error(`Erreur lors du scraping synchrone: ${syncResponse.statusText}`);
+      }
+
+      const results = await syncResponse.json();
+      console.log(`Scraping TikTok terminé, ${results.length} résultats trouvés`);
+      
+      return this.transformResults(results, platform);
+    } catch (error) {
+      console.error(`Erreur lors du scraping synchrone ${platform}:`, error);
+      throw error;
+    }
+  }
+
   private transformResults(results: any[], platform: string): EngagementData[] {
     return results.map((item, index) => ({
-      likes: item.likeCount || item.likesCount || item.reactions || 0,
+      likes: item.likeCount || item.likesCount || item.reactions || item.diggCount || 0,
       comments: item.commentCount || item.commentsCount || 0,
       shares: item.shareCount || item.sharesCount || item.retweetCount || 0,
       platform,
-      postId: item.id || item.postId || `${platform}_${index}`,
-      author: item.author?.userName || item.username || item.author || 'Inconnu',
-      content: item.text || item.caption || item.description || '',
-      url: item.url || item.link || '',
-      timestamp: item.createdAt || item.timestamp || new Date().toISOString(),
+      postId: item.id || item.postId || item.webVideoUrl || `${platform}_${index}`,
+      author: item.author?.userName || item.username || item.author || item.authorMeta?.name || 'Inconnu',
+      content: item.text || item.caption || item.description || item.desc || '',
+      url: item.url || item.link || item.webVideoUrl || '',
+      timestamp: item.createdAt || item.timestamp || item.createTime || new Date().toISOString(),
+      views: item.viewCount || item.playCount || 0,
     }));
   }
 }

@@ -1,4 +1,5 @@
 
+import { useState } from 'react';
 import { useSearchState } from './search/useSearchState';
 import { useSearchFilters } from './search/useSearchFilters';
 import { useSearchExecution } from './search/useSearchExecution';
@@ -18,23 +19,18 @@ export const useSearchPanel = () => {
     setIsSearching,
     currentSearchTerm,
     setCurrentSearchTerm,
-    apifyToken,
-    setApifyToken,
   } = useSearchState();
 
   const { advancedFilters, setAdvancedFilters } = useSearchFilters();
   const { executeSearch } = useSearchExecution();
-  const {
-    saveDialogOpen,
-    setSaveDialogOpen,
-    searchName,
-    setSearchName,
-    handleSaveSearch,
-    handleExecuteSavedSearch,
-  } = useSearchSaving();
+  const { saveSearch } = useSearchSaving();
 
-  const handleSearch = () => {
-    executeSearch(
+  const [saveDialogOpen, setSaveDialogOpen] = useState(false);
+  const [searchName, setSearchName] = useState('');
+  const [apifyToken, setApifyToken] = useState('apify_api_JP5bjoQMQYYZ36blKD7yfm2gDRYNng3W7h69');
+
+  const handleSearch = async () => {
+    await executeSearch(
       keywords,
       selectedPlatforms,
       apifyToken,
@@ -43,18 +39,28 @@ export const useSearchPanel = () => {
     );
   };
 
-  const handleSave = () => {
-    handleSaveSearch(
+  const handleSaveSearch = async () => {
+    const success = await saveSearch({
+      name: searchName,
       keywords,
       selectedPlatforms,
       language,
       period,
       advancedFilters
-    );
+    });
+
+    if (success) {
+      setSaveDialogOpen(false);
+      setSearchName('');
+    }
+  };
+
+  const handleExecuteSavedSearch = async (searchId: string) => {
+    console.log('Exécution de la recherche sauvegardée:', searchId);
+    // TODO: Implémenter l'exécution des recherches sauvegardées
   };
 
   return {
-    // State
     keywords,
     selectedPlatforms,
     language,
@@ -65,8 +71,6 @@ export const useSearchPanel = () => {
     searchName,
     apifyToken,
     advancedFilters,
-    
-    // State setters
     setKeywords,
     setSelectedPlatforms,
     setLanguage,
@@ -75,10 +79,8 @@ export const useSearchPanel = () => {
     setSearchName,
     setApifyToken,
     setAdvancedFilters,
-    
-    // Handlers
     handleSearch,
-    handleSaveSearch: handleSave,
+    handleSaveSearch,
     handleExecuteSavedSearch,
   };
 };
