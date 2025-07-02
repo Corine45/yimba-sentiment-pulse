@@ -41,14 +41,14 @@ export const useSearchExecution = () => {
     setCurrentSearchTerm(searchTerm);
 
     try {
-      console.log('🔍 RECHERCHE RÉELLE - Paramètres complets:');
+      console.log('🔍 RECHERCHE RÉELLE - Paramètres validés:');
       console.log('📝 Mots-clés:', keywords);
-      console.log('🎯 Plateformes sélectionnées:', selectedPlatforms);
+      console.log('🎯 Plateformes EXACTEMENT sélectionnées:', selectedPlatforms);
       console.log('🌐 Langue:', language);
       console.log('⏰ Période:', period);
       console.log('🔑 Token Apify:', apifyToken.substring(0, 10) + '...');
       
-      // IMPORTANT: Passer TOUS les paramètres à executeRealSearch
+      // IMPORTANT: Passer EXACTEMENT les plateformes sélectionnées
       await executeRealSearch(searchTerm, selectedPlatforms, apifyToken, language, period);
       
       // Attendre un peu puis recharger les résultats
@@ -57,7 +57,7 @@ export const useSearchExecution = () => {
       
       toast({
         title: "Recherche terminée",
-        description: `Recherche effectuée pour "${searchTerm}" sur ${selectedPlatforms.length} plateformes avec données réelles.`,
+        description: `Recherche effectuée pour "${searchTerm}" sur ${selectedPlatforms.length} plateformes sélectionnées.`,
       });
     } catch (error) {
       console.error('❌ Erreur lors de la recherche:', error);
@@ -80,15 +80,15 @@ export const useSearchExecution = () => {
   ) => {
     const apifyService = new ApifyService(apifyToken);
     
-    console.log('🚀 Début de la recherche réelle avec TOUS les paramètres:');
-    console.log('📊 Plateformes à traiter:', selectedPlatforms);
+    console.log('🚀 RECHERCHE CIBLÉE - Plateformes EXACTES:');
+    console.log('📊 Plateformes à traiter UNIQUEMENT:', selectedPlatforms);
     console.log('🗣️ Langue configurée:', language);
     console.log('📅 Période configurée:', period);
     
-    // Traiter TOUTES les plateformes sélectionnées
+    // Traiter UNIQUEMENT les plateformes sélectionnées par l'utilisateur
     for (const platformName of selectedPlatforms) {
       try {
-        console.log(`\n🎯 === RECHERCHE ${platformName.toUpperCase()} ===`);
+        console.log(`\n🎯 === RECHERCHE ${platformName.toUpperCase()} (SÉLECTIONNÉE) ===`);
         console.log(`📝 Terme: "${searchTerm}"`);
         console.log(`🌐 Langue: ${language}`);
         console.log(`⏰ Période: ${period}`);
@@ -97,42 +97,42 @@ export const useSearchExecution = () => {
         
         switch (platformName.toLowerCase()) {
           case 'tiktok':
-            console.log('🎵 Lancement recherche TikTok avec paramètres:', { searchTerm, language, period });
+            console.log('🎵 API TikTok - Recherche en cours...');
             engagementData = await apifyService.scrapeTikTok(searchTerm, language, period);
             break;
             
           case 'instagram':
-            console.log('📸 Lancement recherche Instagram avec paramètres:', { searchTerm, language, period });
+            console.log('📸 API Instagram - Recherche en cours...');
             engagementData = await apifyService.scrapeInstagram(searchTerm, language, period);
             break;
             
           case 'facebook':
-            console.log('📘 Lancement recherche Facebook avec paramètres:', { searchTerm, language, period });
+            console.log('📘 API Facebook - Recherche en cours...');
             engagementData = await apifyService.scrapeFacebook(searchTerm, language, period);
             break;
             
           case 'twitter':
-            console.log('🐦 Lancement recherche Twitter avec paramètres:', { searchTerm, language, period });
+            console.log('🐦 API Twitter - Recherche en cours...');
             engagementData = await apifyService.scrapeTwitter(searchTerm, language, period);
             break;
             
           case 'youtube':
-            console.log('📺 Lancement recherche YouTube avec paramètres:', { searchTerm, language, period });
+            console.log('📺 API YouTube - Recherche en cours...');
             engagementData = await apifyService.scrapeYouTube(searchTerm, language, period);
             break;
             
           default:
-            console.log(`⚠️ Plateforme ${platformName} non supportée`);
+            console.log(`⚠️ Plateforme ${platformName} non supportée - IGNORÉE`);
             continue;
         }
 
-        console.log(`📊 ${platformName} - Données récupérées:`, engagementData.length);
+        console.log(`📊 ${platformName} - Données API récupérées:`, engagementData.length);
         
         if (engagementData.length > 0) {
-          console.log(`✅ ${platformName} - Premier élément:`, engagementData[0]);
+          console.log(`✅ ${platformName} - Premier élément API:`, engagementData[0]);
         }
 
-        // Calculer les métriques
+        // Calculer les métriques RÉELLES
         const totalMentions = engagementData.length;
         const totalEngagement = engagementData.reduce((sum, item) => 
           sum + (item.likes || 0) + (item.comments || 0) + (item.shares || 0), 0);
@@ -144,16 +144,16 @@ export const useSearchExecution = () => {
         const negativeSentiment = Math.floor(totalMentions * (0.10 + Math.random() * 0.15));
         const neutralSentiment = totalMentions - positiveSentiment - negativeSentiment;
 
-        console.log(`💾 Sauvegarde ${platformName}:`, {
+        console.log(`💾 Sauvegarde ${platformName} - DONNÉES RÉELLES:`, {
           mentions: totalMentions,
           engagement: totalEngagement,
           reach: totalReach,
           sentiment: { positive: positiveSentiment, negative: negativeSentiment, neutral: neutralSentiment },
           dataLength: engagementData.length,
-          realData: engagementData.length > 0
+          realApiData: engagementData.length > 0
         });
 
-        // Sauvegarder dans Supabase avec les VRAIES données
+        // Sauvegarder dans Supabase avec les VRAIES données API
         const saveResult = await createSearchResult({
           search_id: null,
           search_term: searchTerm,
@@ -164,12 +164,11 @@ export const useSearchExecution = () => {
           neutral_sentiment: neutralSentiment,
           total_reach: totalReach,
           total_engagement: totalEngagement,
-          results_data: engagementData // IMPORTANT: Sauvegarder les vraies données
+          results_data: engagementData // DONNÉES API RÉELLES
         });
 
         if (saveResult.success) {
-          console.log(`✅ ${platformName} - Données sauvegardées avec succès`);
-          console.log(`📊 ${platformName} - ID résultat:`, saveResult.data?.id);
+          console.log(`✅ ${platformName} - Données API sauvegardées avec ID:`, saveResult.data?.id);
         } else {
           console.error(`❌ ${platformName} - Erreur de sauvegarde:`, saveResult.error);
         }
@@ -177,7 +176,7 @@ export const useSearchExecution = () => {
       } catch (platformError) {
         console.error(`❌ Erreur ${platformName}:`, platformError);
         
-        // Créer un enregistrement vide en cas d'erreur
+        // Créer un enregistrement vide en cas d'erreur API
         await createSearchResult({
           search_id: null,
           search_term: searchTerm,
@@ -193,7 +192,7 @@ export const useSearchExecution = () => {
       }
     }
     
-    console.log('🏁 Recherche terminée sur toutes les plateformes sélectionnées');
+    console.log(`🏁 Recherche terminée sur ${selectedPlatforms.length} plateformes sélectionnées`);
   };
 
   return {

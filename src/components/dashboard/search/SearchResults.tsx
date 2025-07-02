@@ -31,7 +31,7 @@ export const SearchResults = ({ userRole, permissions, isSearching, searchTerm =
     }
   }, [searchTerm, isSearching, fetchSearchResults]);
 
-  console.log('📊 État SearchResults DÉTAILLÉ:', {
+  console.log('📊 État SearchResults - ANALYSE DÉTAILLÉE:', {
     searchTerm,
     isSearching,
     resultsLoading,
@@ -45,12 +45,11 @@ export const SearchResults = ({ userRole, permissions, isSearching, searchTerm =
       platform: r.platform,
       mentions: r.total_mentions,
       dataLength: r.results_data?.length || 0,
-      hasActualData: r.results_data && Array.isArray(r.results_data) && r.results_data.length > 0,
-      firstItemKeys: r.results_data?.[0] ? Object.keys(r.results_data[0]) : 'N/A'
+      hasActualData: r.results_data && Array.isArray(r.results_data) && r.results_data.length > 0
     }))
   });
 
-  // Calcul des métriques depuis les résultats RÉELS
+  // Calcul des métriques depuis les résultats RÉELS uniquement
   const totalMentions = searchResults.reduce((sum, result) => sum + (result.total_mentions || 0), 0);
   const totalReach = searchResults.reduce((sum, result) => sum + (result.total_reach || 0), 0);
   const totalEngagement = searchResults.reduce((sum, result) => sum + (result.total_engagement || 0), 0);
@@ -64,54 +63,41 @@ export const SearchResults = ({ userRole, permissions, isSearching, searchTerm =
   const positivePercentage = totalMentions > 0 
     ? Math.round((totalSentiment.positive / totalMentions) * 100) 
     : 0;
-
   const negativePercentage = totalMentions > 0 
     ? Math.round((totalSentiment.negative / totalMentions) * 100) 
     : 0;
-
   const neutralPercentage = totalMentions > 0 
     ? Math.round((totalSentiment.neutral / totalMentions) * 100) 
     : 0;
 
-  // Distribution par plateforme depuis les résultats RÉELS
+  // Distribution par plateforme - EXACTEMENT depuis les résultats
   const platformCounts = searchResults.reduce((acc, result) => {
     acc[result.platform] = (acc[result.platform] || 0) + (result.total_mentions || 0);
     return acc;
   }, {} as Record<string, number>);
 
-  // Plateformes avec données détaillées disponibles
-  const platformsWithData = ['TikTok', 'Instagram', 'Facebook', 'Twitter', 'YouTube'];
+  // Obtenir les plateformes UNIQUEMENT présentes dans les résultats
+  const platformsWithResults = [...new Set(searchResults.map(r => r.platform))];
   
-  // CORRECTION: Fonction améliorée pour récupérer les résultats par plateforme
+  console.log('🎯 Plateformes avec résultats RÉELS:', platformsWithResults);
+
+  // Fonction pour récupérer les résultats par plateforme
   const getPlatformResults = (platformName: string) => {
     const results = searchResults.filter(result => {
       const isPlatform = result.platform.toLowerCase() === platformName.toLowerCase();
-      const hasData = result.results_data && Array.isArray(result.results_data) && result.results_data.length > 0;
       
-      console.log(`🎯 ${platformName} - Analyse résultat:`, {
-        resultId: result.id,
-        resultPlatform: result.platform,
-        targetPlatform: platformName,
+      console.log(`🔍 ${platformName} - Vérification:`, {
+        platform: result.platform,
         isPlatform,
         totalMentions: result.total_mentions,
         dataLength: result.results_data?.length || 0,
-        hasData,
-        sampleData: result.results_data?.[0] ? 'Présent' : 'Absent'
+        hasData: result.results_data && Array.isArray(result.results_data) && result.results_data.length > 0
       });
       
       return isPlatform;
     });
     
-    console.log(`📱 ${platformName} - Résultats trouvés:`, {
-      totalResults: results.length,
-      withData: results.filter(r => r.results_data?.length > 0).length,
-      allResultsData: results.map(r => ({
-        id: r.id,
-        mentions: r.total_mentions,
-        dataCount: r.results_data?.length || 0
-      }))
-    });
-    
+    console.log(`📱 ${platformName} - Résultats trouvés:`, results.length);
     return results;
   };
 
@@ -129,27 +115,28 @@ export const SearchResults = ({ userRole, permissions, isSearching, searchTerm =
     return (
       <div className="text-center py-8">
         <p className="text-gray-500">Aucun résultat trouvé pour "{searchTerm}"</p>
-        <p className="text-sm text-gray-400 mt-2">Vérifiez la configuration des APIs ou essayez d'autres mots-clés.</p>
+        <p className="text-sm text-gray-400 mt-2">Vérifiez les logs de la console pour plus de détails sur les appels API.</p>
       </div>
     );
   }
 
-  // Calculer le nombre total de posts récupérés
+  // Calculer le nombre total de posts récupérés via API
   const totalPostsRetrieved = searchResults.reduce((sum, r) => sum + (r.results_data?.length || 0), 0);
+  const platformsWithData = searchResults.filter(r => r.results_data?.length > 0).length;
 
   return (
     <div className="space-y-4">
       {searchTerm && (
         <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
           <p className="text-sm text-blue-800">
-            <strong>Recherche active :</strong> "{searchTerm}" - {searchResults.length} plateforme(s) analysée(s)
+            <strong>Recherche active :</strong> "{searchTerm}" - {searchResults.length} plateforme(s) traitée(s)
           </p>
           <p className="text-xs text-blue-600 mt-1">
-            Posts récupérés : {totalPostsRetrieved} | Plateformes avec données : {searchResults.filter(r => r.results_data?.length > 0).length}
+            Posts API récupérés : {totalPostsRetrieved} | Plateformes avec données : {platformsWithData}
           </p>
           {totalPostsRetrieved === 0 && searchResults.length > 0 && (
             <p className="text-xs text-orange-600 mt-1">
-              ⚠️ Mentions détectées mais données détaillées en cours de récupération - vérifiez les logs
+              ⚠️ Plateformes traitées mais aucune donnée API récupérée - vérifiez les logs de la console
             </p>
           )}
         </div>
@@ -172,15 +159,9 @@ export const SearchResults = ({ userRole, permissions, isSearching, searchTerm =
         <PlatformDistribution platformCounts={platformCounts} />
       )}
 
-      {/* LISTES DÉTAILLÉES PAR PLATEFORME - TOUTES LES PLATEFORMES */}
-      {platformsWithData.map(platformName => {
+      {/* AFFICHAGE DES RÉSULTATS DÉTAILLÉS - UNIQUEMENT LES PLATEFORMES AVEC RÉSULTATS */}
+      {platformsWithResults.map(platformName => {
         const platformResults = getPlatformResults(platformName);
-        
-        console.log(`🔍 Affichage ${platformName}:`, {
-          hasResults: platformResults.length > 0,
-          resultCount: platformResults.length,
-          withData: platformResults.filter(r => r.results_data?.length > 0).length
-        });
         
         if (platformResults.length > 0) {
           return (

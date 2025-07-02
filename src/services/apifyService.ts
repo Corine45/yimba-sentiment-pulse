@@ -47,14 +47,17 @@ class ApifyService {
       shouldDownloadCovers: false,
       shouldDownloadVideos: false,
       shouldDownloadSubtitles: false,
-      language: language // AJOUT: Utiliser le paramètre langue
+      language: language
     };
 
     try {
-      console.log(`🎵 RECHERCHE TIKTOK RÉELLE - Configuration complète:`);
-      console.log('🔧 Input TikTok:', JSON.stringify(runInput, null, 2));
-      console.log('🌐 Langue demandée:', language);
-      console.log('📅 Période demandée:', period);
+      console.log(`🎵 TikTok API - Configuration COMPLÈTE:`, {
+        terme: searchTerm,
+        langue: language,
+        période: period,
+        limite: this.getResultsLimit(period),
+        input: runInput
+      });
       
       const response = await fetch(`${this.baseUrl}/acts/${actorId}/run-sync-get-dataset-items`, {
         method: 'POST',
@@ -65,69 +68,71 @@ class ApifyService {
         body: JSON.stringify(runInput)
       });
 
-      console.log('📡 TikTok Response Status:', response.status);
+      console.log('📡 TikTok API Response Status:', response.status);
       
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('❌ Erreur TikTok Response:', response.status, errorText);
+        console.error('❌ TikTok API Error:', response.status, errorText);
         throw new Error(`TikTok API Error: ${response.status} - ${errorText}`);
       }
 
       const results = await response.json();
-      console.log('📊 TikTok Réponse brute complète:', JSON.stringify(results, null, 2));
+      console.log('📊 TikTok API - Réponse brute complète:', JSON.stringify(results, null, 2));
       
       // Traitement des différents formats de réponse TikTok
       let videos = [];
       if (Array.isArray(results)) {
         videos = results;
-        console.log('✅ TikTok - Format tableau direct');
+        console.log('✅ TikTok API - Format tableau direct');
       } else if (results.items && Array.isArray(results.items)) {
         videos = results.items;
-        console.log('✅ TikTok - Format items');
+        console.log('✅ TikTok API - Format items');
       } else if (results.data && Array.isArray(results.data)) {
         videos = results.data;
-        console.log('✅ TikTok - Format data');
+        console.log('✅ TikTok API - Format data');
       } else {
-        console.log('⚠️ TikTok - Format de réponse non reconnu:', Object.keys(results));
+        console.log('⚠️ TikTok API - Format non reconnu:', Object.keys(results));
         videos = [];
       }
 
-      console.log('✅ TikTok Videos trouvées:', videos.length);
+      console.log(`✅ TikTok API - Videos trouvées: ${videos.length}`);
       if (videos.length > 0) {
-        console.log('🔍 Premier élément TikTok:', JSON.stringify(videos[0], null, 2));
+        console.log('🔍 TikTok API - Premier élément:', JSON.stringify(videos[0], null, 2));
       }
       
       const transformedResults = this.transformTikTokResults(videos);
-      console.log('📊 TikTok Données transformées:', transformedResults.length);
+      console.log(`📊 TikTok API - Données transformées: ${transformedResults.length}`);
       
       return transformedResults;
     } catch (error) {
-      console.error(`❌ Erreur TikTok complète:`, error);
+      console.error(`❌ TikTok API - Erreur complète:`, error);
       return [];
     }
   }
 
   async scrapeInstagram(searchTerm: string, language: string = 'fr', period: string = '7d'): Promise<EngagementData[]> {
     try {
-      console.log(`📸 RECHERCHE INSTAGRAM RÉELLE - Configuration:`);
-      console.log('🌐 Langue:', language);
-      console.log('📅 Période:', period);
+      console.log(`📸 Instagram API - Configuration:`, {
+        terme: searchTerm,
+        langue: language,
+        période: period
+      });
       
-      // Essayer d'abord avec le premier acteur
+      // Essayer avec le premier acteur
       const result1 = await this.runInstagramActor('apify/instagram-scraper', searchTerm, language, period);
       if (result1.length > 0) {
-        console.log('✅ Instagram premier acteur réussi:', result1.length);
+        console.log(`✅ Instagram API - Premier acteur réussi: ${result1.length} résultats`);
         return result1;
       }
 
       // Essayer avec le second acteur
-      console.log('🔄 Essai avec le second acteur Instagram...');
+      console.log('🔄 Instagram API - Essai avec le second acteur...');
       const result2 = await this.runInstagramActor('apify/instagram-post-scraper', searchTerm, language, period);
-      console.log('📊 Instagram second acteur:', result2.length);
+      console.log(`📊 Instagram API - Second acteur: ${result2.length} résultats`);
       return result2;
       
     } catch (error) {
-      console.error('❌ Erreur Instagram complète:', error);
+      console.error('❌ Instagram API - Erreur complète:', error);
       return [];
     }
   }
@@ -137,13 +142,14 @@ class ApifyService {
       hashtags: [searchTerm.startsWith('#') ? searchTerm : `#${searchTerm}`],
       resultsLimit: this.getResultsLimit(period),
       maxResults: this.getResultsLimit(period),
-      language: language // IMPORTANT: Utiliser le paramètre langue
+      language: language
     };
 
-    console.log(`📸 Instagram Actor: ${actorId}`);
-    console.log('🔧 Configuration Instagram complète:', JSON.stringify(runInput, null, 2));
-    console.log('🌐 Langue configurée:', language);
-    console.log('📅 Période configurée:', period);
+    console.log(`📸 Instagram Actor: ${actorId}`, {
+      configuration: runInput,
+      langue: language,
+      période: period
+    });
 
     const response = await fetch(`${this.baseUrl}/acts/${actorId}/run-sync-get-dataset-items`, {
       method: 'POST',
@@ -154,35 +160,35 @@ class ApifyService {
       body: JSON.stringify(runInput),
     });
 
-    console.log('📡 Instagram Response Status:', response.status);
+    console.log(`📡 Instagram ${actorId} Response Status:`, response.status);
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`❌ Erreur Instagram ${actorId}:`, response.status, errorText);
+      console.error(`❌ Instagram ${actorId} Error:`, response.status, errorText);
       throw new Error(`Instagram ${actorId} Error: ${response.status} - ${errorText}`);
     }
 
     const results = await response.json();
-    console.log('📊 Instagram Réponse brute:', JSON.stringify(results, null, 2));
+    console.log(`📊 Instagram ${actorId} - Réponse:`, JSON.stringify(results, null, 2));
 
     // Traitement des données Instagram
     let posts = [];
     if (Array.isArray(results)) {
       posts = results;
-      console.log('✅ Instagram - Format tableau direct');
+      console.log(`✅ Instagram ${actorId} - Format tableau direct`);
     } else if (results.items && Array.isArray(results.items)) {
       posts = results.items;
-      console.log('✅ Instagram - Format items');
+      console.log(`✅ Instagram ${actorId} - Format items`);
     } else if (results.data && Array.isArray(results.data)) {
       posts = results.data;
-      console.log('✅ Instagram - Format data');
+      console.log(`✅ Instagram ${actorId} - Format data`);
     } else {
-      console.log('⚠️ Instagram - Format de réponse non reconnu:', Object.keys(results));
+      console.log(`⚠️ Instagram ${actorId} - Format non reconnu:`, Object.keys(results));
       posts = [];
     }
 
     if (posts.length > 0) {
-      console.log('🔍 Premier élément Instagram:', JSON.stringify(posts[0], null, 2));
+      console.log(`🔍 Instagram ${actorId} - Premier élément:`, JSON.stringify(posts[0], null, 2));
     }
 
     return this.transformInstagramResults(posts);
