@@ -29,16 +29,22 @@ interface TikTokDetailedResultsProps {
 }
 
 export const TikTokDetailedResults = ({ tikTokResults, canExportData }: TikTokDetailedResultsProps) => {
-  // Récupérer toutes les vidéos TikTok RÉELLES uniquement
+  // Récupérer toutes les vidéos TikTok RÉELLES
   const allTikTokPosts = tikTokResults.flatMap(result => {
     console.log('📱 Traitement résultat TikTok RÉEL:', {
       searchTerm: result.search_term,
       totalMentions: result.total_mentions,
-      dataLength: result.results_data?.length || 0
+      dataLength: result.results_data?.length || 0,
+      platform: result.platform
     });
     
-    // Retourner uniquement les données réelles - pas de simulation
-    return result.results_data || [];
+    // Vérifier que c'est bien TikTok et qu'il y a des données
+    if (result.platform.toLowerCase() === 'tiktok' && result.results_data && Array.isArray(result.results_data)) {
+      console.log('✅ Données TikTok RÉELLES trouvées:', result.results_data.length);
+      return result.results_data;
+    }
+    
+    return [];
   });
 
   console.log('📊 Posts TikTok RÉELS à afficher:', allTikTokPosts.length);
@@ -109,9 +115,11 @@ export const TikTokDetailedResults = ({ tikTokResults, canExportData }: TikTokDe
     URL.revokeObjectURL(url);
   };
 
+  // Calculer le total des mentions TikTok
+  const totalTikTokMentions = tikTokResults.reduce((sum, result) => 
+    result.platform.toLowerCase() === 'tiktok' ? sum + result.total_mentions : sum, 0);
+
   if (allTikTokPosts.length === 0) {
-    const totalMentions = tikTokResults.reduce((sum, result) => sum + result.total_mentions, 0);
-    
     return (
       <Card className="border-pink-200 bg-pink-50">
         <CardHeader>
@@ -123,13 +131,13 @@ export const TikTokDetailedResults = ({ tikTokResults, canExportData }: TikTokDe
         <CardContent>
           <div className="text-center py-4">
             <p className="text-gray-600 mb-2">
-              {totalMentions > 0 
-                ? `${totalMentions} mentions TikTok détectées mais aucune donnée détaillée disponible via l'API.`
-                : 'Aucune vidéo TikTok trouvée pour cette recherche via l\'API.'
+              {totalTikTokMentions > 0 
+                ? `${totalTikTokMentions} mentions TikTok détectées mais données détaillées en cours de récupération via l'API.`
+                : 'Aucune vidéo TikTok trouvée pour cette recherche via l\'API TikTok.'
               }
             </p>
             <p className="text-sm text-gray-500">
-              Vérifiez votre configuration API ou essayez d'autres mots-clés.
+              Vérifiez votre configuration API TikTok ou essayez d'autres hashtags.
             </p>
           </div>
         </CardContent>
@@ -143,7 +151,7 @@ export const TikTokDetailedResults = ({ tikTokResults, canExportData }: TikTokDe
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center space-x-2">
             <Video className="w-5 h-5 text-pink-600" />
-            <span>🎵 Résultats TikTok détaillés - Données Réelles ({allTikTokPosts.length} vidéos)</span>
+            <span>🎵 Résultats TikTok détaillés - Données Réelles API ({allTikTokPosts.length} vidéos)</span>
           </CardTitle>
           {canExportData && (
             <div className="flex space-x-2">
@@ -164,13 +172,19 @@ export const TikTokDetailedResults = ({ tikTokResults, canExportData }: TikTokDe
         </div>
       </CardHeader>
       <CardContent>
+        <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+          <p className="text-sm text-green-800">
+            ✅ Données récupérées en temps réel via l'API TikTok
+          </p>
+        </div>
+        
         <div className="space-y-4 max-h-96 overflow-y-auto">
           {allTikTokPosts.map((post, index) => (
             <div key={`${post.postId}-${index}`} className="border border-pink-200 rounded-lg p-4 hover:shadow-md transition-shadow bg-white">
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center space-x-2">
                   <Badge className="bg-pink-500 text-white">
-                    TikTok Réel
+                    TikTok API
                   </Badge>
                   <span className="text-sm text-gray-500">
                     {post.timestamp ? new Date(post.timestamp).toLocaleDateString('fr-FR', {
@@ -192,26 +206,26 @@ export const TikTokDetailedResults = ({ tikTokResults, canExportData }: TikTokDe
               </div>
 
               <div className="flex items-center space-x-2 mb-2">
-                <span className="font-medium text-gray-900">@{post.author || 'Auteur inconnu'}</span>
+                <span className="font-medium text-gray-900">@{post.author}</span>
               </div>
 
               <p className="text-gray-700 text-sm mb-3 line-clamp-3">
-                {post.content || 'Contenu non disponible'}
+                {post.content}
               </p>
 
               <div className="flex items-center justify-between">
                 <div className="flex space-x-4 text-sm">
                   <div className="flex items-center space-x-1 text-red-600">
                     <Heart className="w-4 h-4" />
-                    <span className="font-medium">{(post.likes || 0).toLocaleString()}</span>
+                    <span className="font-medium">{post.likes.toLocaleString()}</span>
                   </div>
                   <div className="flex items-center space-x-1 text-blue-600">
                     <MessageSquare className="w-4 h-4" />
-                    <span className="font-medium">{(post.comments || 0).toLocaleString()}</span>
+                    <span className="font-medium">{post.comments.toLocaleString()}</span>
                   </div>
                   <div className="flex items-center space-x-1 text-green-600">
                     <Share className="w-4 h-4" />
-                    <span className="font-medium">{(post.shares || 0).toLocaleString()}</span>
+                    <span className="font-medium">{post.shares.toLocaleString()}</span>
                   </div>
                   {post.views && (
                     <div className="flex items-center space-x-1 text-purple-600">

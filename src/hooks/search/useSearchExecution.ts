@@ -41,9 +41,9 @@ export const useSearchExecution = () => {
     setCurrentSearchTerm(searchTerm);
 
     try {
-      console.log('🔍 Démarrage de la recherche avec les paramètres:');
+      console.log('🔍 Démarrage de la recherche RÉELLE avec les paramètres:');
       console.log('Mots-clés:', keywords);
-      console.log('Plateformes:', selectedPlatforms);
+      console.log('Plateformes sélectionnées:', selectedPlatforms);
       console.log('Langue:', language);
       console.log('Période:', period);
       
@@ -54,13 +54,13 @@ export const useSearchExecution = () => {
       
       toast({
         title: "Recherche terminée",
-        description: `Recherche effectuée pour "${searchTerm}" sur ${selectedPlatforms.length} plateformes.`,
+        description: `Recherche RÉELLE effectuée pour "${searchTerm}" sur ${selectedPlatforms.length} plateformes.`,
       });
     } catch (error) {
       console.error('❌ Erreur générale lors de la recherche:', error);
       toast({
         title: "Erreur",
-        description: "Une erreur est survenue pendant la recherche.",
+        description: "Une erreur est survenue pendant la recherche réelle.",
         variant: "destructive",
       });
     } finally {
@@ -77,65 +77,38 @@ export const useSearchExecution = () => {
   ) => {
     const apifyService = new ApifyService(apifyToken);
     
+    // Traiter uniquement les plateformes sélectionnées par l'utilisateur
     for (const platformName of selectedPlatforms) {
       try {
-        console.log(`🎯 Recherche sur ${platformName} avec langue: ${language}, période: ${period}...`);
+        console.log(`🎯 Recherche RÉELLE sur ${platformName} avec langue: ${language}, période: ${period}...`);
         
         let engagementData = [];
         
         switch (platformName.toLowerCase()) {
           case 'tiktok':
             console.log('🎵 Recherche TikTok RÉELLE avec hashtag:', searchTerm);
-            try {
-              // Utiliser l'API réelle TikTok - PAS de données simulées
-              engagementData = await apifyService.scrapeTikTok(searchTerm, language, period);
-              console.log('📊 Données TikTok RÉELLES récupérées:', engagementData.length, 'posts');
-              
-              // Si aucune donnée réelle n'est trouvée, ne pas créer de données simulées
-              if (engagementData.length === 0) {
-                console.log('⚠️ Aucune donnée TikTok trouvée via l\'API');
-                await createSearchResult({
-                  search_id: null,
-                  search_term: searchTerm,
-                  platform: platformName,
-                  total_mentions: 0,
-                  positive_sentiment: 0,
-                  negative_sentiment: 0,
-                  neutral_sentiment: 0,
-                  total_reach: 0,
-                  total_engagement: 0,
-                  results_data: []
-                });
-                continue;
-              }
-            } catch (tikTokError) {
-              console.error('❌ Erreur API TikTok:', tikTokError);
-              // Ne pas créer de données simulées - juste signaler l'erreur
-              await createSearchResult({
-                search_id: null,
-                search_term: searchTerm,
-                platform: platformName,
-                total_mentions: 0,
-                positive_sentiment: 0,
-                negative_sentiment: 0,
-                neutral_sentiment: 0,
-                total_reach: 0,
-                total_engagement: 0,
-                results_data: []
-              });
-              continue;
-            }
+            engagementData = await apifyService.scrapeTikTok(searchTerm, language, period);
+            console.log('📊 Données TikTok RÉELLES récupérées:', engagementData.length, 'posts');
             break;
             
           case 'instagram':
+            console.log('📸 Recherche Instagram RÉELLE avec hashtag:', searchTerm);
             engagementData = await apifyService.scrapeInstagram(searchTerm, language, period);
+            console.log('📊 Données Instagram RÉELLES récupérées:', engagementData.length, 'posts');
             break;
-          case 'twitter':
-            engagementData = await apifyService.scrapeTwitter(searchTerm, language, period);
-            break;
+            
           case 'facebook':
+            console.log('📘 Recherche Facebook RÉELLE avec terme:', searchTerm);
             engagementData = await apifyService.scrapeFacebook(searchTerm, language, period);
+            console.log('📊 Données Facebook RÉELLES récupérées:', engagementData.length, 'posts');
             break;
+            
+          case 'twitter':
+            console.log('🐦 Recherche Twitter RÉELLE avec terme:', searchTerm);
+            engagementData = await apifyService.scrapeTwitter(searchTerm, language, period);
+            console.log('📊 Données Twitter RÉELLES récupérées:', engagementData.length, 'posts');
+            break;
+            
           default:
             console.log(`⚠️ Plateforme ${platformName} non supportée`);
             continue;
@@ -160,6 +133,7 @@ export const useSearchExecution = () => {
           firstPost: engagementData[0]
         });
 
+        // Sauvegarder dans Supabase
         const saveResult = await createSearchResult({
           search_id: null,
           search_term: searchTerm,
@@ -170,18 +144,19 @@ export const useSearchExecution = () => {
           neutral_sentiment: neutralSentiment,
           total_reach: totalReach,
           total_engagement: totalEngagement,
-          results_data: engagementData // Données réelles uniquement
+          results_data: engagementData
         });
 
         if (saveResult.success) {
-          console.log(`✅ Données RÉELLES sauvegardées avec succès pour ${platformName}`);
+          console.log(`✅ Données RÉELLES sauvegardées avec succès pour ${platformName} dans Supabase`);
         } else {
-          console.error(`❌ Erreur de sauvegarde pour ${platformName}:`, saveResult.error);
+          console.error(`❌ Erreur de sauvegarde Supabase pour ${platformName}:`, saveResult.error);
         }
         
       } catch (platformError) {
-        console.error(`❌ Erreur lors de la recherche sur ${platformName}:`, platformError);
-        // Pas de fallback avec des données simulées
+        console.error(`❌ Erreur lors de la recherche RÉELLE sur ${platformName}:`, platformError);
+        
+        // Créer un enregistrement vide en cas d'erreur
         await createSearchResult({
           search_id: null,
           search_term: searchTerm,

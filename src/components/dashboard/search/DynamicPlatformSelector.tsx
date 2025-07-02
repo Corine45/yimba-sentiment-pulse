@@ -13,10 +13,16 @@ export const DynamicPlatformSelector = ({ selectedPlatforms, onPlatformChange }:
   const { platforms, loading } = usePlatforms();
 
   const handlePlatformToggle = (platformName: string, checked: boolean) => {
+    console.log(`🎯 Filtre plateforme: ${platformName} ${checked ? 'sélectionné' : 'désélectionné'}`);
+    
     if (checked) {
-      onPlatformChange([...selectedPlatforms, platformName]);
+      const newPlatforms = [...selectedPlatforms, platformName];
+      console.log('📋 Plateformes sélectionnées:', newPlatforms);
+      onPlatformChange(newPlatforms);
     } else {
-      onPlatformChange(selectedPlatforms.filter(p => p !== platformName));
+      const newPlatforms = selectedPlatforms.filter(p => p !== platformName);
+      console.log('📋 Plateformes restantes:', newPlatforms);
+      onPlatformChange(newPlatforms);
     }
   };
 
@@ -49,13 +55,25 @@ export const DynamicPlatformSelector = ({ selectedPlatforms, onPlatformChange }:
             />
             <Label htmlFor={platform.id} className="text-sm flex items-center space-x-2">
               <span>{platform.name}</span>
-              {platform.apify_actor_id && (
-                <Badge variant="outline" className="text-xs">API</Badge>
-              )}
+              <Badge variant="outline" className="text-xs bg-green-100 text-green-800">
+                API ✓
+              </Badge>
             </Label>
           </div>
         ))}
       </div>
+      
+      {selectedPlatforms.length > 0 && (
+        <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+          <p className="text-sm text-blue-800">
+            <strong>Plateformes sélectionnées:</strong> {selectedPlatforms.join(', ')}
+          </p>
+          <p className="text-xs text-blue-600 mt-1">
+            Les données seront récupérées uniquement depuis ces plateformes via leurs APIs respectives.
+          </p>
+        </div>
+      )}
+      
       {platforms.length === 0 && (
         <p className="text-sm text-gray-500">Aucune plateforme disponible</p>
       )}

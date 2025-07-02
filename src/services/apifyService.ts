@@ -1,3 +1,4 @@
+
 export interface EngagementData {
   likes: number;
   comments: number;
@@ -38,36 +39,94 @@ class ApifyService {
   }
 
   async scrapeInstagram(searchTerm: string, language: string = 'fr', period: string = '7d'): Promise<EngagementData[]> {
-    const actorId = 'apify/instagram-scraper';
+    const actorId = 'apify/instagram-api-scraper';
     const runInput = {
-      usernames: [searchTerm],
+      searchHashtags: [searchTerm],
       resultsLimit: this.getResultsLimit(period),
-      language: language
+      language: language,
+      period: period
     };
 
-    return this.runActor(actorId, runInput, 'instagram');
+    try {
+      console.log(`📸 Démarrage du scraping Instagram RÉEL pour: "${searchTerm}"`);
+      
+      const syncResponse = await fetch(`${this.baseUrl}/acts/${actorId}/run-sync?token=${this.apiToken}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(runInput),
+      });
+
+      if (!syncResponse.ok) {
+        console.error('❌ Erreur réponse Apify Instagram:', syncResponse.status, syncResponse.statusText);
+        throw new Error(`Erreur lors du scraping Instagram: ${syncResponse.statusText}`);
+      }
+
+      const results = await syncResponse.json();
+      console.log(`✅ Scraping Instagram RÉEL terminé, ${results.length} résultats trouvés`);
+      
+      if (!Array.isArray(results)) {
+        console.warn('⚠️ Format de réponse Instagram inattendu:', results);
+        return [];
+      }
+      
+      return this.transformInstagramResults(results);
+    } catch (error) {
+      console.error(`❌ Erreur lors du scraping Instagram RÉEL:`, error);
+      throw error;
+    }
   }
 
   async scrapeTwitter(searchTerm: string, language: string = 'fr', period: string = '7d'): Promise<EngagementData[]> {
     const actorId = 'apify/twitter-scraper';
     const runInput = {
-      handles: [searchTerm],
-      tweetsDesired: this.getResultsLimit(period),
+      searchTerms: [searchTerm],
+      maxTweets: this.getResultsLimit(period),
       language: language
     };
 
-    return this.runActor(actorId, runInput, 'twitter');
+    return this.runActorSync(actorId, runInput, 'twitter');
   }
 
   async scrapeFacebook(searchTerm: string, language: string = 'fr', period: string = '7d'): Promise<EngagementData[]> {
-    const actorId = 'apify/facebook-posts-scraper';
+    const actorId = 'easyapi/facebook-posts-search-scraper';
     const runInput = {
-      startUrls: [{ url: searchTerm }],
+      searchTerms: [searchTerm],
       maxPosts: this.getResultsLimit(period),
-      language: language
+      language: language,
+      period: period
     };
 
-    return this.runActor(actorId, runInput, 'facebook');
+    try {
+      console.log(`📘 Démarrage du scraping Facebook RÉEL pour: "${searchTerm}"`);
+      
+      const syncResponse = await fetch(`${this.baseUrl}/acts/${actorId}/run-sync?token=${this.apiToken}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(runInput),
+      });
+
+      if (!syncResponse.ok) {
+        console.error('❌ Erreur réponse Apify Facebook:', syncResponse.status, syncResponse.statusText);
+        throw new Error(`Erreur lors du scraping Facebook: ${syncResponse.statusText}`);
+      }
+
+      const results = await syncResponse.json();
+      console.log(`✅ Scraping Facebook RÉEL terminé, ${results.length} résultats trouvés`);
+      
+      if (!Array.isArray(results)) {
+        console.warn('⚠️ Format de réponse Facebook inattendu:', results);
+        return [];
+      }
+      
+      return this.transformFacebookResults(results);
+    } catch (error) {
+      console.error(`❌ Erreur lors du scraping Facebook RÉEL:`, error);
+      throw error;
+    }
   }
 
   async scrapeTikTok(searchTerm: string, language: string = 'fr', period: string = '7d'): Promise<EngagementData[]> {
@@ -83,9 +142,8 @@ class ApifyService {
     };
 
     try {
-      console.log(`🎵 Démarrage du scraping TikTok RÉEL pour: "${searchTerm}", langue: ${language}, période: ${period}`);
+      console.log(`🎵 Démarrage du scraping TikTok RÉEL pour: "${searchTerm}"`);
       
-      // Utiliser l'endpoint synchrone pour TikTok
       const syncResponse = await fetch(`${this.baseUrl}/acts/${actorId}/run-sync?token=${this.apiToken}`, {
         method: 'POST',
         headers: {
@@ -95,7 +153,7 @@ class ApifyService {
       });
 
       if (!syncResponse.ok) {
-        console.error('❌ Erreur réponse Apify:', syncResponse.status, syncResponse.statusText);
+        console.error('❌ Erreur réponse Apify TikTok:', syncResponse.status, syncResponse.statusText);
         throw new Error(`Erreur lors du scraping TikTok: ${syncResponse.statusText}`);
       }
 
@@ -103,7 +161,7 @@ class ApifyService {
       console.log(`✅ Scraping TikTok RÉEL terminé, ${results.length} résultats trouvés`);
       
       if (!Array.isArray(results)) {
-        console.warn('⚠️ Format de réponse inattendu:', results);
+        console.warn('⚠️ Format de réponse TikTok inattendu:', results);
         return [];
       }
       
@@ -113,7 +171,7 @@ class ApifyService {
       return transformedResults;
     } catch (error) {
       console.error(`❌ Erreur lors du scraping TikTok RÉEL:`, error);
-      throw error; // Ne pas créer de données simulées
+      throw error;
     }
   }
 
@@ -127,69 +185,24 @@ class ApifyService {
     }
   }
 
-  private async runActor(actorId: string, runInput: any, platform: string): Promise<EngagementData[]> {
+  private async runActorSync(actorId: string, runInput: any, platform: string): Promise<EngagementData[]> {
     try {
       console.log(`Démarrage du scraping ${platform} avec Apify...`);
       
-      // Démarrer l'exécution de l'acteur
-      const runResponse = await fetch(`${this.baseUrl}/acts/${actorId}/runs`, {
+      const syncResponse = await fetch(`${this.baseUrl}/acts/${actorId}/run-sync?token=${this.apiToken}`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${this.apiToken}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(runInput),
       });
 
-      if (!runResponse.ok) {
-        throw new Error(`Erreur lors du démarrage du scraping: ${runResponse.statusText}`);
+      if (!syncResponse.ok) {
+        throw new Error(`Erreur lors du scraping ${platform}: ${syncResponse.statusText}`);
       }
 
-      const runData = await runResponse.json();
-      const runId = runData.data.id;
-
-      console.log(`Run ID: ${runId} - Attente des résultats...`);
-
-      // Attendre que l'exécution soit terminée
-      let isFinished = false;
-      let attempts = 0;
-      const maxAttempts = 60; // 5 minutes maximum
-
-      while (!isFinished && attempts < maxAttempts) {
-        await new Promise(resolve => setTimeout(resolve, 5000)); // Attendre 5 secondes
-        
-        const statusResponse = await fetch(`${this.baseUrl}/actor-runs/${runId}`, {
-          headers: {
-            'Authorization': `Bearer ${this.apiToken}`,
-          },
-        });
-
-        const statusData = await statusResponse.json();
-        isFinished = statusData.data.status === 'SUCCEEDED';
-        
-        if (statusData.data.status === 'FAILED') {
-          throw new Error('Le scraping a échoué');
-        }
-        
-        attempts++;
-      }
-
-      if (!isFinished) {
-        throw new Error('Timeout: Le scraping prend trop de temps');
-      }
-
-      // Récupérer les résultats
-      const resultsResponse = await fetch(`${this.baseUrl}/actor-runs/${runId}/dataset/items`, {
-        headers: {
-          'Authorization': `Bearer ${this.apiToken}`,
-        },
-      });
-
-      if (!resultsResponse.ok) {
-        throw new Error(`Erreur lors de la récupération des résultats: ${resultsResponse.statusText}`);
-      }
-
-      const results = await resultsResponse.json();
+      const results = await syncResponse.json();
+      console.log(`✅ Scraping ${platform} terminé, ${results.length} résultats trouvés`);
       
       return this.transformResults(results, platform);
     } catch (error) {
@@ -200,7 +213,7 @@ class ApifyService {
 
   private transformTikTokResults(results: any[]): EngagementData[] {
     return results.map((item, index) => {
-      console.log(`Transformation item ${index}:`, {
+      console.log(`Transformation TikTok item ${index}:`, {
         id: item.id || item.webVideoUrl,
         author: item.authorMeta?.name || item.author,
         likes: item.diggCount,
@@ -213,10 +226,10 @@ class ApifyService {
         likes: item.diggCount || item.likeCount || 0,
         comments: item.commentCount || 0,
         shares: item.shareCount || 0,
-        platform: 'tiktok',
+        platform: 'TikTok',
         postId: item.id || item.webVideoUrl || `tiktok_${index}`,
-        author: item.authorMeta?.name || item.author?.userName || item.username || 'Inconnu',
-        content: item.desc || item.text || item.description || '',
+        author: item.authorMeta?.name || item.author?.userName || item.username || 'Utilisateur TikTok',
+        content: item.desc || item.text || item.description || 'Contenu TikTok',
         url: item.webVideoUrl || item.url || '',
         timestamp: item.createTime ? new Date(item.createTime * 1000).toISOString() : 
                   item.createdAt || new Date().toISOString(),
@@ -225,23 +238,58 @@ class ApifyService {
     });
   }
 
-  private transformResults(results: any[], platform: string): EngagementData[] {
-    if (platform === 'tiktok') {
-      return this.transformTikTokResults(results);
-    }
-
+  private transformInstagramResults(results: any[]): EngagementData[] {
     return results.map((item, index) => ({
-      likes: item.likeCount || item.likesCount || item.reactions || item.diggCount || 0,
-      comments: item.commentCount || item.commentsCount || 0,
-      shares: item.shareCount || item.sharesCount || item.retweetCount || 0,
-      platform,
-      postId: item.id || item.postId || item.webVideoUrl || `${platform}_${index}`,
-      author: item.author?.userName || item.username || item.author || item.authorMeta?.name || 'Inconnu',
-      content: item.text || item.caption || item.description || item.desc || '',
-      url: item.url || item.link || item.webVideoUrl || '',
-      timestamp: item.createdAt || item.timestamp || item.createTime || new Date().toISOString(),
-      views: item.viewCount || item.playCount || 0,
+      likes: item.likesCount || item.likeCount || 0,
+      comments: item.commentsCount || item.commentCount || 0,
+      shares: item.sharesCount || item.shareCount || 0,
+      platform: 'Instagram',
+      postId: item.id || item.shortCode || `instagram_${index}`,
+      author: item.ownerUsername || item.username || 'Utilisateur Instagram',
+      content: item.caption || item.text || 'Post Instagram',
+      url: item.url || item.displayUrl || '',
+      timestamp: item.timestamp || new Date().toISOString(),
+      views: item.videoViewCount || item.viewCount || 0,
     }));
+  }
+
+  private transformFacebookResults(results: any[]): EngagementData[] {
+    return results.map((item, index) => ({
+      likes: item.likes || item.likesCount || item.reactions || 0,
+      comments: item.comments || item.commentsCount || 0,
+      shares: item.shares || item.sharesCount || 0,
+      platform: 'Facebook',
+      postId: item.id || item.postId || `facebook_${index}`,
+      author: item.author || item.pageName || 'Utilisateur Facebook',
+      content: item.text || item.message || 'Post Facebook',
+      url: item.url || item.link || '',
+      timestamp: item.createdTime || item.timestamp || new Date().toISOString(),
+      views: item.viewCount || 0,
+    }));
+  }
+
+  private transformResults(results: any[], platform: string): EngagementData[] {
+    switch (platform.toLowerCase()) {
+      case 'tiktok':
+        return this.transformTikTokResults(results);
+      case 'instagram':
+        return this.transformInstagramResults(results);
+      case 'facebook':
+        return this.transformFacebookResults(results);
+      default:
+        return results.map((item, index) => ({
+          likes: item.likeCount || item.likesCount || item.reactions || item.diggCount || 0,
+          comments: item.commentCount || item.commentsCount || 0,
+          shares: item.shareCount || item.sharesCount || item.retweetCount || 0,
+          platform,
+          postId: item.id || item.postId || item.webVideoUrl || `${platform}_${index}`,
+          author: item.author?.userName || item.username || item.author || item.authorMeta?.name || `Utilisateur ${platform}`,
+          content: item.text || item.caption || item.description || item.desc || `Contenu ${platform}`,
+          url: item.url || item.link || item.webVideoUrl || '',
+          timestamp: item.createdAt || item.timestamp || item.createTime || new Date().toISOString(),
+          views: item.viewCount || item.playCount || 0,
+        }));
+    }
   }
 }
 
