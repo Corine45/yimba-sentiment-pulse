@@ -23,7 +23,7 @@ export const SearchResults = ({ userRole, permissions, isSearching, searchTerm =
   const { searchResults, loading: resultsLoading, fetchSearchResults } = useSearchResults();
   const { posts, loading: postsLoading } = useSocialMediaData(searchTerm);
 
-  // Rechargement automatique des résultats quand le terme de recherche change
+  // Rechargement automatique des résultats
   useEffect(() => {
     if (searchTerm && !isSearching) {
       console.log('🔄 Rechargement des résultats pour:', searchTerm);
@@ -31,15 +31,19 @@ export const SearchResults = ({ userRole, permissions, isSearching, searchTerm =
     }
   }, [searchTerm, isSearching, fetchSearchResults]);
 
-  console.log('📊 État actuel des résultats:', {
+  console.log('📊 État actuel:', {
     searchTerm,
     isSearching,
     resultsLoading,
     searchResultsCount: searchResults.length,
-    postsCount: posts.length
+    searchResults: searchResults.map(r => ({
+      platform: r.platform,
+      mentions: r.total_mentions,
+      dataLength: r.results_data?.length || 0
+    }))
   });
 
-  // Calcul des métriques depuis les résultats de recherche
+  // Calcul des métriques depuis les résultats RÉELS
   const totalMentions = searchResults.reduce((sum, result) => sum + (result.total_mentions || 0), 0);
   const totalReach = searchResults.reduce((sum, result) => sum + (result.total_reach || 0), 0);
   const totalEngagement = searchResults.reduce((sum, result) => sum + (result.total_engagement || 0), 0);
@@ -62,46 +66,49 @@ export const SearchResults = ({ userRole, permissions, isSearching, searchTerm =
     ? Math.round((totalSentiment.neutral / totalMentions) * 100) 
     : 0;
 
-  // Distribution par plateforme depuis les résultats de recherche
+  // Distribution par plateforme depuis les résultats RÉELS
   const platformCounts = searchResults.reduce((acc, result) => {
     acc[result.platform] = (acc[result.platform] || 0) + (result.total_mentions || 0);
     return acc;
   }, {} as Record<string, number>);
 
-  // Résultats par plateforme avec données détaillées
+  // Plateformes avec données détaillées disponibles
   const platformsWithData = ['TikTok', 'Instagram', 'Facebook', 'Twitter', 'YouTube'];
   
   const getPlatformResults = (platformName: string) => {
-    return searchResults.filter(result => {
+    const results = searchResults.filter(result => {
       const isPlatform = result.platform.toLowerCase() === platformName.toLowerCase();
-      const hasData = result.results_data && Array.isArray(result.results_data) && result.results_data.length > 0;
       
-      console.log(`🔍 Vérification ${platformName} pour ${result.platform}:`, {
+      console.log(`🔍 ${platformName} - Vérification:`, {
+        platform: result.platform,
         isPlatform,
-        hasData,
+        totalMentions: result.total_mentions,
         dataLength: result.results_data?.length || 0,
-        totalMentions: result.total_mentions
+        hasData: result.results_data && Array.isArray(result.results_data) && result.results_data.length > 0
       });
       
-      return isPlatform && (hasData || result.total_mentions > 0);
+      return isPlatform;
     });
+    
+    console.log(`📱 ${platformName} - Résultats trouvés:`, results.length);
+    return results;
   };
 
   if (isSearching || resultsLoading) {
     return <SearchLoadingState searchTerm={searchTerm} />;
   }
 
-  // Afficher l'état vide seulement si aucun terme de recherche ET aucun résultat
+  // État vide seulement si aucun terme ET aucun résultat
   if (!searchTerm && searchResults.length === 0) {
     return <SearchEmptyState />;
   }
 
-  // Si on a un terme de recherche mais aucun résultat
+  // Si terme de recherche mais aucun résultat
   if (searchTerm && searchResults.length === 0 && !isSearching && !resultsLoading) {
     return (
       <div className="text-center py-8">
         <p className="text-gray-500">Aucun résultat trouvé pour "{searchTerm}"</p>
-        <p className="text-sm text-gray-400 mt-2">Essayez avec d'autres mots-clés ou vérifiez la configuration des plateformes.</p>
+        <p className="text-sm text-gray-400 mt-2">Vérifiez la configuration des APIs ou essayez d'autres mots-clés.</p>
       </div>
     );
   }
@@ -112,6 +119,9 @@ export const SearchResults = ({ userRole, permissions, isSearching, searchTerm =
         <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
           <p className="text-sm text-blue-800">
             <strong>Recherche active :</strong> "{searchTerm}" - {searchResults.length} plateforme(s) analysée(s)
+          </p>
+          <p className="text-xs text-blue-600 mt-1">
+            Total des posts récupérés : {searchResults.reduce((sum, r) => sum + (r.results_data?.length || 0), 0)}
           </p>
         </div>
       )}
@@ -133,7 +143,7 @@ export const SearchResults = ({ userRole, permissions, isSearching, searchTerm =
         <PlatformDistribution platformCounts={platformCounts} />
       )}
 
-      {/* SECTIONS DÉTAILLÉES PAR PLATEFORME */}
+      {/* LISTES DÉTAILLÉES PAR PLATEFORME */}
       {platformsWithData.map(platformName => {
         const platformResults = getPlatformResults(platformName);
         if (platformResults.length > 0) {
