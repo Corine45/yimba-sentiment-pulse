@@ -46,12 +46,15 @@ class ApifyService {
       maxResults: this.getResultsLimit(period),
       shouldDownloadCovers: false,
       shouldDownloadVideos: false,
-      shouldDownloadSubtitles: false
+      shouldDownloadSubtitles: false,
+      language: language // AJOUT: Utiliser le paramètre langue
     };
 
     try {
-      console.log(`🎵 RECHERCHE TIKTOK RÉELLE - Terme: "${searchTerm}"`);
-      console.log('🔧 Configuration TikTok:', JSON.stringify(runInput, null, 2));
+      console.log(`🎵 RECHERCHE TIKTOK RÉELLE - Configuration complète:`);
+      console.log('🔧 Input TikTok:', JSON.stringify(runInput, null, 2));
+      console.log('🌐 Langue demandée:', language);
+      console.log('📅 Période demandée:', period);
       
       const response = await fetch(`${this.baseUrl}/acts/${actorId}/run-sync-get-dataset-items`, {
         method: 'POST',
@@ -106,7 +109,9 @@ class ApifyService {
 
   async scrapeInstagram(searchTerm: string, language: string = 'fr', period: string = '7d'): Promise<EngagementData[]> {
     try {
-      console.log(`📸 RECHERCHE INSTAGRAM RÉELLE - Terme: "${searchTerm}"`);
+      console.log(`📸 RECHERCHE INSTAGRAM RÉELLE - Configuration:`);
+      console.log('🌐 Langue:', language);
+      console.log('📅 Période:', period);
       
       // Essayer d'abord avec le premier acteur
       const result1 = await this.runInstagramActor('apify/instagram-scraper', searchTerm, language, period);
@@ -132,11 +137,13 @@ class ApifyService {
       hashtags: [searchTerm.startsWith('#') ? searchTerm : `#${searchTerm}`],
       resultsLimit: this.getResultsLimit(period),
       maxResults: this.getResultsLimit(period),
-      language: language
+      language: language // IMPORTANT: Utiliser le paramètre langue
     };
 
     console.log(`📸 Instagram Actor: ${actorId}`);
-    console.log('🔧 Configuration Instagram:', JSON.stringify(runInput, null, 2));
+    console.log('🔧 Configuration Instagram complète:', JSON.stringify(runInput, null, 2));
+    console.log('🌐 Langue configurée:', language);
+    console.log('📅 Période configurée:', period);
 
     const response = await fetch(`${this.baseUrl}/acts/${actorId}/run-sync-get-dataset-items`, {
       method: 'POST',
@@ -186,12 +193,14 @@ class ApifyService {
     const runInput = {
       searchTerms: [searchTerm],
       maxTweets: this.getResultsLimit(period),
-      language: language
+      language: language // IMPORTANT: Utiliser le paramètre langue
     };
 
     try {
-      console.log(`🐦 RECHERCHE TWITTER RÉELLE - Terme: "${searchTerm}"`);
-      console.log('🔧 Configuration Twitter:', JSON.stringify(runInput, null, 2));
+      console.log(`🐦 RECHERCHE TWITTER RÉELLE - Configuration complète:`);
+      console.log('🔧 Input Twitter:', JSON.stringify(runInput, null, 2));
+      console.log('🌐 Langue configurée:', language);
+      console.log('📅 Période configurée:', period);
       
       const response = await fetch(`${this.baseUrl}/acts/${actorId}/run-sync-get-dataset-items`, {
         method: 'POST',
@@ -247,12 +256,14 @@ class ApifyService {
     const runInput = {
       searchKeywords: [searchTerm],
       maxResults: this.getResultsLimit(period),
-      language: language
+      language: language // IMPORTANT: Utiliser le paramètre langue
     };
 
     try {
-      console.log(`📺 RECHERCHE YOUTUBE RÉELLE - Terme: "${searchTerm}"`);
-      console.log('🔧 Configuration YouTube:', JSON.stringify(runInput, null, 2));
+      console.log(`📺 RECHERCHE YOUTUBE RÉELLE - Configuration complète:`);
+      console.log('🔧 Input YouTube:', JSON.stringify(runInput, null, 2));
+      console.log('🌐 Langue configurée:', language);
+      console.log('📅 Période configurée:', period);
       
       const response = await fetch(`${this.baseUrl}/acts/${actorId}/run-sync-get-dataset-items`, {
         method: 'POST',
@@ -308,12 +319,14 @@ class ApifyService {
     const runInput = {
       searchTerms: [searchTerm],
       maxPosts: this.getResultsLimit(period),
-      language: language
+      language: language // IMPORTANT: Utiliser le paramètre langue
     };
 
     try {
-      console.log(`📘 RECHERCHE FACEBOOK RÉELLE - Terme: "${searchTerm}"`);
-      console.log('🔧 Configuration Facebook:', JSON.stringify(runInput, null, 2));
+      console.log(`📘 RECHERCHE FACEBOOK RÉELLE - Configuration complète:`);
+      console.log('🔧 Input Facebook:', JSON.stringify(runInput, null, 2));
+      console.log('🌐 Langue configurée:', language);
+      console.log('📅 Période configurée:', period);
       
       const response = await fetch(`${this.baseUrl}/acts/${actorId}/run-sync-get-dataset-items`, {
         method: 'POST',
@@ -414,12 +427,23 @@ class ApifyService {
   }
 
   private getResultsLimit(period: string): number {
+    console.log('📊 Calcul limite résultats pour période:', period);
     switch (period) {
-      case '1d': return 20;
-      case '7d': return 50;
-      case '30d': return 100;
-      case '3m': return 200;
-      default: return 50;
+      case '1d': 
+        console.log('📅 Période 1 jour -> 20 résultats');
+        return 20;
+      case '7d': 
+        console.log('📅 Période 7 jours -> 50 résultats');
+        return 50;
+      case '30d': 
+        console.log('📅 Période 30 jours -> 100 résultats');
+        return 100;
+      case '3m': 
+        console.log('📅 Période 3 mois -> 200 résultats');
+        return 200;
+      default: 
+        console.log('📅 Période par défaut -> 50 résultats');
+        return 50;
     }
   }
 

@@ -41,16 +41,18 @@ export const useSearchExecution = () => {
     setCurrentSearchTerm(searchTerm);
 
     try {
-      console.log('🔍 RECHERCHE RÉELLE - Paramètres:');
-      console.log('Mots-clés:', keywords);
-      console.log('Plateformes:', selectedPlatforms);
-      console.log('Langue:', language);
-      console.log('Période:', period);
+      console.log('🔍 RECHERCHE RÉELLE - Paramètres complets:');
+      console.log('📝 Mots-clés:', keywords);
+      console.log('🎯 Plateformes sélectionnées:', selectedPlatforms);
+      console.log('🌐 Langue:', language);
+      console.log('⏰ Période:', period);
+      console.log('🔑 Token Apify:', apifyToken.substring(0, 10) + '...');
       
+      // IMPORTANT: Passer TOUS les paramètres à executeRealSearch
       await executeRealSearch(searchTerm, selectedPlatforms, apifyToken, language, period);
       
       // Attendre un peu puis recharger les résultats
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await new Promise(resolve => setTimeout(resolve, 3000));
       await fetchSearchResults(searchTerm);
       
       toast({
@@ -61,7 +63,7 @@ export const useSearchExecution = () => {
       console.error('❌ Erreur lors de la recherche:', error);
       toast({
         title: "Erreur",
-        description: "Une erreur est survenue pendant la recherche. Des données de test sont utilisées.",
+        description: "Une erreur est survenue pendant la recherche. Vérifiez les logs de la console.",
         variant: "destructive",
       });
     } finally {
@@ -78,49 +80,56 @@ export const useSearchExecution = () => {
   ) => {
     const apifyService = new ApifyService(apifyToken);
     
-    console.log('🚀 Début de la recherche réelle sur', selectedPlatforms.length, 'plateformes');
+    console.log('🚀 Début de la recherche réelle avec TOUS les paramètres:');
+    console.log('📊 Plateformes à traiter:', selectedPlatforms);
+    console.log('🗣️ Langue configurée:', language);
+    console.log('📅 Période configurée:', period);
     
+    // Traiter TOUTES les plateformes sélectionnées
     for (const platformName of selectedPlatforms) {
       try {
         console.log(`\n🎯 === RECHERCHE ${platformName.toUpperCase()} ===`);
-        console.log(`Terme: "${searchTerm}", Langue: ${language}, Période: ${period}`);
+        console.log(`📝 Terme: "${searchTerm}"`);
+        console.log(`🌐 Langue: ${language}`);
+        console.log(`⏰ Période: ${period}`);
         
         let engagementData = [];
         
         switch (platformName.toLowerCase()) {
           case 'tiktok':
-            console.log('🎵 Lancement recherche TikTok...');
+            console.log('🎵 Lancement recherche TikTok avec paramètres:', { searchTerm, language, period });
             engagementData = await apifyService.scrapeTikTok(searchTerm, language, period);
-            console.log('📊 TikTok - Données récupérées:', engagementData.length);
             break;
             
           case 'instagram':
-            console.log('📸 Lancement recherche Instagram...');
+            console.log('📸 Lancement recherche Instagram avec paramètres:', { searchTerm, language, period });
             engagementData = await apifyService.scrapeInstagram(searchTerm, language, period);
-            console.log('📊 Instagram - Données récupérées:', engagementData.length);
             break;
             
           case 'facebook':
-            console.log('📘 Lancement recherche Facebook...');
+            console.log('📘 Lancement recherche Facebook avec paramètres:', { searchTerm, language, period });
             engagementData = await apifyService.scrapeFacebook(searchTerm, language, period);
-            console.log('📊 Facebook - Données récupérées:', engagementData.length);
             break;
             
           case 'twitter':
-            console.log('🐦 Lancement recherche Twitter...');
+            console.log('🐦 Lancement recherche Twitter avec paramètres:', { searchTerm, language, period });
             engagementData = await apifyService.scrapeTwitter(searchTerm, language, period);
-            console.log('📊 Twitter - Données récupérées:', engagementData.length);
             break;
             
           case 'youtube':
-            console.log('📺 Lancement recherche YouTube...');
+            console.log('📺 Lancement recherche YouTube avec paramètres:', { searchTerm, language, period });
             engagementData = await apifyService.scrapeYouTube(searchTerm, language, period);
-            console.log('📊 YouTube - Données récupérées:', engagementData.length);
             break;
             
           default:
             console.log(`⚠️ Plateforme ${platformName} non supportée`);
             continue;
+        }
+
+        console.log(`📊 ${platformName} - Données récupérées:`, engagementData.length);
+        
+        if (engagementData.length > 0) {
+          console.log(`✅ ${platformName} - Premier élément:`, engagementData[0]);
         }
 
         // Calculer les métriques
@@ -140,10 +149,11 @@ export const useSearchExecution = () => {
           engagement: totalEngagement,
           reach: totalReach,
           sentiment: { positive: positiveSentiment, negative: negativeSentiment, neutral: neutralSentiment },
-          dataLength: engagementData.length
+          dataLength: engagementData.length,
+          realData: engagementData.length > 0
         });
 
-        // Sauvegarder dans Supabase
+        // Sauvegarder dans Supabase avec les VRAIES données
         const saveResult = await createSearchResult({
           search_id: null,
           search_term: searchTerm,
@@ -154,11 +164,12 @@ export const useSearchExecution = () => {
           neutral_sentiment: neutralSentiment,
           total_reach: totalReach,
           total_engagement: totalEngagement,
-          results_data: engagementData
+          results_data: engagementData // IMPORTANT: Sauvegarder les vraies données
         });
 
         if (saveResult.success) {
           console.log(`✅ ${platformName} - Données sauvegardées avec succès`);
+          console.log(`📊 ${platformName} - ID résultat:`, saveResult.data?.id);
         } else {
           console.error(`❌ ${platformName} - Erreur de sauvegarde:`, saveResult.error);
         }
@@ -182,7 +193,7 @@ export const useSearchExecution = () => {
       }
     }
     
-    console.log('🏁 Recherche terminée sur toutes les plateformes');
+    console.log('🏁 Recherche terminée sur toutes les plateformes sélectionnées');
   };
 
   return {
