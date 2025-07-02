@@ -4,7 +4,6 @@ import { Search } from "lucide-react";
 import { SearchActions } from "./SearchActions";
 import { ApiIntegrationNote } from "./ApiIntegrationNote";
 import { ApifyTokenConfig } from "./ApifyTokenConfig";
-import { TikTokSearchConfig } from "./TikTokSearchConfig";
 
 interface SearchPanelConfigProps {
   onSearch: () => void;
@@ -29,8 +28,6 @@ export const SearchPanelConfig = ({
   apifyToken,
   onApifyTokenChange,
 }: SearchPanelConfigProps) => {
-  const isTikTokConfigured = apifyToken.includes('apify_api_JP5bjoQMQYYZ36blKD7yfm2gDRYNng3W7h69');
-
   return (
     <div className="space-y-4">
       <Card>
@@ -67,8 +64,6 @@ export const SearchPanelConfig = ({
           {userRole !== "observateur" && <ApiIntegrationNote />}
         </CardContent>
       </Card>
-
-      <TikTokSearchConfig isConfigured={isTikTokConfigured} />
     </div>
   );
 };
