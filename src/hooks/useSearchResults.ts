@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 
@@ -29,6 +29,8 @@ export const useSearchResults = () => {
     if (!user) return { success: false, error: 'User not authenticated' };
 
     try {
+      console.log('💾 Création du résultat de recherche:', resultData);
+      
       const { data, error } = await supabase
         .from('search_results')
         .insert([{
@@ -38,7 +40,12 @@ export const useSearchResults = () => {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Erreur lors de la création:', error);
+        throw error;
+      }
+
+      console.log('✅ Résultat créé avec succès:', data);
       return { success: true, data };
     } catch (error) {
       console.error('Error creating search result:', error);
@@ -46,11 +53,16 @@ export const useSearchResults = () => {
     }
   };
 
-  const fetchSearchResults = async (searchTerm?: string) => {
-    if (!user) return { success: false, error: 'User not authenticated' };
+  const fetchSearchResults = useCallback(async (searchTerm?: string) => {
+    if (!user) {
+      console.log('❌ Utilisateur non authentifié');
+      return { success: false, error: 'User not authenticated' };
+    }
 
     setLoading(true);
     try {
+      console.log('🔍 Récupération des résultats pour:', searchTerm || 'tous les termes');
+      
       let query = supabase
         .from('search_results')
         .select('*')
@@ -63,9 +75,14 @@ export const useSearchResults = () => {
 
       const { data, error } = await query;
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Erreur lors de la récupération:', error);
+        throw error;
+      }
       
-      // Transform the data to match our interface
+      console.log('📊 Résultats récupérés:', data?.length || 0);
+      
+      // Transformer les données pour s'assurer que results_data est un tableau
       const transformedData = (data || []).map(item => ({
         ...item,
         results_data: Array.isArray(item.results_data) ? item.results_data : []
@@ -75,11 +92,19 @@ export const useSearchResults = () => {
       return { success: true, data: transformedData };
     } catch (error) {
       console.error('Error fetching search results:', error);
+      setSearchResults([]);
       return { success: false, error };
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
+
+  // Rechargement automatique des résultats au montage
+  useEffect(() => {
+    if (user) {
+      fetchSearchResults();
+    }
+  }, [user, fetchSearchResults]);
 
   return { 
     searchResults, 
