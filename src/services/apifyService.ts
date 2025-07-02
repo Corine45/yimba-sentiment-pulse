@@ -1,4 +1,3 @@
-
 export interface EngagementData {
   likes: number;
   comments: number;
@@ -72,13 +71,45 @@ class ApifyService {
     const actorId = 'clockworks/tiktok-scraper';
     const runInput = {
       hashtags: [keywords],
-      resultsPerPage: 50,
+      resultsPerPage: 20,
       shouldDownloadCovers: false,
       shouldDownloadVideos: false,
       shouldDownloadSubtitles: false
     };
 
-    return this.runActorSync(actorId, runInput, 'tiktok');
+    try {
+      console.log(`🎵 Démarrage du scraping TikTok pour: "${keywords}"`);
+      
+      // Utiliser l'endpoint synchrone pour TikTok
+      const syncResponse = await fetch(`${this.baseUrl}/acts/${actorId}/run-sync?token=${this.apiToken}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(runInput),
+      });
+
+      if (!syncResponse.ok) {
+        console.error('Erreur réponse Apify:', syncResponse.status, syncResponse.statusText);
+        throw new Error(`Erreur lors du scraping TikTok: ${syncResponse.statusText}`);
+      }
+
+      const results = await syncResponse.json();
+      console.log(`✅ Scraping TikTok terminé, ${results.length} résultats trouvés`);
+      
+      if (!Array.isArray(results)) {
+        console.warn('Format de réponse inattendu:', results);
+        return [];
+      }
+      
+      const transformedResults = this.transformTikTokResults(results);
+      console.log('📊 Données transformées:', transformedResults.length, 'posts');
+      
+      return transformedResults;
+    } catch (error) {
+      console.error(`❌ Erreur lors du scraping TikTok:`, error);
+      throw error;
+    }
   }
 
   private async runActor(actorId: string, runInput: any, platform: string): Promise<EngagementData[]> {
@@ -152,34 +183,38 @@ class ApifyService {
     }
   }
 
-  private async runActorSync(actorId: string, runInput: any, platform: string): Promise<EngagementData[]> {
-    try {
-      console.log(`Démarrage du scraping synchrone ${platform} avec Apify...`);
-      
-      // Utiliser l'endpoint synchrone pour TikTok
-      const syncResponse = await fetch(`${this.baseUrl}/acts/${actorId}/run-sync?token=${this.apiToken}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(runInput),
+  private transformTikTokResults(results: any[]): EngagementData[] {
+    return results.map((item, index) => {
+      console.log(`Transformation item ${index}:`, {
+        id: item.id || item.webVideoUrl,
+        author: item.authorMeta?.name || item.author,
+        likes: item.diggCount,
+        comments: item.commentCount,
+        shares: item.shareCount,
+        views: item.playCount
       });
 
-      if (!syncResponse.ok) {
-        throw new Error(`Erreur lors du scraping synchrone: ${syncResponse.statusText}`);
-      }
-
-      const results = await syncResponse.json();
-      console.log(`Scraping TikTok terminé, ${results.length} résultats trouvés`);
-      
-      return this.transformResults(results, platform);
-    } catch (error) {
-      console.error(`Erreur lors du scraping synchrone ${platform}:`, error);
-      throw error;
-    }
+      return {
+        likes: item.diggCount || item.likeCount || 0,
+        comments: item.commentCount || 0,
+        shares: item.shareCount || 0,
+        platform: 'tiktok',
+        postId: item.id || item.webVideoUrl || `tiktok_${index}`,
+        author: item.authorMeta?.name || item.author?.userName || item.username || 'Inconnu',
+        content: item.desc || item.text || item.description || '',
+        url: item.webVideoUrl || item.url || '',
+        timestamp: item.createTime ? new Date(item.createTime * 1000).toISOString() : 
+                  item.createdAt || new Date().toISOString(),
+        views: item.playCount || item.viewCount || 0,
+      };
+    });
   }
 
   private transformResults(results: any[], platform: string): EngagementData[] {
+    if (platform === 'tiktok') {
+      return this.transformTikTokResults(results);
+    }
+
     return results.map((item, index) => ({
       likes: item.likeCount || item.likesCount || item.reactions || item.diggCount || 0,
       comments: item.commentCount || item.commentsCount || 0,

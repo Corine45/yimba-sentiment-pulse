@@ -7,6 +7,7 @@ import { SearchEmptyState } from "./SearchEmptyState";
 import { SearchResultsMetrics } from "./SearchResultsMetrics";
 import { PlatformDistribution } from "./PlatformDistribution";
 import { DetailedMentions } from "./DetailedMentions";
+import { TikTokDetailedResults } from "./TikTokDetailedResults";
 import { ApiIntegrationNote } from "./ApiIntegrationNote";
 
 interface SearchResultsProps {
@@ -43,6 +44,14 @@ export const SearchResults = ({ userRole, permissions, isSearching, searchTerm =
     return acc;
   }, {} as Record<string, number>);
 
+  // Get TikTok specific results with detailed data
+  const tikTokResults = searchResults.filter(result => 
+    result.platform.toLowerCase() === 'tiktok' && 
+    result.results_data && 
+    Array.isArray(result.results_data) && 
+    result.results_data.length > 0
+  );
+
   if (isSearching || resultsLoading) {
     return <SearchLoadingState searchTerm={searchTerm} />;
   }
@@ -64,6 +73,13 @@ export const SearchResults = ({ userRole, permissions, isSearching, searchTerm =
       />
 
       <PlatformDistribution platformCounts={platformCounts} />
+
+      {tikTokResults.length > 0 && (
+        <TikTokDetailedResults 
+          tikTokResults={tikTokResults}
+          canExportData={permissions.canExportData}
+        />
+      )}
 
       <DetailedMentions posts={posts} />
 

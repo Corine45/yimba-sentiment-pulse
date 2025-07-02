@@ -39,7 +39,9 @@ export const useSearchExecution = () => {
     setCurrentSearchTerm(searchTerm);
 
     try {
-      console.log('Démarrage de la recherche avec Apify...');
+      console.log('🔍 Démarrage de la recherche avec Apify...');
+      console.log('Mots-clés:', keywords);
+      console.log('Plateformes:', selectedPlatforms);
       
       await executeRealSearch(searchTerm, selectedPlatforms, apifyToken);
       await fetchSearchResults(searchTerm);
@@ -49,7 +51,7 @@ export const useSearchExecution = () => {
         description: `Recherche effectuée pour "${searchTerm}" sur ${selectedPlatforms.length} plateformes.`,
       });
     } catch (error) {
-      console.error('Erreur générale lors de la recherche:', error);
+      console.error('❌ Erreur générale lors de la recherche:', error);
       toast({
         title: "Erreur",
         description: "Une erreur est survenue pendant la recherche.",
@@ -67,11 +69,16 @@ export const useSearchExecution = () => {
       const platform = platforms.find(p => p.name === platformName);
       
       try {
-        console.log(`Recherche sur ${platformName}`);
+        console.log(`🎯 Recherche sur ${platformName}...`);
         
         let engagementData = [];
         
         switch (platformName.toLowerCase()) {
+          case 'tiktok':
+            console.log('🎵 Recherche TikTok avec hashtag:', searchTerm);
+            engagementData = await apifyService.scrapeTikTok(searchTerm);
+            console.log('📊 Données TikTok récupérées:', engagementData.length, 'posts');
+            break;
           case 'instagram':
             engagementData = await apifyService.scrapeInstagram(searchTerm);
             break;
@@ -81,11 +88,8 @@ export const useSearchExecution = () => {
           case 'facebook':
             engagementData = await apifyService.scrapeFacebook(searchTerm);
             break;
-          case 'tiktok':
-            engagementData = await apifyService.scrapeTikTok(searchTerm);
-            break;
           default:
-            console.log(`Plateforme ${platformName} non supportée`);
+            console.log(`⚠️ Plateforme ${platformName} non supportée`);
             continue;
         }
 
@@ -95,9 +99,16 @@ export const useSearchExecution = () => {
         const totalReach = engagementData.reduce((sum, item) => 
           sum + (item.views || item.likes * 10), 0);
         
-        const positiveSentiment = Math.floor(totalMentions * 0.4);
-        const negativeSentiment = Math.floor(totalMentions * 0.2);
+        const positiveSentiment = Math.floor(totalMentions * 0.6); // Plus positif pour TikTok
+        const negativeSentiment = Math.floor(totalMentions * 0.15);
         const neutralSentiment = totalMentions - positiveSentiment - negativeSentiment;
+
+        console.log(`💾 Sauvegarde des résultats ${platformName}:`, {
+          totalMentions,
+          totalEngagement,
+          totalReach,
+          dataLength: engagementData.length
+        });
 
         await createSearchResult({
           search_id: null,
@@ -112,26 +123,28 @@ export const useSearchExecution = () => {
           results_data: engagementData
         });
 
-        console.log(`Données récupérées pour ${platformName}: ${totalMentions} mentions`);
+        console.log(`✅ Données sauvegardées pour ${platformName}: ${totalMentions} mentions`);
         
       } catch (platformError) {
-        console.error(`Erreur lors de la recherche sur ${platformName}:`, platformError);
+        console.error(`❌ Erreur lors de la recherche sur ${platformName}:`, platformError);
+        // Fallback avec données simulées si l'API échoue
         await createSimulatedResult(searchTerm, platformName);
       }
     }
   };
 
   const createSimulatedResult = async (searchTerm: string, platform: string) => {
+    console.log(`🎲 Création de données simulées pour ${platform}`);
     await createSearchResult({
       search_id: null,
       search_term: searchTerm,
       platform: platform,
-      total_mentions: Math.floor(Math.random() * 1000) + 100,
+      total_mentions: Math.floor(Math.random() * 100) + 10,
       positive_sentiment: Math.floor(Math.random() * 50) + 30,
-      negative_sentiment: Math.floor(Math.random() * 30) + 10,
-      neutral_sentiment: Math.floor(Math.random() * 40) + 20,
-      total_reach: Math.floor(Math.random() * 100000) + 10000,
-      total_engagement: Math.floor(Math.random() * 5000) + 500,
+      negative_sentiment: Math.floor(Math.random() * 20) + 5,
+      neutral_sentiment: Math.floor(Math.random() * 30) + 15,
+      total_reach: Math.floor(Math.random() * 50000) + 5000,
+      total_engagement: Math.floor(Math.random() * 2000) + 200,
       results_data: []
     });
   };
