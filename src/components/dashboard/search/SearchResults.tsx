@@ -68,20 +68,28 @@ export const SearchResults = ({ userRole, permissions, isSearching, searchTerm =
     return acc;
   }, {} as Record<string, number>);
 
-  // Résultats TikTok spécifiques avec données détaillées
-  const tikTokResults = searchResults.filter(result => 
-    result.platform.toLowerCase() === 'tiktok' && 
-    result.results_data && 
-    Array.isArray(result.results_data) && 
-    result.results_data.length > 0
-  );
+  // Résultats TikTok spécifiques avec données détaillées - CORRECTION ICI
+  const tikTokResults = searchResults.filter(result => {
+    const isTikTok = result.platform.toLowerCase() === 'tiktok';
+    const hasData = result.results_data && Array.isArray(result.results_data) && result.results_data.length > 0;
+    
+    console.log(`🔍 Vérification TikTok pour ${result.platform}:`, {
+      isTikTok,
+      hasData,
+      dataLength: result.results_data?.length || 0,
+      totalMentions: result.total_mentions
+    });
+    
+    return isTikTok && (hasData || result.total_mentions > 0);
+  });
 
   console.log('🎵 Résultats TikTok trouvés:', tikTokResults.length);
   tikTokResults.forEach((result, index) => {
     console.log(`TikTok ${index + 1}:`, {
       mentions: result.total_mentions,
-      dataLength: result.results_data?.length,
-      searchTerm: result.search_term
+      dataLength: result.results_data?.length || 0,
+      searchTerm: result.search_term,
+      hasValidData: result.results_data && Array.isArray(result.results_data)
     });
   });
 
@@ -131,11 +139,14 @@ export const SearchResults = ({ userRole, permissions, isSearching, searchTerm =
         <PlatformDistribution platformCounts={platformCounts} />
       )}
 
+      {/* SECTION TIKTOK DÉTAILLÉE - TOUJOURS AFFICHER SI DES RÉSULTATS TIKTOK */}
       {tikTokResults.length > 0 && (
-        <TikTokDetailedResults 
-          tikTokResults={tikTokResults}
-          canExportData={permissions.canExportData}
-        />
+        <div className="mt-6">
+          <TikTokDetailedResults 
+            tikTokResults={tikTokResults}
+            canExportData={permissions.canExportData}
+          />
+        </div>
       )}
 
       {posts.length > 0 && (
