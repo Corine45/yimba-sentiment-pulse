@@ -2,7 +2,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Video, Heart, MessageSquare, Share, Eye, Download, ExternalLink } from "lucide-react";
+import { Video, Heart, MessageSquare, Share, Eye, Download, ExternalLink, FileText, FileImage } from "lucide-react";
+import jsPDF from 'jspdf';
 
 interface TikTokPost {
   likes: number;
@@ -28,40 +29,21 @@ interface TikTokDetailedResultsProps {
 }
 
 export const TikTokDetailedResults = ({ tikTokResults, canExportData }: TikTokDetailedResultsProps) => {
-  // Récupérer toutes les vidéos TikTok de tous les résultats
+  // Récupérer toutes les vidéos TikTok RÉELLES uniquement
   const allTikTokPosts = tikTokResults.flatMap(result => {
-    console.log('📱 Traitement résultat TikTok:', {
+    console.log('📱 Traitement résultat TikTok RÉEL:', {
       searchTerm: result.search_term,
       totalMentions: result.total_mentions,
       dataLength: result.results_data?.length || 0
     });
     
-    // Si pas de results_data mais qu'il y a des mentions, créer des données simulées
-    if (!result.results_data || result.results_data.length === 0) {
-      if (result.total_mentions > 0) {
-        console.log('🎲 Création de données simulées pour TikTok');
-        return Array.from({ length: Math.min(result.total_mentions, 10) }, (_, index) => ({
-          likes: Math.floor(Math.random() * 10000) + 100,
-          comments: Math.floor(Math.random() * 500) + 10,
-          shares: Math.floor(Math.random() * 200) + 5,
-          views: Math.floor(Math.random() * 100000) + 1000,
-          platform: 'tiktok',
-          postId: `simulated_${result.search_term}_${index}`,
-          author: `user_${Math.floor(Math.random() * 1000)}`,
-          content: `Vidéo TikTok contenant "${result.search_term}" - Contenu simulé`,
-          url: `https://tiktok.com/@user/video/${index}`,
-          timestamp: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString()
-        }));
-      }
-      return [];
-    }
-    
+    // Retourner uniquement les données réelles - pas de simulation
     return result.results_data || [];
   });
 
-  console.log('📊 Posts TikTok à afficher:', allTikTokPosts.length);
+  console.log('📊 Posts TikTok RÉELS à afficher:', allTikTokPosts.length);
 
-  const exportTikTokData = () => {
+  const exportToJSON = () => {
     const dataStr = JSON.stringify(allTikTokPosts, null, 2);
     const dataBlob = new Blob([dataStr], { type: 'application/json' });
     const url = URL.createObjectURL(dataBlob);
@@ -69,10 +51,65 @@ export const TikTokDetailedResults = ({ tikTokResults, canExportData }: TikTokDe
     link.href = url;
     link.download = `tiktok_results_${new Date().toISOString().split('T')[0]}.json`;
     link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const exportToPDF = () => {
+    const pdf = new jsPDF();
+    pdf.setFontSize(16);
+    pdf.text('Résultats TikTok - Données Réelles', 20, 20);
+    
+    let yPosition = 40;
+    
+    allTikTokPosts.forEach((post, index) => {
+      if (yPosition > 250) {
+        pdf.addPage();
+        yPosition = 20;
+      }
+      
+      pdf.setFontSize(12);
+      pdf.text(`Vidéo ${index + 1}:`, 20, yPosition);
+      pdf.setFontSize(10);
+      pdf.text(`Auteur: @${post.author}`, 20, yPosition + 10);
+      pdf.text(`Likes: ${post.likes.toLocaleString()}`, 20, yPosition + 20);
+      pdf.text(`Commentaires: ${post.comments.toLocaleString()}`, 20, yPosition + 30);
+      pdf.text(`Partages: ${post.shares.toLocaleString()}`, 20, yPosition + 40);
+      if (post.views) {
+        pdf.text(`Vues: ${post.views.toLocaleString()}`, 20, yPosition + 50);
+      }
+      
+      yPosition += 70;
+    });
+    
+    pdf.save(`tiktok_results_${new Date().toISOString().split('T')[0]}.pdf`);
+  };
+
+  const exportToCSV = () => {
+    const headers = ['Auteur', 'Contenu', 'Likes', 'Commentaires', 'Partages', 'Vues', 'URL', 'Date'];
+    const csvContent = [
+      headers.join(','),
+      ...allTikTokPosts.map(post => [
+        `"${post.author}"`,
+        `"${post.content.replace(/"/g, '""')}"`,
+        post.likes,
+        post.comments,
+        post.shares,
+        post.views || 0,
+        `"${post.url}"`,
+        `"${new Date(post.timestamp).toLocaleDateString('fr-FR')}"`
+      ].join(','))
+    ].join('\n');
+
+    const dataBlob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `tiktok_results_${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
   };
 
   if (allTikTokPosts.length === 0) {
-    // Afficher quand même la section avec un message informatif
     const totalMentions = tikTokResults.reduce((sum, result) => sum + result.total_mentions, 0);
     
     return (
@@ -87,15 +124,13 @@ export const TikTokDetailedResults = ({ tikTokResults, canExportData }: TikTokDe
           <div className="text-center py-4">
             <p className="text-gray-600 mb-2">
               {totalMentions > 0 
-                ? `${totalMentions} mentions TikTok détectées mais les détails des vidéos sont en cours de traitement...`
-                : 'Aucune vidéo TikTok trouvée pour cette recherche.'
+                ? `${totalMentions} mentions TikTok détectées mais aucune donnée détaillée disponible via l'API.`
+                : 'Aucune vidéo TikTok trouvée pour cette recherche via l\'API.'
               }
             </p>
-            {totalMentions > 0 && (
-              <p className="text-sm text-gray-500">
-                Les données détaillées apparaîtront lors de la prochaine recherche.
-              </p>
-            )}
+            <p className="text-sm text-gray-500">
+              Vérifiez votre configuration API ou essayez d'autres mots-clés.
+            </p>
           </div>
         </CardContent>
       </Card>
@@ -108,13 +143,23 @@ export const TikTokDetailedResults = ({ tikTokResults, canExportData }: TikTokDe
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center space-x-2">
             <Video className="w-5 h-5 text-pink-600" />
-            <span>🎵 Résultats TikTok détaillés ({allTikTokPosts.length} vidéos)</span>
+            <span>🎵 Résultats TikTok détaillés - Données Réelles ({allTikTokPosts.length} vidéos)</span>
           </CardTitle>
           {canExportData && (
-            <Button variant="outline" onClick={exportTikTokData}>
-              <Download className="w-4 h-4 mr-2" />
-              Exporter TikTok
-            </Button>
+            <div className="flex space-x-2">
+              <Button variant="outline" size="sm" onClick={exportToJSON}>
+                <Download className="w-4 h-4 mr-2" />
+                JSON
+              </Button>
+              <Button variant="outline" size="sm" onClick={exportToPDF}>
+                <FileText className="w-4 h-4 mr-2" />
+                PDF
+              </Button>
+              <Button variant="outline" size="sm" onClick={exportToCSV}>
+                <FileImage className="w-4 h-4 mr-2" />
+                CSV
+              </Button>
+            </div>
           )}
         </div>
       </CardHeader>
@@ -125,7 +170,7 @@ export const TikTokDetailedResults = ({ tikTokResults, canExportData }: TikTokDe
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center space-x-2">
                   <Badge className="bg-pink-500 text-white">
-                    TikTok
+                    TikTok Réel
                   </Badge>
                   <span className="text-sm text-gray-500">
                     {post.timestamp ? new Date(post.timestamp).toLocaleDateString('fr-FR', {
@@ -140,7 +185,7 @@ export const TikTokDetailedResults = ({ tikTokResults, canExportData }: TikTokDe
                   <Button variant="ghost" size="sm" asChild>
                     <a href={post.url} target="_blank" rel="noopener noreferrer">
                       <ExternalLink className="w-3 h-3 mr-1" />
-                      Voir
+                      Voir sur TikTok
                     </a>
                   </Button>
                 )}

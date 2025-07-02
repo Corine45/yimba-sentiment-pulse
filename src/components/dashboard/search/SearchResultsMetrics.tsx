@@ -1,7 +1,8 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Download, TrendingUp, Eye } from "lucide-react";
+import { Download, TrendingUp, Eye, FileText, FileImage } from "lucide-react";
+import jsPDF from 'jspdf';
 
 interface SearchResultsMetricsProps {
   totalMentions: number;
@@ -29,7 +30,7 @@ export const SearchResultsMetrics = ({
   searchResults = []
 }: SearchResultsMetricsProps) => {
   
-  const exportAllResults = () => {
+  const exportToJSON = () => {
     const dataStr = JSON.stringify(searchResults, null, 2);
     const dataBlob = new Blob([dataStr], { type: 'application/json' });
     const url = URL.createObjectURL(dataBlob);
@@ -37,6 +38,47 @@ export const SearchResultsMetrics = ({
     link.href = url;
     link.download = `resultats_${searchTerm || 'recherche'}_${new Date().toISOString().split('T')[0]}.json`;
     link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const exportToPDF = () => {
+    const pdf = new jsPDF();
+    pdf.setFontSize(16);
+    pdf.text(`Rapport de recherche: ${searchTerm || 'Données'}`, 20, 20);
+    
+    pdf.setFontSize(12);
+    pdf.text(`Date: ${new Date().toLocaleDateString('fr-FR')}`, 20, 40);
+    pdf.text(`Total mentions: ${totalMentions.toLocaleString()}`, 20, 60);
+    pdf.text(`Sentiment positif: ${positivePercentage}%`, 20, 80);
+    pdf.text(`Sentiment négatif: ${negativePercentage}%`, 20, 100);
+    pdf.text(`Sentiment neutre: ${neutralPercentage}%`, 20, 120);
+    pdf.text(`Portée totale: ${(totalReach / 1000).toFixed(1)}K`, 20, 140);
+    pdf.text(`Engagements totaux: ${(totalEngagement / 1000).toFixed(1)}K`, 20, 160);
+    
+    pdf.save(`rapport_${searchTerm || 'recherche'}_${new Date().toISOString().split('T')[0]}.pdf`);
+  };
+
+  const exportToCSV = () => {
+    const headers = ['Plateforme', 'Mentions', 'Sentiment Positif', 'Sentiment Négatif', 'Portée', 'Engagement'];
+    const csvContent = [
+      headers.join(','),
+      ...searchResults.map(result => [
+        result.platform,
+        result.total_mentions || 0,
+        result.positive_sentiment || 0,
+        result.negative_sentiment || 0,
+        result.total_reach || 0,
+        result.total_engagement || 0
+      ].join(','))
+    ].join('\n');
+
+    const dataBlob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `donnees_${searchTerm || 'recherche'}_${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -45,13 +87,23 @@ export const SearchResultsMetrics = ({
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center space-x-2">
             <TrendingUp className="w-5 h-5 text-blue-600" />
-            <span>Résultats de recherche {searchTerm && `pour "${searchTerm}"`}</span>
+            <span>Résultats de recherche {searchTerm && `pour "${searchTerm}"`} - Données Réelles</span>
           </CardTitle>
           {canExportData && searchResults.length > 0 && (
-            <Button variant="outline" size="sm" onClick={exportAllResults}>
-              <Download className="w-4 h-4 mr-2" />
-              Exporter les résultats
-            </Button>
+            <div className="flex space-x-2">
+              <Button variant="outline" size="sm" onClick={exportToJSON}>
+                <Download className="w-4 h-4 mr-2" />
+                JSON
+              </Button>
+              <Button variant="outline" size="sm" onClick={exportToPDF}>
+                <FileText className="w-4 h-4 mr-2" />
+                PDF
+              </Button>
+              <Button variant="outline" size="sm" onClick={exportToCSV}>
+                <FileImage className="w-4 h-4 mr-2" />
+                CSV
+              </Button>
+            </div>
           )}
         </div>
       </CardHeader>
@@ -102,7 +154,15 @@ export const SearchResultsMetrics = ({
         {searchTerm && totalMentions === 0 && (
           <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
             <p className="text-sm text-yellow-800">
-              Aucune mention trouvée pour "{searchTerm}". Vérifiez l'orthographe ou essayez d'autres mots-clés.
+              Aucune mention trouvée pour "{searchTerm}" via les APIs. Vérifiez la configuration ou essayez d'autres mots-clés.
+            </p>
+          </div>
+        )}
+
+        {totalMentions > 0 && (
+          <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+            <p className="text-sm text-green-800">
+              ✅ Données récupérées en temps réel via les APIs configurées
             </p>
           </div>
         )}

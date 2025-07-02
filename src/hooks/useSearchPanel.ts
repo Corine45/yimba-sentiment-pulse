@@ -40,7 +40,9 @@ export const useSearchPanel = () => {
       selectedPlatforms,
       apifyToken,
       setIsSearching,
-      setCurrentSearchTerm
+      setCurrentSearchTerm,
+      language, // Ajouter la langue
+      period    // Ajouter la période
     );
   };
 

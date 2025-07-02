@@ -37,48 +37,53 @@ class ApifyService {
     this.apiToken = apiToken;
   }
 
-  async scrapeInstagram(username: string): Promise<EngagementData[]> {
+  async scrapeInstagram(searchTerm: string, language: string = 'fr', period: string = '7d'): Promise<EngagementData[]> {
     const actorId = 'apify/instagram-scraper';
     const runInput = {
-      usernames: [username],
-      resultsLimit: 50
+      usernames: [searchTerm],
+      resultsLimit: this.getResultsLimit(period),
+      language: language
     };
 
     return this.runActor(actorId, runInput, 'instagram');
   }
 
-  async scrapeTwitter(username: string): Promise<EngagementData[]> {
+  async scrapeTwitter(searchTerm: string, language: string = 'fr', period: string = '7d'): Promise<EngagementData[]> {
     const actorId = 'apify/twitter-scraper';
     const runInput = {
-      handles: [username],
-      tweetsDesired: 50
+      handles: [searchTerm],
+      tweetsDesired: this.getResultsLimit(period),
+      language: language
     };
 
     return this.runActor(actorId, runInput, 'twitter');
   }
 
-  async scrapeFacebook(pageUrl: string): Promise<EngagementData[]> {
+  async scrapeFacebook(searchTerm: string, language: string = 'fr', period: string = '7d'): Promise<EngagementData[]> {
     const actorId = 'apify/facebook-posts-scraper';
     const runInput = {
-      startUrls: [{ url: pageUrl }],
-      maxPosts: 50
+      startUrls: [{ url: searchTerm }],
+      maxPosts: this.getResultsLimit(period),
+      language: language
     };
 
     return this.runActor(actorId, runInput, 'facebook');
   }
 
-  async scrapeTikTok(keywords: string): Promise<EngagementData[]> {
+  async scrapeTikTok(searchTerm: string, language: string = 'fr', period: string = '7d'): Promise<EngagementData[]> {
     const actorId = 'clockworks/tiktok-scraper';
     const runInput = {
-      hashtags: [keywords],
-      resultsPerPage: 20,
+      hashtags: [searchTerm],
+      resultsPerPage: this.getResultsLimit(period),
+      language: language,
+      period: period,
       shouldDownloadCovers: false,
       shouldDownloadVideos: false,
       shouldDownloadSubtitles: false
     };
 
     try {
-      console.log(`🎵 Démarrage du scraping TikTok pour: "${keywords}"`);
+      console.log(`🎵 Démarrage du scraping TikTok RÉEL pour: "${searchTerm}", langue: ${language}, période: ${period}`);
       
       // Utiliser l'endpoint synchrone pour TikTok
       const syncResponse = await fetch(`${this.baseUrl}/acts/${actorId}/run-sync?token=${this.apiToken}`, {
@@ -90,25 +95,35 @@ class ApifyService {
       });
 
       if (!syncResponse.ok) {
-        console.error('Erreur réponse Apify:', syncResponse.status, syncResponse.statusText);
+        console.error('❌ Erreur réponse Apify:', syncResponse.status, syncResponse.statusText);
         throw new Error(`Erreur lors du scraping TikTok: ${syncResponse.statusText}`);
       }
 
       const results = await syncResponse.json();
-      console.log(`✅ Scraping TikTok terminé, ${results.length} résultats trouvés`);
+      console.log(`✅ Scraping TikTok RÉEL terminé, ${results.length} résultats trouvés`);
       
       if (!Array.isArray(results)) {
-        console.warn('Format de réponse inattendu:', results);
+        console.warn('⚠️ Format de réponse inattendu:', results);
         return [];
       }
       
       const transformedResults = this.transformTikTokResults(results);
-      console.log('📊 Données transformées:', transformedResults.length, 'posts');
+      console.log('📊 Données TikTok RÉELLES transformées:', transformedResults.length, 'posts');
       
       return transformedResults;
     } catch (error) {
-      console.error(`❌ Erreur lors du scraping TikTok:`, error);
-      throw error;
+      console.error(`❌ Erreur lors du scraping TikTok RÉEL:`, error);
+      throw error; // Ne pas créer de données simulées
+    }
+  }
+
+  private getResultsLimit(period: string): number {
+    switch (period) {
+      case '1d': return 10;
+      case '7d': return 20;
+      case '30d': return 50;
+      case '3m': return 100;
+      default: return 20;
     }
   }
 

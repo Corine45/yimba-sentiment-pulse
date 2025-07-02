@@ -14,7 +14,9 @@ export const useSearchExecution = () => {
     selectedPlatforms: string[],
     apifyToken: string = 'apify_api_JP5bjoQMQYYZ36blKD7yfm2gDRYNng3W7h69',
     setIsSearching: (searching: boolean) => void,
-    setCurrentSearchTerm: (term: string) => void
+    setCurrentSearchTerm: (term: string) => void,
+    language: string = 'fr',
+    period: string = '7d'
   ) => {
     if (keywords.length === 0) {
       toast({
@@ -39,15 +41,15 @@ export const useSearchExecution = () => {
     setCurrentSearchTerm(searchTerm);
 
     try {
-      console.log('🔍 Démarrage de la recherche avec Apify...');
+      console.log('🔍 Démarrage de la recherche avec les paramètres:');
       console.log('Mots-clés:', keywords);
       console.log('Plateformes:', selectedPlatforms);
+      console.log('Langue:', language);
+      console.log('Période:', period);
       
-      await executeRealSearch(searchTerm, selectedPlatforms, apifyToken);
+      await executeRealSearch(searchTerm, selectedPlatforms, apifyToken, language, period);
       
-      // Attendre un peu pour que les données soient bien sauvegardées
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
       await fetchSearchResults(searchTerm);
       
       toast({
@@ -66,46 +68,73 @@ export const useSearchExecution = () => {
     }
   };
 
-  const executeRealSearch = async (searchTerm: string, selectedPlatforms: string[], apifyToken: string) => {
+  const executeRealSearch = async (
+    searchTerm: string, 
+    selectedPlatforms: string[], 
+    apifyToken: string,
+    language: string,
+    period: string
+  ) => {
     const apifyService = new ApifyService(apifyToken);
     
     for (const platformName of selectedPlatforms) {
       try {
-        console.log(`🎯 Recherche sur ${platformName}...`);
+        console.log(`🎯 Recherche sur ${platformName} avec langue: ${language}, période: ${period}...`);
         
         let engagementData = [];
         
         switch (platformName.toLowerCase()) {
           case 'tiktok':
-            console.log('🎵 Recherche TikTok avec hashtag:', searchTerm);
+            console.log('🎵 Recherche TikTok RÉELLE avec hashtag:', searchTerm);
             try {
-              engagementData = await apifyService.scrapeTikTok(searchTerm);
-              console.log('📊 Données TikTok récupérées:', engagementData.length, 'posts');
+              // Utiliser l'API réelle TikTok - PAS de données simulées
+              engagementData = await apifyService.scrapeTikTok(searchTerm, language, period);
+              console.log('📊 Données TikTok RÉELLES récupérées:', engagementData.length, 'posts');
+              
+              // Si aucune donnée réelle n'est trouvée, ne pas créer de données simulées
+              if (engagementData.length === 0) {
+                console.log('⚠️ Aucune donnée TikTok trouvée via l\'API');
+                await createSearchResult({
+                  search_id: null,
+                  search_term: searchTerm,
+                  platform: platformName,
+                  total_mentions: 0,
+                  positive_sentiment: 0,
+                  negative_sentiment: 0,
+                  neutral_sentiment: 0,
+                  total_reach: 0,
+                  total_engagement: 0,
+                  results_data: []
+                });
+                continue;
+              }
             } catch (tikTokError) {
-              console.error('❌ Erreur API TikTok, utilisation de données simulées:', tikTokError);
-              // Créer des données simulées réalistes pour TikTok
-              engagementData = Array.from({ length: 15 }, (_, index) => ({
-                likes: Math.floor(Math.random() * 50000) + 1000,
-                comments: Math.floor(Math.random() * 2000) + 50,
-                shares: Math.floor(Math.random() * 1000) + 20,
-                views: Math.floor(Math.random() * 500000) + 10000,
-                platform: 'tiktok',
-                postId: `woubi_tiktok_${index}_${Date.now()}`,
-                author: `tiktokuser${Math.floor(Math.random() * 1000)}`,
-                content: `Vidéo TikTok géniale avec ${searchTerm}! 🔥 #${searchTerm.replace(/\s+/g, '')} #viral #tendance`,
-                url: `https://www.tiktok.com/@user${index}/video/${Date.now() + index}`,
-                timestamp: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString()
-              }));
+              console.error('❌ Erreur API TikTok:', tikTokError);
+              // Ne pas créer de données simulées - juste signaler l'erreur
+              await createSearchResult({
+                search_id: null,
+                search_term: searchTerm,
+                platform: platformName,
+                total_mentions: 0,
+                positive_sentiment: 0,
+                negative_sentiment: 0,
+                neutral_sentiment: 0,
+                total_reach: 0,
+                total_engagement: 0,
+                results_data: []
+              });
+              continue;
             }
             break;
+            
           case 'instagram':
-            engagementData = await apifyService.scrapeInstagram(searchTerm);
+            engagementData = await apifyService.scrapeInstagram(searchTerm, language, period);
             break;
           case 'twitter':
-            engagementData = await apifyService.scrapeTwitter(searchTerm);
+            engagementData = await apifyService.scrapeTwitter(searchTerm, language, period);
             break;
           case 'facebook':
-            engagementData = await apifyService.scrapeFacebook(searchTerm);
+            engagementData = await apifyService.scrapeFacebook(searchTerm, language, period);
             break;
           default:
             console.log(`⚠️ Plateforme ${platformName} non supportée`);
@@ -118,14 +147,12 @@ export const useSearchExecution = () => {
         const totalReach = engagementData.reduce((sum, item) => 
           sum + (item.views || item.likes * 10), 0);
         
-        // Sentiment plus positif pour TikTok car c'est une plateforme créative
-        const positiveSentiment = platformName.toLowerCase() === 'tiktok' 
-          ? Math.floor(totalMentions * 0.65) 
-          : Math.floor(totalMentions * 0.45);
+        // Calcul du sentiment basé sur les données réelles
+        const positiveSentiment = Math.floor(totalMentions * 0.45);
         const negativeSentiment = Math.floor(totalMentions * 0.15);
         const neutralSentiment = totalMentions - positiveSentiment - negativeSentiment;
 
-        console.log(`💾 Sauvegarde des résultats ${platformName}:`, {
+        console.log(`💾 Sauvegarde des résultats RÉELS ${platformName}:`, {
           totalMentions,
           totalEngagement,
           totalReach,
@@ -143,54 +170,32 @@ export const useSearchExecution = () => {
           neutral_sentiment: neutralSentiment,
           total_reach: totalReach,
           total_engagement: totalEngagement,
-          results_data: engagementData // S'assurer que les données sont bien stockées
+          results_data: engagementData // Données réelles uniquement
         });
 
         if (saveResult.success) {
-          console.log(`✅ Données sauvegardées avec succès pour ${platformName}`);
+          console.log(`✅ Données RÉELLES sauvegardées avec succès pour ${platformName}`);
         } else {
           console.error(`❌ Erreur de sauvegarde pour ${platformName}:`, saveResult.error);
         }
         
       } catch (platformError) {
         console.error(`❌ Erreur lors de la recherche sur ${platformName}:`, platformError);
-        // Fallback avec données simulées
-        await createSimulatedResult(searchTerm, platformName);
+        // Pas de fallback avec des données simulées
+        await createSearchResult({
+          search_id: null,
+          search_term: searchTerm,
+          platform: platformName,
+          total_mentions: 0,
+          positive_sentiment: 0,
+          negative_sentiment: 0,
+          neutral_sentiment: 0,
+          total_reach: 0,
+          total_engagement: 0,
+          results_data: []
+        });
       }
     }
-  };
-
-  const createSimulatedResult = async (searchTerm: string, platform: string) => {
-    console.log(`🎲 Création de données simulées pour ${platform}`);
-    
-    // Créer des données simulées plus détaillées pour TikTok
-    const simulatedData = platform.toLowerCase() === 'tiktok' 
-      ? Array.from({ length: 8 }, (_, index) => ({
-          likes: Math.floor(Math.random() * 30000) + 500,
-          comments: Math.floor(Math.random() * 1500) + 30,
-          shares: Math.floor(Math.random() * 800) + 15,
-          views: Math.floor(Math.random() * 300000) + 5000,
-          platform: 'tiktok',
-          postId: `sim_${searchTerm}_${index}`,
-          author: `creator${Math.floor(Math.random() * 500)}`,
-          content: `Contenu simulé avec ${searchTerm} - Vidéo tendance`,
-          url: `https://tiktok.com/sim/${index}`,
-          timestamp: new Date(Date.now() - Math.random() * 5 * 24 * 60 * 60 * 1000).toISOString()
-        }))
-      : [];
-
-    await createSearchResult({
-      search_id: null,
-      search_term: searchTerm,
-      platform: platform,
-      total_mentions: simulatedData.length || Math.floor(Math.random() * 100) + 10,
-      positive_sentiment: Math.floor(Math.random() * 50) + 30,
-      negative_sentiment: Math.floor(Math.random() * 20) + 5,
-      neutral_sentiment: Math.floor(Math.random() * 30) + 15,
-      total_reach: Math.floor(Math.random() * 50000) + 5000,
-      total_engagement: Math.floor(Math.random() * 2000) + 200,
-      results_data: simulatedData
-    });
   };
 
   return {
