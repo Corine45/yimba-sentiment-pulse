@@ -1,3 +1,4 @@
+
 export interface EngagementData {
   likes: number;
   comments: number;
@@ -40,7 +41,6 @@ class ApifyService {
   async scrapeTikTok(searchTerm: string, language: string = 'fr', period: string = '7d'): Promise<EngagementData[]> {
     const actorId = 'clockworks/tiktok-scraper';
     
-    // Configuration spécialisée pour TikTok
     const runInput = {
       hashtags: [searchTerm.startsWith('#') ? searchTerm : `#${searchTerm}`],
       resultsPerPage: this.getResultsLimit(period),
@@ -59,8 +59,7 @@ class ApifyService {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(runInput),
-        timeout: 30000
+        body: JSON.stringify(runInput)
       });
 
       if (!response.ok) {
@@ -73,7 +72,6 @@ class ApifyService {
       const results = await response.json();
       console.log('📊 Réponse brute TikTok:', results);
       
-      // Vérifier différents formats de réponse
       let videos = [];
       if (Array.isArray(results)) {
         videos = results;
@@ -92,39 +90,8 @@ class ApifyService {
       return transformedResults;
     } catch (error) {
       console.error(`❌ Erreur lors du scraping TikTok:`, error);
-      // Retourner des données de test pour vérifier l'affichage
-      return this.generateTestTikTokData(searchTerm);
+      return [];
     }
-  }
-
-  // Données de test pour vérifier l'affichage
-  private generateTestTikTokData(searchTerm: string): EngagementData[] {
-    return [
-      {
-        likes: 15420,
-        comments: 342,
-        shares: 156,
-        platform: 'TikTok',
-        postId: 'test_tiktok_1',
-        author: 'test_user_1',
-        content: `Vidéo TikTok contenant ${searchTerm} - Données de test API`,
-        url: 'https://tiktok.com/@test_user_1/video/123456',
-        timestamp: new Date().toISOString(),
-        views: 125000,
-      },
-      {
-        likes: 8960,
-        comments: 198,
-        shares: 87,
-        platform: 'TikTok',
-        postId: 'test_tiktok_2',
-        author: 'test_user_2',
-        content: `Autre vidéo avec ${searchTerm} - Test de récupération`,
-        url: 'https://tiktok.com/@test_user_2/video/789012',
-        timestamp: new Date(Date.now() - 3600000).toISOString(),
-        views: 89000,
-      }
-    ];
   }
 
   async scrapeInstagram(searchTerm: string, language: string = 'fr', period: string = '7d'): Promise<EngagementData[]> {
@@ -141,25 +108,8 @@ class ApifyService {
       return await this.runInstagramActor('apify/instagram-post-scraper', searchTerm, language, period);
     } catch (error) {
       console.error('❌ Tous les acteurs Instagram ont échoué:', error);
-      return this.generateTestInstagramData(searchTerm);
+      return [];
     }
-  }
-
-  private generateTestInstagramData(searchTerm: string): EngagementData[] {
-    return [
-      {
-        likes: 2340,
-        comments: 89,
-        shares: 45,
-        platform: 'Instagram',
-        postId: 'test_insta_1',
-        author: 'insta_user_1',
-        content: `Post Instagram avec ${searchTerm} - Test API`,
-        url: 'https://instagram.com/p/test123',
-        timestamp: new Date().toISOString(),
-        views: 12000,
-      }
-    ];
   }
 
   private async runInstagramActor(actorId: string, searchTerm: string, language: string, period: string): Promise<EngagementData[]> {
@@ -230,25 +180,8 @@ class ApifyService {
       return this.transformTwitterResults(Array.isArray(results) ? results : []);
     } catch (error) {
       console.error(`❌ Erreur Twitter:`, error);
-      return this.generateTestTwitterData(searchTerm);
+      return [];
     }
-  }
-
-  private generateTestTwitterData(searchTerm: string): EngagementData[] {
-    return [
-      {
-        likes: 456,
-        comments: 23,
-        shares: 12,
-        platform: 'Twitter',
-        postId: 'test_twitter_1',
-        author: 'twitter_user_1',
-        content: `Tweet contenant ${searchTerm} - Test API`,
-        url: 'https://twitter.com/status/test123',
-        timestamp: new Date().toISOString(),
-        views: 5600,
-      }
-    ];
   }
 
   private transformTwitterResults(results: any[]): EngagementData[] {
@@ -296,25 +229,8 @@ class ApifyService {
       return this.transformYouTubeResults(Array.isArray(results) ? results : []);
     } catch (error) {
       console.error(`❌ Erreur YouTube:`, error);
-      return this.generateTestYouTubeData(searchTerm);
+      return [];
     }
-  }
-
-  private generateTestYouTubeData(searchTerm: string): EngagementData[] {
-    return [
-      {
-        likes: 1240,
-        comments: 67,
-        shares: 34,
-        platform: 'YouTube',
-        postId: 'test_youtube_1',
-        author: 'YouTube Channel 1',
-        content: `Vidéo YouTube sur ${searchTerm} - Test API`,
-        url: 'https://youtube.com/watch?v=test123',
-        timestamp: new Date().toISOString(),
-        views: 25000,
-      }
-    ];
   }
 
   private transformYouTubeResults(results: any[]): EngagementData[] {
@@ -362,25 +278,8 @@ class ApifyService {
       return this.transformFacebookResults(Array.isArray(results) ? results : []);
     } catch (error) {
       console.error(`❌ Erreur Facebook:`, error);
-      return this.generateTestFacebookData(searchTerm);
+      return [];
     }
-  }
-
-  private generateTestFacebookData(searchTerm: string): EngagementData[] {
-    return [
-      {
-        likes: 890,
-        comments: 45,
-        shares: 23,
-        platform: 'Facebook',
-        postId: 'test_facebook_1',
-        author: 'Facebook User 1',
-        content: `Post Facebook mentionnant ${searchTerm} - Test API`,
-        url: 'https://facebook.com/post/test123',
-        timestamp: new Date().toISOString(),
-        views: 8900,
-      }
-    ];
   }
 
   private transformFacebookResults(results: any[]): EngagementData[] {
