@@ -23,10 +23,15 @@ export const useSearchPanel = () => {
 
   const { advancedFilters, setAdvancedFilters } = useSearchFilters();
   const { executeSearch } = useSearchExecution();
-  const { saveSearch } = useSearchSaving();
+  const { 
+    saveDialogOpen, 
+    setSaveDialogOpen, 
+    searchName, 
+    setSearchName, 
+    handleSaveSearch: saveSearchFunction,
+    handleExecuteSavedSearch 
+  } = useSearchSaving();
 
-  const [saveDialogOpen, setSaveDialogOpen] = useState(false);
-  const [searchName, setSearchName] = useState('');
   const [apifyToken, setApifyToken] = useState('apify_api_JP5bjoQMQYYZ36blKD7yfm2gDRYNng3W7h69');
 
   const handleSearch = async () => {
@@ -40,24 +45,18 @@ export const useSearchPanel = () => {
   };
 
   const handleSaveSearch = async () => {
-    const success = await saveSearch({
-      name: searchName,
+    const success = await saveSearchFunction(
       keywords,
       selectedPlatforms,
       language,
       period,
       advancedFilters
-    });
+    );
 
     if (success) {
       setSaveDialogOpen(false);
       setSearchName('');
     }
-  };
-
-  const handleExecuteSavedSearch = async (searchId: string) => {
-    console.log('Exécution de la recherche sauvegardée:', searchId);
-    // TODO: Implémenter l'exécution des recherches sauvegardées
   };
 
   return {
