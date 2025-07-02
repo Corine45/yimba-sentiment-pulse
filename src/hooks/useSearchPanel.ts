@@ -45,18 +45,13 @@ export const useSearchPanel = () => {
   };
 
   const handleSaveSearch = async () => {
-    const success = await saveSearchFunction(
+    await saveSearchFunction(
       keywords,
       selectedPlatforms,
       language,
       period,
       advancedFilters
     );
-
-    if (success) {
-      setSaveDialogOpen(false);
-      setSearchName('');
-    }
   };
 
   return {
