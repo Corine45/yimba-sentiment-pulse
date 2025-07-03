@@ -47,7 +47,7 @@ class ApifyService {
       console.log(`✅ ${platform} - Réponse reçue:`, data);
       
       // Adapter selon la structure de votre API
-      const items = data?.data?.output?.dataset?.items || data?.data || data || [];
+      const items = data?.data?.items || data?.items || data?.data || data || [];
       console.log(`📊 ${platform} - Items extraits:`, items.length);
       
       return Array.isArray(items) ? items : [];
@@ -91,8 +91,8 @@ class ApifyService {
       platform: 'Instagram',
       postId: item.id ?? item.postId ?? `instagram_${Date.now()}`,
       author: item.username ?? item.author ?? 'Utilisateur Instagram',
-      content: item.caption ?? item.content ?? item.text ?? '',
-      url: item.url ?? item.permalink ?? `https://instagram.com/p/${item.id}`,
+      content: item.caption ?? item.content ?? item.text ?? item.biography ?? '',
+      url: item.url ?? item.permalink ?? `https://instagram.com/${item.username}`,
       timestamp: item.timestamp ?? item.taken_at_timestamp ? new Date(item.taken_at_timestamp * 1000).toISOString() : new Date().toISOString(),
     }));
   }

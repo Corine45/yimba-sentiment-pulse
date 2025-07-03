@@ -116,11 +116,15 @@ export const useSearchExecution = () => {
         const totalEngagement = engagementData.reduce((sum, item) => 
           sum + (item.likes || 0) + (item.comments || 0) + (item.shares || 0), 0);
         const totalReach = engagementData.reduce((sum, item) => 
-          sum + (item.views || item.likes * 10), 0); // Estimation basée sur les vraies données
+          sum + (item.views || item.likes * 10 || 0), 0);
         
         // Calcul du sentiment basé sur l'engagement réel
-        const positiveSentiment = Math.floor(totalMentions * 0.45); // 45% positif par défaut
-        const negativeSentiment = Math.floor(totalMentions * 0.15); // 15% négatif par défaut
+        const highEngagementPosts = engagementData.filter(item => 
+          (item.likes + item.comments + item.shares) > (totalEngagement / totalMentions || 0)
+        ).length;
+        
+        const positiveSentiment = Math.floor(highEngagementPosts * 0.7); // Posts à fort engagement = sentiment positif
+        const negativeSentiment = Math.floor((totalMentions - highEngagementPosts) * 0.2); // 20% des autres posts
         const neutralSentiment = totalMentions - positiveSentiment - negativeSentiment;
 
         console.log(`💾 Sauvegarde ${platformName} - DONNÉES RÉELLES:`, {

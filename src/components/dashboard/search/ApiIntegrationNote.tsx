@@ -8,11 +8,11 @@ export const ApiIntegrationNote = () => {
       <div className="text-xs text-green-700 space-y-1">
         <p>• Serveur API: <code>https://yimbapulseapi.a-car.ci</code></p>
         <p>• Toutes les données sont récupérées en temps réel via vos APIs</p>
-        <p>• Problèmes CORS résolus grâce à votre serveur backend</p>
-        <p>• Support complet: TikTok, Facebook, Twitter, YouTube, Instagram</p>
+        <p>• Endpoints actifs: /api/scrape/tiktok, /api/scrape/facebook, /api/scrape/twitter, /api/scrape/youtube, /api/scrape/instagram</p>
+        <p>• Aucune donnée factice - Résultats 100% authentiques</p>
       </div>
       <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-xs text-blue-700">
-        <strong>🚀 APIs Actives:</strong> Scraping en temps réel - Données authentiques - Métriques précises
+        <strong>🚀 APIs Actives:</strong> Scraping en temps réel depuis votre serveur - Données authentiques - Métriques précises
       </div>
     </div>
   );
