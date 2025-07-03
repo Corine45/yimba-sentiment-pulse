@@ -40,7 +40,7 @@ class ApifyService {
           statusText: response.statusText,
           errorText
         });
-        throw new Error(`Erreur API ${platform}: ${response.status}`);
+        return []; // Retourner tableau vide en cas d'erreur
       }
 
       const data = await response.json();
@@ -53,7 +53,7 @@ class ApifyService {
       return Array.isArray(items) ? items : [];
     } catch (error) {
       console.error(`❌ Erreur appel API ${platform}:`, error);
-      return []; // Retour tableau vide, PAS de données factices
+      return []; // Retourner tableau vide en cas d'erreur
     }
   }
 
@@ -63,7 +63,6 @@ class ApifyService {
     const hashtags = searchTerm.split(',').map(term => term.trim().replace('#', ''));
     const items = await this.postData('tiktok', { hashtags }, 'TikTok');
 
-    // Si pas de données de l'API, retourner tableau vide
     if (items.length === 0) {
       console.log('⚠️ Aucune donnée TikTok retournée par votre API');
       return [];
@@ -89,23 +88,23 @@ class ApifyService {
     const usernames = searchTerm.split(',').map(term => term.trim().replace('@', ''));
     const items = await this.postData('instagram', { usernames }, 'Instagram');
 
-    // Si pas de données de l'API, retourner tableau vide
     if (items.length === 0) {
       console.log('⚠️ Aucune donnée Instagram retournée par votre API');
       return [];
     }
 
+    // Traitement des données Instagram selon votre structure API
     return items.map((item: any) => ({
-      likes: item.likes ?? item.likesCount ?? 0,
-      comments: item.comments ?? item.commentsCount ?? 0,
-      shares: 0, // Instagram n'a pas de partages publics
-      views: item.views ?? item.viewsCount ?? 0,
+      likes: 0, // Instagram API ne retourne pas de likes dans cette structure
+      comments: 0,
+      shares: 0,
+      views: 0,
       platform: 'Instagram',
-      postId: item.id ?? item.postId ?? `instagram_${Date.now()}_${Math.random()}`,
-      author: item.username ?? item.author ?? 'Utilisateur Instagram',
-      content: item.caption ?? item.content ?? item.text ?? item.biography ?? '',
-      url: item.url ?? item.permalink ?? `https://instagram.com/${item.username}`,
-      timestamp: item.timestamp ?? item.taken_at_timestamp ? new Date(item.taken_at_timestamp * 1000).toISOString() : new Date().toISOString(),
+      postId: item.id ?? `instagram_${Date.now()}_${Math.random()}`,
+      author: item.username ?? 'Utilisateur Instagram',
+      content: item.biography ?? item.fullName ?? '',
+      url: item.url ?? `https://instagram.com/${item.username}`,
+      timestamp: new Date().toISOString(),
     }));
   }
 
@@ -115,7 +114,6 @@ class ApifyService {
     const keywords = searchTerm.split(',').map(term => term.trim());
     const items = await this.postData('facebook', { keywords }, 'Facebook');
 
-    // Si pas de données de l'API, retourner tableau vide
     if (items.length === 0) {
       console.log('⚠️ Aucune donnée Facebook retournée par votre API');
       return [];
@@ -141,7 +139,6 @@ class ApifyService {
     const keywords = searchTerm.split(',').map(term => term.trim());
     const items = await this.postData('twitter', { keywords }, 'Twitter');
 
-    // Si pas de données de l'API, retourner tableau vide
     if (items.length === 0) {
       console.log('⚠️ Aucune donnée Twitter retournée par votre API');
       return [];
@@ -167,7 +164,6 @@ class ApifyService {
     const keywords = searchTerm.split(',').map(term => term.trim());
     const items = await this.postData('youtube', { keywords }, 'YouTube');
 
-    // Si pas de données de l'API, retourner tableau vide
     if (items.length === 0) {
       console.log('⚠️ Aucune donnée YouTube retournée par votre API');
       return [];
@@ -176,7 +172,7 @@ class ApifyService {
     return items.map((item: any) => ({
       likes: item.likes ?? item.likeCount ?? 0,
       comments: item.comments ?? item.commentCount ?? 0,
-      shares: 0, // YouTube n'expose pas les partages dans l'API
+      shares: 0,
       views: item.views ?? item.viewCount ?? 0,
       platform: 'YouTube',
       postId: item.id ?? item.videoId ?? `youtube_${Date.now()}_${Math.random()}`,

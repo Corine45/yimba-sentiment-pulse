@@ -39,7 +39,7 @@ export const useSearchExecution = () => {
     setCurrentSearchTerm(searchTerm);
 
     try {
-      console.log('🔍 RECHERCHE RÉELLE VIA VOTRE API BACKEND:');
+      console.log('🔍 RECHERCHE EXCLUSIVEMENT VIA VOTRE API BACKEND:');
       console.log('📝 Mots-clés:', keywords);
       console.log('🎯 Plateformes SÉLECTIONNÉES:', selectedPlatforms);
       console.log('🌐 Langue:', language);
@@ -78,14 +78,12 @@ export const useSearchExecution = () => {
     console.log('🚀 APPEL API BACKEND - DONNÉES 100% RÉELLES:');
     console.log('📊 Plateformes filtrées à traiter:', selectedPlatforms);
     
-    // TRAITEMENT UNIQUEMENT DES PLATEFORMES SÉLECTIONNÉES
     for (const platformName of selectedPlatforms) {
       try {
         console.log(`\n🎯 === APPEL API ${platformName.toUpperCase()} RÉEL ===`);
         
         let engagementData: any[] = [];
         
-        // APPEL API RÉEL selon la plateforme sélectionnée
         switch (platformName.toLowerCase()) {
           case 'tiktok':
             engagementData = await apifyService.scrapeTikTok(searchTerm, language, period);
@@ -114,12 +112,11 @@ export const useSearchExecution = () => {
 
         console.log(`📊 ${platformName} - Données RÉELLES reçues de l'API:`, engagementData.length);
 
-        // Calcul des métriques RÉELLES basées UNIQUEMENT sur les données de votre API
+        // TOUJOURS sauvegarder les données exactes de l'API (même si vides)
         const totalMentions = engagementData.length;
         let totalEngagement = 0;
         let totalReach = 0;
 
-        // Calculs basés sur les VRAIES données de votre API
         if (totalMentions > 0) {
           totalEngagement = engagementData.reduce((sum, item) => 
             sum + (item.likes || 0) + (item.comments || 0) + (item.shares || 0), 0);
@@ -127,7 +124,6 @@ export const useSearchExecution = () => {
             sum + (item.views || item.likes * 10 || 0), 0);
         }
         
-        // Calcul du sentiment basé sur l'engagement réel de vos données
         let positiveSentiment = 0;
         let negativeSentiment = 0;
         let neutralSentiment = 0;
@@ -174,7 +170,7 @@ export const useSearchExecution = () => {
       } catch (platformError) {
         console.error(`❌ Erreur API ${platformName}:`, platformError);
         
-        // En cas d'erreur API, sauvegarder résultat vide (PAS de données factices)
+        // En cas d'erreur API, sauvegarder résultat vide
         await createSearchResult({
           search_id: null,
           search_term: searchTerm,
@@ -185,7 +181,7 @@ export const useSearchExecution = () => {
           neutral_sentiment: 0,
           total_reach: 0,
           total_engagement: 0,
-          results_data: [] // Tableau vide, AUCUNE donnée factice
+          results_data: []
         });
       }
     }
