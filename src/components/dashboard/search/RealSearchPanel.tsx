@@ -87,7 +87,7 @@ export const RealSearchPanel = () => {
 
   const handleSearch = () => {
     setCurrentPage(1);
-    const advancedFilters = {
+    const advancedFilters: SearchFilters = {
       ...filters,
       language: selectedLanguage,
       excludedLanguages,
@@ -98,7 +98,7 @@ export const RealSearchPanel = () => {
       importance: importanceLevel,
       visited: visitedFilter,
       influenceScore: influenceScore[0],
-      sentiment: sentimentFilter.length > 0 ? sentimentFilter[0] : undefined
+      sentiment: sentimentFilter.length > 0 ? sentimentFilter : undefined
     };
     executeSearch(keywords, selectedPlatforms, advancedFilters);
   };
@@ -160,7 +160,22 @@ export const RealSearchPanel = () => {
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
     const mentionsToSave = mentions.slice(startIndex, endIndex);
-    await saveMentions(mentionsToSave, keywords, selectedPlatforms, filters, format);
+    
+    const filtersToSave: SearchFilters = {
+      ...filters,
+      language: selectedLanguage,
+      excludedLanguages,
+      country: selectedCountry,
+      excludedCountries,
+      author: authorFilter,
+      domain: domainFilter,
+      importance: importanceLevel,
+      visited: visitedFilter,
+      influenceScore: influenceScore[0],
+      sentiment: sentimentFilter
+    };
+    
+    await saveMentions(mentionsToSave, keywords, selectedPlatforms, filtersToSave, format);
   };
 
   const clearAllFilters = () => {

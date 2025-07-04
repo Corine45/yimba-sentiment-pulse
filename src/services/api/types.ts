@@ -27,7 +27,7 @@ export interface SearchFilters {
   language?: string;
   period?: string;
   sortBy?: 'recent' | 'popular';
-  sentiment?: 'positive' | 'negative' | 'neutral';
+  sentiment?: 'positive' | 'negative' | 'neutral' | string[];
   minEngagement?: number;
   maxEngagement?: number;
   geography?: {
@@ -52,6 +52,11 @@ export interface SearchFilters {
   visitedFilter?: string;
   includePageLikes?: boolean;
   includePageSearch?: boolean;
+  // Nouvelles propriétés pour les filtres détaillés
+  country?: string;
+  importance?: string;
+  visited?: string;
+  influenceScore?: number;
 }
 
 export interface CachedResult {
