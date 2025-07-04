@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,17 +5,28 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Download, Trash2, Search, FileText, Calendar, TrendingUp } from "lucide-react";
+import { Download, Trash2, Search, FileText, Calendar, TrendingUp, Save } from "lucide-react";
 import { useSavedMentions } from "@/hooks/useSavedMentions";
 import { useToast } from "@/hooks/use-toast";
 import { FileGenerators } from '@/utils/fileGenerators';
+import { DeleteConfirmModal } from './DeleteConfirmModal';
+import { SaveFormatSelector } from './SaveFormatSelector';
 
 export const SavedMentionsHistory = () => {
-  const { savedMentions, loading, deleteSavedMention } = useSavedMentions();
+  const { savedMentions, loading, deleteSavedMention, saveMentionData } = useSavedMentions();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('date');
   const [currentPage, setCurrentPage] = useState(1);
+  const [deleteModal, setDeleteModal] = useState<{open: boolean; id: string; fileName: string}>({
+    open: false, id: '', fileName: ''
+  });
+  const [saveModal, setSaveModal] = useState<{open: boolean; mention: any}>({
+    open: false, mention: null
+  });
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  
   const itemsPerPage = 10;
 
   const filteredMentions = savedMentions.filter(mention =>
@@ -43,16 +53,18 @@ export const SavedMentionsHistory = () => {
   const paginatedMentions = sortedMentions.slice(startIndex, startIndex + itemsPerPage);
 
   const handleDelete = async (id: string, fileName: string) => {
-    if (!window.confirm(`Êtes-vous sûr de vouloir supprimer "${fileName}" ?`)) {
-      return;
-    }
+    setDeleteModal({ open: true, id, fileName });
+  };
 
-    const result = await deleteSavedMention(id);
+  const confirmDelete = async () => {
+    setIsDeleting(true);
+    const result = await deleteSavedMention(deleteModal.id);
     if (result.success) {
       toast({
         title: "Suppression réussie",
-        description: `"${fileName}" a été supprimé avec succès.`,
+        description: `"${deleteModal.fileName}" a été supprimé avec succès.`,
       });
+      setDeleteModal({ open: false, id: '', fileName: '' });
     } else {
       toast({
         title: "Erreur",
@@ -60,6 +72,62 @@ export const SavedMentionsHistory = () => {
         variant: "destructive",
       });
     }
+    setIsDeleting(false);
+  };
+
+  const handleSaveAs = (mention: any) => {
+    setSaveModal({ open: true, mention });
+  };
+
+  const handleSaveConfirm = async (fileName: string, format: 'json' | 'pdf' | 'csv') => {
+    setIsSaving(true);
+    try {
+      const stats = {
+        total: saveModal.mention.total_mentions,
+        positive: saveModal.mention.positive_mentions,
+        neutral: saveModal.mention.neutral_mentions,
+        negative: saveModal.mention.negative_mentions,
+        engagement: saveModal.mention.total_engagement
+      };
+
+      // Sauvegarder d'abord dans la base de données
+      const saveResult = await saveMentionData({
+        fileName,
+        exportFormat: format,
+        searchKeywords: saveModal.mention.search_keywords,
+        platforms: saveModal.mention.platforms,
+        mentionsData: saveModal.mention.mentions_data,
+        stats,
+        filtersApplied: saveModal.mention.filters_applied || {}
+      });
+
+      if (saveResult.success) {
+        // Ensuite générer le fichier
+        await FileGenerators.generateFile(
+          saveModal.mention.mentions_data,
+          saveModal.mention.search_keywords,
+          saveModal.mention.platforms,
+          format,
+          fileName,
+          stats
+        );
+
+        toast({
+          title: "Sauvegarde réussie",
+          description: `"${fileName}.${format}" a été sauvegardé et généré.`,
+        });
+        setSaveModal({ open: false, mention: null });
+      } else {
+        throw new Error('Échec de la sauvegarde');
+      }
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de sauvegarder le fichier.",
+        variant: "destructive",
+      });
+    }
+    setIsSaving(false);
   };
 
   const handleDownload = async (mention: any) => {
@@ -122,185 +190,209 @@ export const SavedMentionsHistory = () => {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center space-x-2">
-          <FileText className="w-5 h-5" />
-          <span>Historique des sauvegardes</span>
-          <Badge variant="secondary">{savedMentions.length}</Badge>
-        </CardTitle>
-      </CardHeader>
-      
-      <CardContent>
-        {/* Filtres et recherche */}
-        <div className="flex flex-col md:flex-row gap-4 mb-6">
-          <div className="flex-1">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <Input
-                placeholder="Rechercher par mots-clés ou nom de fichier..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-          </div>
-          <Select value={sortBy} onValueChange={setSortBy}>
-            <SelectTrigger className="w-48">
-              <SelectValue placeholder="Trier par" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="date">Date (récent)</SelectItem>
-              <SelectItem value="mentions">Nb. mentions</SelectItem>
-              <SelectItem value="engagement">Engagement</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        {paginatedMentions.length === 0 ? (
-          <div className="text-center py-8">
-            <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-500">
-              {searchTerm ? 'Aucune sauvegarde trouvée pour cette recherche.' : 'Aucune sauvegarde trouvée. Lancez une recherche pour commencer.'}
-            </p>
-          </div>
-        ) : (
-          <>
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Nom du fichier</TableHead>
-                    <TableHead>Mots-clés</TableHead>
-                    <TableHead>Plateformes</TableHead>
-                    <TableHead>Mentions</TableHead>
-                    <TableHead>Sentiment</TableHead>
-                    <TableHead>Engagement</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {paginatedMentions.map((mention) => (
-                    <TableRow key={mention.id}>
-                      <TableCell className="font-medium">
-                        <div className="flex items-center space-x-2">
-                          <FileText className="w-4 h-4 text-blue-600" />
-                          <span>{mention.file_name}</span>
-                          <Badge variant="outline" className="ml-2 text-xs">
-                            {mention.export_format.toUpperCase()}
-                          </Badge>
-                        </div>
-                      </TableCell>
-                      
-                      <TableCell>
-                        <div className="flex flex-wrap gap-1">
-                          {mention.search_keywords.slice(0, 3).map((keyword, index) => (
-                            <Badge key={index} variant="outline" className="text-xs">
-                              {keyword}
-                            </Badge>
-                          ))}
-                          {mention.search_keywords.length > 3 && (
-                            <Badge variant="outline" className="text-xs">
-                              +{mention.search_keywords.length - 3}
-                            </Badge>
-                          )}
-                        </div>
-                      </TableCell>
-                      
-                      <TableCell>
-                        <div className="flex flex-wrap gap-1">
-                          {mention.platforms.map((platform, index) => (
-                            <Badge key={index} variant="secondary" className="text-xs">
-                              {platform}
-                            </Badge>
-                          ))}
-                        </div>
-                      </TableCell>
-                      
-                      <TableCell>
-                        <div className="flex items-center space-x-1">
-                          <TrendingUp className="w-4 h-4 text-blue-600" />
-                          <span className="font-medium">{mention.total_mentions}</span>
-                        </div>
-                      </TableCell>
-                      
-                      <TableCell>
-                        <div className={`text-sm ${getSentimentColor(mention.positive_mentions, mention.neutral_mentions, mention.negative_mentions)}`}>
-                          <div>✓ {mention.positive_mentions}</div>
-                          <div>○ {mention.neutral_mentions}</div>
-                          <div>✗ {mention.negative_mentions}</div>
-                        </div>
-                      </TableCell>
-                      
-                      <TableCell>
-                        <span className="font-medium text-orange-600">
-                          {mention.total_engagement.toLocaleString()}
-                        </span>
-                      </TableCell>
-                      
-                      <TableCell>
-                        <div className="flex items-center space-x-1 text-sm text-gray-600">
-                          <Calendar className="w-3 h-3" />
-                          <span>{new Date(mention.created_at).toLocaleDateString('fr-FR')}</span>
-                        </div>
-                      </TableCell>
-                      
-                      <TableCell>
-                        <div className="flex space-x-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleDownload(mention)}
-                            className="text-blue-600 hover:text-blue-700"
-                          >
-                            <Download className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleDelete(mention.id, mention.file_name)}
-                            className="text-red-600 hover:text-red-700"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="flex items-center justify-between mt-6">
-                <div className="text-sm text-gray-600">
-                  Affichage de {startIndex + 1} à {Math.min(startIndex + itemsPerPage, sortedMentions.length)} sur {sortedMentions.length} sauvegardes
-                </div>
-                <div className="flex space-x-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                    disabled={currentPage === 1}
-                  >
-                    Précédent
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                    disabled={currentPage === totalPages}
-                  >
-                    Suivant
-                  </Button>
-                </div>
+    <>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <FileText className="w-5 h-5" />
+            <span>Historique des sauvegardes</span>
+            <Badge variant="secondary">{savedMentions.length}</Badge>
+          </CardTitle>
+        </CardHeader>
+        
+        <CardContent>
+          <div className="flex flex-col md:flex-row gap-4 mb-6">
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <Input
+                  placeholder="Rechercher par mots-clés ou nom de fichier..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
               </div>
-            )}
-          </>
-        )}
-      </CardContent>
-    </Card>
+            </div>
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="Trier par" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="date">Date (récent)</SelectItem>
+                <SelectItem value="mentions">Nb. mentions</SelectItem>
+                <SelectItem value="engagement">Engagement</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {paginatedMentions.length === 0 ? (
+            <div className="text-center py-8">
+              <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-500">
+                {searchTerm ? 'Aucune sauvegarde trouvée pour cette recherche.' : 'Aucune sauvegarde trouvée. Lancez une recherche pour commencer.'}
+              </p>
+            </div>
+          ) : (
+            <>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Nom du fichier</TableHead>
+                      <TableHead>Mots-clés</TableHead>
+                      <TableHead>Plateformes</TableHead>
+                      <TableHead>Mentions</TableHead>
+                      <TableHead>Sentiment</TableHead>
+                      <TableHead>Engagement</TableHead>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {paginatedMentions.map((mention) => (
+                      <TableRow key={mention.id}>
+                        <TableCell className="font-medium">
+                          <div className="flex items-center space-x-2">
+                            <FileText className="w-4 h-4 text-blue-600" />
+                            <span>{mention.file_name}</span>
+                            <Badge variant="outline" className="ml-2 text-xs">
+                              {mention.export_format.toUpperCase()}
+                            </Badge>
+                          </div>
+                        </TableCell>
+                        
+                        <TableCell>
+                          <div className="flex flex-wrap gap-1">
+                            {mention.search_keywords.slice(0, 3).map((keyword, index) => (
+                              <Badge key={index} variant="outline" className="text-xs">
+                                {keyword}
+                              </Badge>
+                            ))}
+                            {mention.search_keywords.length > 3 && (
+                              <Badge variant="outline" className="text-xs">
+                                +{mention.search_keywords.length - 3}
+                              </Badge>
+                            )}
+                          </div>
+                        </TableCell>
+                        
+                        <TableCell>
+                          <div className="flex flex-wrap gap-1">
+                            {mention.platforms.map((platform, index) => (
+                              <Badge key={index} variant="secondary" className="text-xs">
+                                {platform}
+                              </Badge>
+                            ))}
+                          </div>
+                        </TableCell>
+                        
+                        <TableCell>
+                          <div className="flex items-center space-x-1">
+                            <TrendingUp className="w-4 h-4 text-blue-600" />
+                            <span className="font-medium">{mention.total_mentions}</span>
+                          </div>
+                        </TableCell>
+                        
+                        <TableCell>
+                          <div className={`text-sm ${getSentimentColor(mention.positive_mentions, mention.neutral_mentions, mention.negative_mentions)}`}>
+                            <div>✓ {mention.positive_mentions}</div>
+                            <div>○ {mention.neutral_mentions}</div>
+                            <div>✗ {mention.negative_mentions}</div>
+                          </div>
+                        </TableCell>
+                        
+                        <TableCell>
+                          <span className="font-medium text-orange-600">
+                            {mention.total_engagement.toLocaleString()}
+                          </span>
+                        </TableCell>
+                        
+                        <TableCell>
+                          <div className="flex items-center space-x-1 text-sm text-gray-600">
+                            <Calendar className="w-3 h-3" />
+                            <span>{new Date(mention.created_at).toLocaleDateString('fr-FR')}</span>
+                          </div>
+                        </TableCell>
+                        
+                        <TableCell>
+                          <div className="flex space-x-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleDownload(mention)}
+                              className="text-blue-600 hover:text-blue-700"
+                            >
+                              <Download className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleSaveAs(mention)}
+                              className="text-green-600 hover:text-green-700"
+                            >
+                              <Save className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleDelete(mention.id, mention.file_name)}
+                              className="text-red-600 hover:text-red-700"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between mt-6">
+                  <div className="text-sm text-gray-600">
+                    Affichage de {startIndex + 1} à {Math.min(startIndex + itemsPerPage, sortedMentions.length)} sur {sortedMentions.length} sauvegardes
+                  </div>
+                  <div className="flex space-x-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                      disabled={currentPage === 1}
+                    >
+                      Précédent
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                      disabled={currentPage === totalPages}
+                    >
+                      Suivant
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </CardContent>
+      </Card>
+
+      <DeleteConfirmModal
+        open={deleteModal.open}
+        onOpenChange={(open) => setDeleteModal({ open, id: '', fileName: '' })}
+        onConfirm={confirmDelete}
+        fileName={deleteModal.fileName}
+        isDeleting={isDeleting}
+      />
+
+      <SaveFormatSelector
+        open={saveModal.open}
+        onOpenChange={(open) => setSaveModal({ open, mention: null })}
+        onSave={handleSaveConfirm}
+        isSaving={isSaving}
+        mentionsCount={saveModal.mention?.total_mentions || 0}
+      />
+    </>
   );
 };
