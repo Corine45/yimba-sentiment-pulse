@@ -1,50 +1,92 @@
 
-import React from 'react';
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-import { AuthProvider } from './hooks/useAuth';
-import { Dashboard } from './components/dashboard/Dashboard';
-import { useAuth } from './hooks/useAuth';
-import { ProtectedRoute } from './components/auth/ProtectedRoute';
-import './App.css';
-import Recherche2 from "@/pages/Recherche2";
+import { Toaster } from "@/components/ui/toaster";
+import { Toaster as Sonner } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "@/hooks/useAuth";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import Home from "./pages/Home";
+import About from "./pages/About";
+import Index from "./pages/Index";
+import Auth from "./pages/Auth";
+import Dashboard from "./pages/Dashboard";
+import AdminPanel from "./pages/AdminPanel";
+import AnalystWorkspace from "./pages/AnalystWorkspace";
+import Profile from "./pages/Profile";
+import StatusOverview from "./pages/StatusOverview";
+import NotFound from "./pages/NotFound";
 
-function App() {
-  return (
-    <AuthProvider>
-      <Router>
-        <div className="min-h-screen bg-background font-sans antialiased">
+const queryClient = new QueryClient();
+
+const App = () => (
+  <QueryClientProvider client={queryClient}>
+    <TooltipProvider>
+      <AuthProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
           <Routes>
-            <Route path="/" element={<div>Home Page</div>} />
-            <Route path="/auth" element={<div>Auth Page</div>} />
-            <Route
-              path="/dashboard"
-              element={
-                <ProtectedRoute>
-                  <DashboardWrapper />
-                </ProtectedRoute>
-              }
-            />
+            <Route path="/" element={<Home />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/auth" element={<Auth />} />
+            
+            {/* Routes protégées */}
             <Route 
-              path="/recherche2" 
+              path="/login" 
               element={
                 <ProtectedRoute>
-                  <Recherche2 />
+                  <Index />
                 </ProtectedRoute>
               } 
             />
+            <Route 
+              path="/dashboard" 
+              element={
+                <ProtectedRoute>
+                  <Dashboard />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/profile" 
+              element={
+                <ProtectedRoute>
+                  <Profile />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/status" 
+              element={
+                <ProtectedRoute>
+                  <StatusOverview />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin" 
+              element={
+                <ProtectedRoute requiredRole="admin">
+                  <AdminPanel />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/analyst" 
+              element={
+                <ProtectedRoute requiredRole="analyste">
+                  <AnalystWorkspace />
+                </ProtectedRoute>
+              } 
+            />
+            
+            <Route path="*" element={<NotFound />} />
           </Routes>
-        </div>
-      </Router>
-    </AuthProvider>
-  );
-}
-
-function DashboardWrapper() {
-  const { user, signOut } = useAuth();
-  
-  if (!user) return null;
-  
-  return <Dashboard user={user} onLogout={signOut} />;
-}
+        </BrowserRouter>
+      </AuthProvider>
+    </TooltipProvider>
+  </QueryClientProvider>
+);
 
 export default App;
