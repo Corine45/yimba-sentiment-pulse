@@ -41,11 +41,13 @@ export const useSavedMentions = () => {
 
       if (error) throw error;
       
-      // Transform the data to match our interface
+      // Transform the data to match our interface with proper type safety
       const transformedData = (data || []).map(item => ({
         ...item,
-        mentions_data: Array.isArray(item.mentions_data) ? item.mentions_data as MentionResult[] : [],
-        filters_applied: (item.filters_applied as SearchFilters) || {}
+        mentions_data: Array.isArray(item.mentions_data) ? 
+          (item.mentions_data as unknown as MentionResult[]) : [],
+        filters_applied: (item.filters_applied as unknown as SearchFilters) || {},
+        export_format: (item.export_format as 'json' | 'pdf' | 'csv') || 'json'
       }));
       
       setSavedMentions(transformedData);
