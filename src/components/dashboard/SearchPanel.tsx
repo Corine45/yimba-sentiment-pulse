@@ -1,9 +1,5 @@
 
-import { SearchResults } from "./search/SearchResults";
-import { SearchTabs } from "./search/SearchTabs";
-import { SaveSearchDialog } from "./search/SaveSearchDialog";
-import { SearchPanelConfig } from "./search/SearchPanelConfig";
-import { useSearchPanel } from "@/hooks/useSearchPanel";
+import { RealSearchPanel } from "./search/RealSearchPanel";
 
 interface SearchPanelProps {
   userRole: string;
@@ -15,75 +11,13 @@ interface SearchPanelProps {
 }
 
 export const SearchPanel = ({ userRole, permissions }: SearchPanelProps) => {
-  const {
-    keywords,
-    selectedPlatforms,
-    language,
-    period,
-    isSearching,
-    currentSearchTerm,
-    saveDialogOpen,
-    searchName,
-    apifyToken,
-    advancedFilters,
-    setKeywords,
-    setSelectedPlatforms,
-    setLanguage,
-    setPeriod,
-    setSaveDialogOpen,
-    setSearchName,
-    setApifyToken,
-    setAdvancedFilters,
-    handleSearch,
-    handleSaveSearch,
-    handleExecuteSavedSearch,
-  } = useSearchPanel();
+  if (!permissions.canSearch) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-gray-500">Vous n'avez pas l'autorisation d'effectuer des recherches.</p>
+      </div>
+    );
+  }
 
-  return (
-    <div className="space-y-6">
-      <SearchTabs
-        keywords={keywords}
-        onKeywordsChange={setKeywords}
-        selectedPlatforms={selectedPlatforms}
-        onPlatformChange={setSelectedPlatforms}
-        language={language}
-        onLanguageChange={setLanguage}
-        period={period}
-        onPeriodChange={setPeriod}
-        advancedFilters={advancedFilters}
-        onAdvancedFiltersChange={setAdvancedFilters}
-        onExecuteSavedSearch={handleExecuteSavedSearch}
-        userRole={userRole}
-        searchLevel={permissions.searchLevel}
-      >
-        <SearchPanelConfig
-          onSearch={handleSearch}
-          onSaveSearch={() => setSaveDialogOpen(true)}
-          isSearching={isSearching}
-          hasKeywords={keywords.length > 0}
-          userRole={userRole}
-          permissions={permissions}
-          apifyToken={apifyToken}
-          onApifyTokenChange={setApifyToken}
-        />
-      </SearchTabs>
-
-      <SaveSearchDialog
-        open={saveDialogOpen}
-        onOpenChange={setSaveDialogOpen}
-        searchName={searchName}
-        onSearchNameChange={setSearchName}
-        onSave={handleSaveSearch}
-        keywords={keywords}
-        selectedPlatforms={selectedPlatforms}
-      />
-
-      <SearchResults 
-        userRole={userRole} 
-        permissions={permissions}
-        isSearching={isSearching}
-        searchTerm={currentSearchTerm}
-      />
-    </div>
-  );
+  return <RealSearchPanel />;
 };
