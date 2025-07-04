@@ -29,8 +29,9 @@ export const useSavedMentions = () => {
       // Transform the data to match SavedMention interface
       const transformedData: SavedMention[] = (data || []).map(item => ({
         ...item,
-        mentions_data: Array.isArray(item.mentions_data) ? item.mentions_data as MentionResult[] : [],
-        filters_applied: (item.filters_applied as SearchFilters) || {}
+        mentions_data: Array.isArray(item.mentions_data) ? item.mentions_data as unknown as MentionResult[] : [],
+        filters_applied: (item.filters_applied as SearchFilters) || {},
+        export_format: (item.export_format as 'json' | 'pdf' | 'csv') || 'json'
       }));
       
       setSavedMentions(transformedData);
