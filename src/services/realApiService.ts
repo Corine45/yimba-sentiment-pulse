@@ -1,67 +1,16 @@
-export interface MentionResult {
-  id: string;
-  platform: string;
-  content: string;
-  author: string;
-  url: string;
-  timestamp: string;
-  engagement: {
-    likes: number;
-    comments: number;
-    shares: number;
-    views?: number;
-  };
-  sentiment?: 'positive' | 'negative' | 'neutral';
-  influenceScore?: number;
-  sourceUrl?: string;
-  location?: {
-    latitude?: number;
-    longitude?: number;
-    city?: string;
-    country?: string;
-  };
-}
 
-export interface SearchFilters {
-  language?: string;
-  period?: string;
-  sortBy?: 'recent' | 'popular';
-  sentiment?: 'positive' | 'negative' | 'neutral';
-  minEngagement?: number;
-  maxEngagement?: number;
-  geography?: {
-    country?: string;
-    region?: string;
-    city?: string;
-    latitude?: number;
-    longitude?: number;
-    radius?: number;
-  };
-}
-
-export interface CachedResult {
-  data: MentionResult[];
-  timestamp: number;
-  filters: SearchFilters;
-  keywords: string[];
-  platforms: string[];
-}
+import { MentionResult, SearchFilters, CachedResult } from './api/types';
+import { CacheManager } from './api/cacheManager';
+import { DataTransformer } from './api/dataTransformer';
+import { FiltersManager } from './api/filtersManager';
 
 class RealApiService {
   private backendUrl: string;
-  private cache: Map<string, CachedResult> = new Map();
-  private cacheExpiration = 10 * 60 * 1000; // 10 minutes
+  private cacheManager: CacheManager;
 
   constructor(backendUrl: string = 'https://yimbapulseapi.a-car.ci') {
     this.backendUrl = backendUrl;
-  }
-
-  private getCacheKey(keywords: string[], platforms: string[], filters: SearchFilters): string {
-    return JSON.stringify({ keywords, platforms, filters });
-  }
-
-  private isValidCache(cached: CachedResult): boolean {
-    return Date.now() - cached.timestamp < this.cacheExpiration;
+    this.cacheManager = new CacheManager();
   }
 
   private async postData(endpoint: string, payload: any, filters?: SearchFilters): Promise<MentionResult[]> {
@@ -98,11 +47,11 @@ class RealApiService {
         return [];
       }
       
-      let results = this.transformToMentions(items, endpoint);
+      let results = DataTransformer.transformToMentions(items, endpoint);
       
       // Appliquer les filtres
       if (filters) {
-        results = this.applyFilters(results, filters);
+        results = FiltersManager.applyFilters(results, filters);
       }
       
       return results;
@@ -110,245 +59,6 @@ class RealApiService {
       console.error(`❌ Erreur réseau:`, error);
       throw error;
     }
-  }
-
-  private applyFilters(results: MentionResult[], filters: SearchFilters): MentionResult[] {
-    let filtered = [...results];
-
-    // Filtrer par sentiment
-    if (filters.sentiment) {
-      filtered = filtered.filter(item => item.sentiment === filters.sentiment);
-    }
-
-    // Filtrer par engagement
-    if (filters.minEngagement !== undefined) {
-      filtered = filtered.filter(item => 
-        (item.engagement.likes + item.engagement.comments + item.engagement.shares) >= filters.minEngagement
-      );
-    }
-
-    if (filters.maxEngagement !== undefined) {
-      filtered = filtered.filter(item => 
-        (item.engagement.likes + item.engagement.comments + item.engagement.shares) <= filters.maxEngagement
-      );
-    }
-
-    // Filtrer par période
-    if (filters.period) {
-      const now = new Date();
-      const periodMap: { [key: string]: number } = {
-        '1d': 24 * 60 * 60 * 1000,
-        '7d': 7 * 24 * 60 * 60 * 1000,
-        '30d': 30 * 24 * 60 * 60 * 1000,
-        '3m': 90 * 24 * 60 * 60 * 1000
-      };
-      
-      const periodMs = periodMap[filters.period];
-      if (periodMs) {
-        const cutoffDate = new Date(now.getTime() - periodMs);
-        filtered = filtered.filter(item => new Date(item.timestamp) >= cutoffDate);
-      }
-    }
-
-    // Filtrer par géographie
-    if (filters.geography && (filters.geography.country || filters.geography.city)) {
-      filtered = filtered.filter(item => {
-        if (!item.location) return false;
-        
-        if (filters.geography?.country && item.location.country !== filters.geography.country) {
-          return false;
-        }
-        
-        if (filters.geography?.city && item.location.city !== filters.geography.city) {
-          return false;
-        }
-        
-        // Filtrage par coordonnées et rayon si spécifiés
-        if (filters.geography?.latitude && filters.geography?.longitude && filters.geography?.radius) {
-          if (!item.location.latitude || !item.location.longitude) return false;
-          
-          const distance = this.calculateDistance(
-            filters.geography.latitude,
-            filters.geography.longitude,
-            item.location.latitude,
-            item.location.longitude
-          );
-          
-          return distance <= filters.geography.radius;
-        }
-        
-        return true;
-      });
-    }
-
-    // Trier les résultats
-    if (filters.sortBy === 'recent') {
-      filtered.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-    } else if (filters.sortBy === 'popular') {
-      filtered.sort((a, b) => {
-        const aEngagement = a.engagement.likes + a.engagement.comments + a.engagement.shares;
-        const bEngagement = b.engagement.likes + b.engagement.comments + b.engagement.shares;
-        return bEngagement - aEngagement;
-      });
-    }
-
-    return filtered;
-  }
-
-  private calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
-    const R = 6371; // Rayon de la Terre en km
-    const dLat = this.deg2rad(lat2 - lat1);
-    const dLon = this.deg2rad(lon2 - lon1);
-    const a = 
-      Math.sin(dLat/2) * Math.sin(dLat/2) +
-      Math.cos(this.deg2rad(lat1)) * Math.cos(this.deg2rad(lat2)) * 
-      Math.sin(dLon/2) * Math.sin(dLon/2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    return R * c;
-  }
-
-  private deg2rad(deg: number): number {
-    return deg * (Math.PI/180);
-  }
-
-  private transformToMentions(items: any[], endpoint: string): MentionResult[] {
-    const platform = this.getPlatformFromEndpoint(endpoint);
-    
-    return items.map((item, index) => ({
-      id: item.id || item._id || `${platform}_${Date.now()}_${index}`,
-      platform,
-      content: this.extractContent(item, platform),
-      author: this.extractAuthor(item, platform),
-      url: this.extractUrl(item, platform),
-      timestamp: this.extractTimestamp(item),
-      engagement: this.extractEngagement(item, platform),
-      sentiment: this.calculateSentiment(item),
-      influenceScore: this.calculateInfluenceScore(item),
-      sourceUrl: item.sourceUrl || item.url || '',
-      location: this.extractLocation(item)
-    }));
-  }
-
-  private extractLocation(item: any): MentionResult['location'] | undefined {
-    if (item.location || item.geo || item.coordinates) {
-      return {
-        latitude: item.location?.latitude || item.geo?.lat || item.coordinates?.lat,
-        longitude: item.location?.longitude || item.geo?.lng || item.coordinates?.lng,
-        city: item.location?.city || item.geo?.city,
-        country: item.location?.country || item.geo?.country
-      };
-    }
-    return undefined;
-  }
-
-  private getPlatformFromEndpoint(endpoint: string): string {
-    if (endpoint.includes('tiktok')) return 'TikTok';
-    if (endpoint.includes('facebook')) return 'Facebook';
-    if (endpoint.includes('twitter') || endpoint.includes('x-post')) return 'Twitter';
-    if (endpoint.includes('youtube')) return 'YouTube';
-    if (endpoint.includes('instagram')) return 'Instagram';
-    return 'Unknown';
-  }
-
-  private extractContent(item: any, platform: string): string {
-    const contentFields = ['text', 'content', 'desc', 'message', 'title', 'description', 'caption'];
-    for (const field of contentFields) {
-      if (item[field] && typeof item[field] === 'string') return item[field];
-    }
-    return item.text || item.content || `Contenu ${platform}`;
-  }
-
-  private extractAuthor(item: any, platform: string): string {
-    const authorFields = ['author', 'username', 'user', 'channelTitle', 'from'];
-    for (const field of authorFields) {
-      if (item[field]) {
-        return typeof item[field] === 'object' ? 
-          (item[field].name || item[field].username || item[field].displayName) : 
-          item[field];
-      }
-    }
-    return item.author?.name || item.username || `User_${platform}`;
-  }
-
-  private extractUrl(item: any, platform: string): string {
-    if (item.url) return item.url;
-    if (item.webVideoUrl) return item.webVideoUrl;
-    if (item.permalink_url) return item.permalink_url;
-    
-    const author = this.extractAuthor(item, platform);
-    switch (platform) {
-      case 'TikTok':
-        return `https://tiktok.com/@${author}`;
-      case 'Facebook':
-        return `https://facebook.com/${item.id || 'post'}`;
-      case 'Twitter':
-        return `https://twitter.com/${author}/status/${item.id}`;
-      case 'YouTube':
-        return `https://youtube.com/watch?v=${item.id}`;
-      case 'Instagram':
-        return `https://instagram.com/${author}`;
-      default:
-        return '#';
-    }
-  }
-
-  private extractTimestamp(item: any): string {
-    const timeFields = ['timestamp', 'created_at', 'createTime', 'publishedAt', 'date', 'createdAt'];
-    for (const field of timeFields) {
-      if (item[field]) {
-        const date = typeof item[field] === 'number' ? 
-          new Date(item[field] * 1000) : 
-          new Date(item[field]);
-        if (!isNaN(date.getTime())) {
-          return date.toISOString();
-        }
-      }
-    }
-    return new Date().toISOString();
-  }
-
-  private extractEngagement(item: any, platform: string): MentionResult['engagement'] {
-    return {
-      likes: this.extractNumber(item, ['likes', 'diggCount', 'likesCount', 'favorite_count', 'likeCount']),
-      comments: this.extractNumber(item, ['comments', 'commentCount', 'commentsCount', 'reply_count']),
-      shares: this.extractNumber(item, ['shares', 'shareCount', 'sharesCount', 'retweet_count']),
-      views: this.extractNumber(item, ['views', 'playCount', 'viewCount', 'view_count']) || undefined
-    };
-  }
-
-  private extractNumber(item: any, fields: string[]): number {
-    for (const field of fields) {
-      if (typeof item[field] === 'number') return item[field];
-      if (typeof item[field] === 'string') {
-        const num = parseInt(item[field], 10);
-        if (!isNaN(num)) return num;
-      }
-    }
-    return 0;
-  }
-
-  private calculateSentiment(item: any): 'positive' | 'negative' | 'neutral' {
-    if (item.sentiment) {
-      const sentiment = item.sentiment.toLowerCase();
-      if (sentiment.includes('positive') || sentiment.includes('pos')) return 'positive';
-      if (sentiment.includes('negative') || sentiment.includes('neg')) return 'negative';
-    }
-    
-    const engagement = this.extractEngagement(item, '');
-    const totalEngagement = engagement.likes + engagement.comments + engagement.shares;
-    
-    if (totalEngagement > 100) return 'positive';
-    if (totalEngagement < 5) return 'negative';
-    return 'neutral';
-  }
-
-  private calculateInfluenceScore(item: any): number {
-    const engagement = this.extractEngagement(item, '');
-    const total = engagement.likes + engagement.comments * 2 + engagement.shares * 3;
-    const views = engagement.views || 0;
-    
-    let score = Math.min(Math.round((total + views / 100) / 50), 10);
-    return Math.max(1, score);
   }
 
   async scrapeTikTok(hashtags: string[], filters?: SearchFilters): Promise<MentionResult[]> {
@@ -452,10 +162,10 @@ class RealApiService {
     platforms: string[], 
     filters: SearchFilters = {}
   ): Promise<{ results: MentionResult[]; fromCache: boolean; platformCounts: { [key: string]: number } }> {
-    const cacheKey = this.getCacheKey(keywords, platforms, filters);
-    const cached = this.cache.get(cacheKey);
+    const cacheKey = this.cacheManager.getCacheKey(keywords, platforms, filters);
+    const cached = this.cacheManager.getCache(cacheKey);
 
-    if (cached && this.isValidCache(cached)) {
+    if (cached && this.cacheManager.isValidCache(cached)) {
       console.log('📦 Résultats récupérés du cache (valide 10 minutes)');
       const platformCounts = this.calculatePlatformCounts(cached.data);
       return { results: cached.data, fromCache: true, platformCounts };
@@ -494,14 +204,7 @@ class RealApiService {
       }
     }
 
-    const cacheData: CachedResult = {
-      data: allResults,
-      timestamp: Date.now(),
-      filters,
-      keywords,
-      platforms
-    };
-    this.cache.set(cacheKey, cacheData);
+    this.cacheManager.setCache(cacheKey, allResults, filters, keywords, platforms);
 
     const platformCounts = this.calculatePlatformCounts(allResults);
     return { results: allResults, fromCache: false, platformCounts };
@@ -516,12 +219,13 @@ class RealApiService {
   }
 
   clearCache(): void {
-    this.cache.clear();
+    this.cacheManager.clearCache();
   }
 
   getCacheSize(): number {
-    return this.cache.size;
+    return this.cacheManager.getCacheSize();
   }
 }
 
 export default RealApiService;
+export { MentionResult, SearchFilters, CachedResult };
