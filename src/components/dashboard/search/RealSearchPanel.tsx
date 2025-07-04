@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,11 +7,12 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { X, Plus, Search, Save, Trash2, Database, Download, TrendingUp, Heart, MessageCircle, Share, Eye } from "lucide-react";
+import { X, Plus, Search, Save, Trash2, Database, Download, TrendingUp, Heart, MessageCircle, Share, Eye, Filter } from "lucide-react";
 import { Brand24StyleResults } from "./Brand24StyleResults";
 import { AdvancedSearchFilters } from "./AdvancedSearchFilters";
 import { SearchPagination } from "./SearchPagination";
 import { SavedMentionsHistory } from "./SavedMentionsHistory";
+import { WordCloud } from "../widgets/WordCloud";
 import { useRealSearch } from "@/hooks/useRealSearch";
 import { SearchFilters } from "@/services/realApiService";
 
@@ -33,6 +33,7 @@ export const RealSearchPanel = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(25);
   const [activeTab, setActiveTab] = useState('search');
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   
   const { 
     mentions, 
@@ -46,6 +47,17 @@ export const RealSearchPanel = () => {
     saveMentions, 
     clearCache 
   } = useRealSearch();
+
+  const handleSearch = () => {
+    setCurrentPage(1);
+    executeSearch(keywords, selectedPlatforms, filters);
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      addKeyword();
+    }
+  };
 
   const addKeyword = () => {
     if (currentKeyword.trim() && !keywords.includes(currentKeyword.trim())) {
@@ -64,17 +76,6 @@ export const RealSearchPanel = () => {
         ? prev.filter(p => p !== platformId)
         : [...prev, platformId]
     );
-  };
-
-  const handleSearch = () => {
-    setCurrentPage(1);
-    executeSearch(keywords, selectedPlatforms, filters);
-  };
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      addKeyword();
-    }
   };
 
   const handleSaveFilters = () => {
@@ -199,26 +200,47 @@ export const RealSearchPanel = () => {
                 </div>
               </div>
 
-              {/* Bouton de recherche */}
-              <Button 
-                onClick={handleSearch} 
-                disabled={isLoading || keywords.length === 0 || selectedPlatforms.length === 0}
-                className="w-full"
-              >
-                <Search className="w-4 h-4 mr-2" />
-                {isLoading ? "Recherche en cours..." : "Lancer la recherche"}
-              </Button>
+              {/* Filtres avancés toggle */}
+              <div className="flex items-center justify-between">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+                  className="flex items-center space-x-2"
+                >
+                  <Filter className="w-4 h-4" />
+                  <span>Filtres avancés</span>
+                  {Object.keys(filters).length > 0 && (
+                    <Badge variant="secondary">{Object.keys(filters).length}</Badge>
+                  )}
+                </Button>
+                
+                <Button 
+                  onClick={handleSearch} 
+                  disabled={isLoading || keywords.length === 0 || selectedPlatforms.length === 0}
+                  className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700"
+                >
+                  <Search className="w-4 h-4 mr-2" />
+                  {isLoading ? "Recherche en cours..." : "Lancer la recherche"}
+                </Button>
+              </div>
             </CardContent>
           </Card>
 
           {/* Filtres avancés */}
-          <AdvancedSearchFilters
-            filters={filters}
-            onFiltersChange={setFilters}
-            onSaveFilters={handleSaveFilters}
-            savedFilters={savedFilters}
-            onLoadFilters={handleLoadFilters}
-          />
+          {showAdvancedFilters && (
+            <AdvancedSearchFilters
+              filters={filters}
+              onFiltersChange={setFilters}
+              onSaveFilters={handleSaveFilters}
+              savedFilters={savedFilters}
+              onLoadFilters={handleLoadFilters}
+            />
+          )}
+
+          {/* Nuage de mots */}
+          {totalMentions > 0 && (
+            <WordCloud mentions={mentions} />
+          )}
 
           {/* Statistiques détaillées */}
           {totalMentions > 0 && (
