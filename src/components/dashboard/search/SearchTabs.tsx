@@ -3,21 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SearchConfiguration } from "./SearchConfiguration";
 import { DynamicAdvancedFilters } from "./DynamicAdvancedFilters";
 import { SavedSearchesManager } from "./SavedSearchesManager";
-
-interface AdvancedFilters {
-  language: string;
-  period: string;
-  customStartDate?: string;
-  customEndDate?: string;
-  platforms: string[];
-  contentType: string;
-  minEngagement?: number;
-  maxEngagement?: number;
-  includeInfluencers: boolean;
-  includeVerified: boolean;
-  sentiment?: string;
-  geographic?: string[];
-}
+import { SearchFilters } from "@/services/api/types";
 
 interface SearchTabsProps {
   keywords: string[];
@@ -28,8 +14,8 @@ interface SearchTabsProps {
   onLanguageChange: (language: string) => void;
   period: string;
   onPeriodChange: (period: string) => void;
-  advancedFilters: AdvancedFilters;
-  onAdvancedFiltersChange: (filters: AdvancedFilters) => void;
+  advancedFilters: SearchFilters;
+  onAdvancedFiltersChange: (filters: SearchFilters) => void;
   onExecuteSavedSearch: (searchId: string) => void;
   userRole: string;
   searchLevel: string;
@@ -80,7 +66,8 @@ export const SearchTabs = ({
         <DynamicAdvancedFilters
           filters={advancedFilters}
           onFiltersChange={onAdvancedFiltersChange}
-          userRole={userRole}
+          onSaveFilters={() => {}}
+          onApplyFilters={() => {}}
         />
       </TabsContent>
 

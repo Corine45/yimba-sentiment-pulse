@@ -1,15 +1,15 @@
 
 import { useState } from 'react';
-import { AdvancedFilters } from './useSearchState';
+import { SearchFilters } from '@/services/api/types';
 
 export const useSearchFilters = () => {
-  const [advancedFilters, setAdvancedFilters] = useState<AdvancedFilters>({
+  const [advancedFilters, setAdvancedFilters] = useState<SearchFilters>({
     language: 'fr',
     period: '7d',
     platforms: ['Instagram', 'Twitter', 'Facebook'],
-    contentType: 'all',
-    includeInfluencers: false,
-    includeVerified: false,
+    sentiment: undefined,
+    minEngagement: undefined,
+    maxEngagement: undefined,
   });
 
   return {

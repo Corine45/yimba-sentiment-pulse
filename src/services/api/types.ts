@@ -38,6 +38,20 @@ export interface SearchFilters {
     longitude?: number;
     radius?: number;
   };
+  // Nouvelles propriétés pour les filtres avancés
+  platforms?: string[];
+  customStartDate?: string;
+  customEndDate?: string;
+  author?: string;
+  domain?: string;
+  minInfluenceScore?: number;
+  languages?: string[];
+  excludedLanguages?: string[];
+  excludedCountries?: string[];
+  importanceFilter?: string;
+  visitedFilter?: string;
+  includePageLikes?: boolean;
+  includePageSearch?: boolean;
 }
 
 export interface CachedResult {
