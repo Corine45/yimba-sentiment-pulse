@@ -127,11 +127,11 @@ export const RealSearchPanel = () => {
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
             <h4 className="font-medium text-blue-900 mb-2">Formats de payload API :</h4>
             <div className="text-xs text-blue-800 space-y-1">
-              <div><strong>TikTok:</strong> <code>{"hashtags": ["abidjan", "civbuzz"]}</code></div>
-              <div><strong>Facebook:</strong> <code>{"query": "abidjan élections"}</code></div>
-              <div><strong>Twitter:</strong> <code>{"query": "abidjan civbuzz"}</code></div>
-              <div><strong>YouTube:</strong> <code>{"searchKeywords": "abidjan côte d'ivoire"}</code></div>
-              <div><strong>Instagram:</strong> <code>{"usernames": ["aymeric", "kouassi_off"]}</code></div>
+              <div><strong>TikTok:</strong> <code>{JSON.stringify({ hashtags: ["abidjan", "civbuzz"] })}</code></div>
+              <div><strong>Facebook:</strong> <code>{JSON.stringify({ query: "abidjan élections" })}</code></div>
+              <div><strong>Twitter:</strong> <code>{JSON.stringify({ query: "abidjan civbuzz" })}</code></div>
+              <div><strong>YouTube:</strong> <code>{JSON.stringify({ searchKeywords: "abidjan côte d'ivoire" })}</code></div>
+              <div><strong>Instagram:</strong> <code>{JSON.stringify({ usernames: ["aymeric", "kouassi_off"] })}</code></div>
             </div>
           </div>
 
