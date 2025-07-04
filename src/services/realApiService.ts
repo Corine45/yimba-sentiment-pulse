@@ -1,4 +1,3 @@
-
 import { MentionResult, SearchFilters, CachedResult } from './api/types';
 import { CacheManager } from './api/cacheManager';
 import { DataTransformer } from './api/dataTransformer';
@@ -228,4 +227,4 @@ class RealApiService {
 }
 
 export default RealApiService;
-export { MentionResult, SearchFilters, CachedResult };
+export type { MentionResult, SearchFilters, CachedResult };
