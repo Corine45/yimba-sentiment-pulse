@@ -66,22 +66,24 @@ export const useSavedMentions = () => {
         )
       };
 
+      const insertData = {
+        user_id: user.id,
+        search_keywords: keywords,
+        platforms: platforms,
+        total_mentions: stats.total,
+        positive_mentions: stats.positive,
+        neutral_mentions: stats.neutral,
+        negative_mentions: stats.negative,
+        total_engagement: stats.engagement,
+        mentions_data: mentions as any,
+        filters_applied: filters as any,
+        export_format: format,
+        file_name: `mentions_${new Date().toISOString().split('T')[0]}_${stats.total}`
+      };
+
       const { data, error } = await supabase
         .from('mention_saves')
-        .insert({
-          user_id: user.id,
-          search_keywords: keywords,
-          platforms: platforms,
-          total_mentions: stats.total,
-          positive_mentions: stats.positive,
-          neutral_mentions: stats.neutral,
-          negative_mentions: stats.negative,
-          total_engagement: stats.engagement,
-          mentions_data: mentions,
-          filters_applied: filters,
-          export_format: format,
-          file_name: `mentions_${new Date().toISOString().split('T')[0]}_${stats.total}`
-        })
+        .insert(insertData)
         .select()
         .single();
 
