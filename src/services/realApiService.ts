@@ -1,4 +1,3 @@
-
 export interface MentionResult {
   id: string;
   platform: string;
@@ -522,103 +521,6 @@ class RealApiService {
 
   getCacheSize(): number {
     return this.cache.size;
-  }
-
-  // Toutes les nouvelles API methods
-  async scrapeTikTok(hashtags: string[], filters?: SearchFilters): Promise<MentionResult[]> {
-    return this.postData('/api/scrape/tiktok', { hashtags }, filters);
-  }
-
-  async scrapeTikTokByLocation(latitude: number, longitude: number, radius: number, filters?: SearchFilters): Promise<MentionResult[]> {
-    return this.postData('/api/scrape/tiktok/location', { latitude, longitude, radius }, filters);
-  }
-
-  async scrapeFacebook(query: string, filters?: SearchFilters): Promise<MentionResult[]> {
-    return this.postData('/api/scrape/facebook', { query }, filters);
-  }
-
-  async scrapeFacebookByUrl(url: string, filters?: SearchFilters): Promise<MentionResult[]> {
-    return this.postData('/api/scrape/facebook-url-id', { url }, filters);
-  }
-
-  async scrapeFacebookPagePosts(page: string, filters?: SearchFilters): Promise<MentionResult[]> {
-    return this.postData('/api/scrape/facebook-page-posts', { page }, filters);
-  }
-
-  async scrapeFacebookPageLikes(page: string, filters?: SearchFilters): Promise<MentionResult[]> {
-    return this.postData('/api/scrape/facebook-page-likes', { page }, filters);
-  }
-
-  async scrapeFacebookPageSearch(keywords: string[], filters?: SearchFilters): Promise<MentionResult[]> {
-    return this.postData('/api/scrape/facebook/page-search', { keywords }, filters);
-  }
-
-  async scrapeTwitter(query: string, filters?: SearchFilters): Promise<MentionResult[]> {
-    return this.postData('/api/scrape/twitter', { query }, filters);
-  }
-
-  async scrapeTwitterTweets(username: string, filters?: SearchFilters): Promise<MentionResult[]> {
-    return this.postData('/api/scrape/twitter/tweets', { username }, filters);
-  }
-
-  async scrapeTwitterReplies(postId: string, maxReplies: number = 100, filters?: SearchFilters): Promise<MentionResult[]> {
-    return this.postData('/api/scrape/x-post-replies', { postId, maxReplies }, filters);
-  }
-
-  async scrapeYouTube(searchKeywords: string, filters?: SearchFilters): Promise<MentionResult[]> {
-    return this.postData('/api/scrape/youtube', { searchKeywords }, filters);
-  }
-
-  async scrapeYouTubeComments(videoId: string, maxComments: number = 50, filters?: SearchFilters): Promise<MentionResult[]> {
-    return this.postData('/api/scrape/youtube-comments', { videoId, maxComments }, filters);
-  }
-
-  async scrapeInstagram(usernames: string[], filters?: SearchFilters): Promise<MentionResult[]> {
-    return this.postData('/api/scrape/instagram', { usernames }, filters);
-  }
-
-  async scrapeInstagramPosts(username: string, filters?: SearchFilters): Promise<MentionResult[]> {
-    return this.postData('/api/scrape/instagram-posts', { username }, filters);
-  }
-
-  async scrapeInstagramGeneral(searchType: string, searchInput: string, filters?: SearchFilters): Promise<MentionResult[]> {
-    return this.postData('/api/scrape/instagram-general', { searchType, searchInput }, filters);
-  }
-
-  async scrapeInstagramComments(postUrl: string, filters?: SearchFilters): Promise<MentionResult[]> {
-    return this.postData('/api/scrape/instagram/comments', { postUrl }, filters);
-  }
-
-  async scrapeInstagramHashtag(hashtag: string, filters?: SearchFilters): Promise<MentionResult[]> {
-    return this.postData('/api/scrape/instagram/hashtag', { hashtag }, filters);
-  }
-
-  async scrapeInstagramApi(usernames: string[], filters?: SearchFilters): Promise<MentionResult[]> {
-    return this.postData('/api/scrape/instagram/api', { usernames }, filters);
-  }
-
-  async scrapeInstagramReels(usernames: string[], filters?: SearchFilters): Promise<MentionResult[]> {
-    return this.postData('/api/scrape/instagram/reels', { usernames }, filters);
-  }
-
-  async scrapeInstagramLocation(locationIds: string[], filters?: SearchFilters): Promise<MentionResult[]> {
-    return this.postData('/api/scrape/instagram/location', { locationIds }, filters);
-  }
-
-  async scrapeSocialEmails(keyword: string, filters?: SearchFilters): Promise<MentionResult[]> {
-    return this.postData('/api/scrape/social-emails', { keyword }, filters);
-  }
-
-  async scrapeSocialAnalytics(profiles: string[], filters?: SearchFilters): Promise<MentionResult[]> {
-    return this.postData('/api/scrape/social/analytics', { profiles }, filters);
-  }
-
-  async scrapeWebsiteContent(startUrls: string[], filters?: SearchFilters): Promise<MentionResult[]> {
-    return this.postData('/api/scrape/website-content', { startUrls }, filters);
-  }
-
-  async scrapeBlogContent(startUrls: string[], filters?: SearchFilters): Promise<MentionResult[]> {
-    return this.postData('/api/scrape/blog-content', { startUrls }, filters);
   }
 }
 

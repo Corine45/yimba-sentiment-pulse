@@ -40,7 +40,15 @@ export const useSavedMentions = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setSavedMentions(data || []);
+      
+      // Transform the data to match our interface
+      const transformedData = (data || []).map(item => ({
+        ...item,
+        mentions_data: Array.isArray(item.mentions_data) ? item.mentions_data as MentionResult[] : [],
+        filters_applied: (item.filters_applied as SearchFilters) || {}
+      }));
+      
+      setSavedMentions(transformedData);
     } catch (error) {
       console.error('Error fetching saved mentions:', error);
     } finally {
@@ -68,20 +76,20 @@ export const useSavedMentions = () => {
 
       const fileName = `mentions_${keywords.join('_')}_${new Date().toISOString().split('T')[0]}`;
 
-      // Sauvegarder en base
+      // Sauvegarder en base avec les bonnes propriétés
       const { data, error } = await supabase
         .from('mention_saves')
         .insert([{
           user_id: user.id,
           search_keywords: keywords,
-          platforms,
+          platforms: platforms,
           total_mentions: mentions.length,
           positive_mentions: positiveCount,
           neutral_mentions: neutralCount,
           negative_mentions: negativeCount,
           total_engagement: totalEngagement,
-          mentions_data: mentions,
-          filters_applied: filters,
+          mentions_data: mentions as any, // Cast to any pour éviter l'erreur de type
+          filters_applied: filters as any, // Cast to any pour éviter l'erreur de type
           export_format: format,
           file_name: fileName
         }])
