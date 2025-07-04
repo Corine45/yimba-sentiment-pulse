@@ -1,5 +1,5 @@
 
-import { MentionResult, SearchFilters } from '@/services/realApiService';
+import { MentionResult, SearchFilters } from '@/services/api/types';
 
 export interface SavedMention {
   id: string;

@@ -25,7 +25,15 @@ export const useSavedMentions = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setSavedMentions(data || []);
+      
+      // Transform the data to match SavedMention interface
+      const transformedData: SavedMention[] = (data || []).map(item => ({
+        ...item,
+        mentions_data: Array.isArray(item.mentions_data) ? item.mentions_data as MentionResult[] : [],
+        filters_applied: (item.filters_applied as SearchFilters) || {}
+      }));
+      
+      setSavedMentions(transformedData);
     } catch (error) {
       console.error('Error fetching saved mentions:', error);
       toast({
@@ -61,7 +69,6 @@ export const useSavedMentions = () => {
       const { data, error } = await supabase
         .from('mention_saves')
         .insert({
-          user_id: user.id,
           search_keywords: keywords,
           platforms: platforms,
           total_mentions: stats.total,
@@ -133,8 +140,7 @@ export const useSavedMentions = () => {
       const { error } = await supabase
         .from('mention_saves')
         .delete()
-        .eq('id', id)
-        .eq('user_id', user.id);
+        .eq('id', id);
 
       if (error) throw error;
 

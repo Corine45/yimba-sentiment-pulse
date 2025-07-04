@@ -41,8 +41,8 @@ export const useSearchPanel = () => {
       apifyToken,
       setIsSearching,
       setCurrentSearchTerm,
-      language, // Ajouter la langue
-      period    // Ajouter la période
+      language,
+      period
     );
   };
 

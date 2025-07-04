@@ -90,19 +90,16 @@ export const SavedMentionsHistory = () => {
         engagement: saveModal.mention.total_engagement
       };
 
-      // Sauvegarder d'abord dans la base de données
-      const saveResult = await saveMentionData({
-        fileName,
-        exportFormat: format,
-        searchKeywords: saveModal.mention.search_keywords,
-        platforms: saveModal.mention.platforms,
-        mentionsData: saveModal.mention.mentions_data,
-        stats,
-        filtersApplied: saveModal.mention.filters_applied || {}
-      });
+      // Use the updated SavedMention with correct property name
+      const mentionToSave = {
+        ...saveModal.mention,
+        file_name: fileName
+      };
+
+      const saveResult = await saveMentionData(mentionToSave, format);
 
       if (saveResult.success) {
-        // Ensuite générer le fichier
+        // Generate file
         await FileGenerators.generateFile(
           saveModal.mention.mentions_data,
           saveModal.mention.search_keywords,
