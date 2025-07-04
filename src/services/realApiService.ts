@@ -181,8 +181,35 @@ class RealApiService {
             platformResults = await this.scrapeTikTok(keywords, filters);
             break;
           case 'facebook':
+            // Optimisation Facebook : utiliser l'endpoint approprié selon le type de recherche
             const fbQuery = keywords.join(' ');
-            platformResults = await this.scrapeFacebook(fbQuery, filters);
+            
+            // Si on recherche des pages spécifiques
+            if (keywords.some(k => k.startsWith('@') || k.includes('facebook.com/'))) {
+              const pageNames = keywords.filter(k => k.startsWith('@')).map(k => k.substring(1));
+              if (pageNames.length > 0) {
+                // Récupérer les posts de la page
+                for (const page of pageNames) {
+                  const pagePosts = await this.scrapeFacebookPagePosts(page, filters);
+                  platformResults.push(...pagePosts);
+                  
+                  // Récupérer aussi les likes si demandé
+                  if (filters.includePageLikes) {
+                    const pageLikes = await this.scrapeFacebookPageLikes(page, filters);
+                    platformResults.push(...pageLikes);
+                  }
+                }
+              }
+            } else {
+              // Recherche par mots-clés classique
+              platformResults = await this.scrapeFacebook(fbQuery, filters);
+              
+              // Recherche additionnelle dans les pages si demandé
+              if (filters.includePageSearch) {
+                const pageSearchResults = await this.scrapeFacebookPageSearch(keywords, filters);
+                platformResults.push(...pageSearchResults);
+              }
+            }
             break;
           case 'twitter':
             const twitterQuery = keywords.join(' ');
@@ -197,6 +224,11 @@ class RealApiService {
             break;
         }
 
+        // Filtrer les résultats selon les critères avancés
+        if (platformResults.length > 0) {
+          platformResults = this.applyAdvancedFilters(platformResults, filters);
+        }
+
         allResults.push(...platformResults);
       } catch (error) {
         console.error(`Erreur pour ${platform}:`, error);
@@ -207,6 +239,42 @@ class RealApiService {
 
     const platformCounts = this.calculatePlatformCounts(allResults);
     return { results: allResults, fromCache: false, platformCounts };
+  }
+
+  private applyAdvancedFilters(results: MentionResult[], filters: SearchFilters): MentionResult[] {
+    let filtered = [...results];
+
+    // Filtrer par auteur si spécifié
+    if (filters.author) {
+      const authorFilter = filters.author.toLowerCase().replace('@', '');
+      filtered = filtered.filter(item => 
+        item.author.toLowerCase().includes(authorFilter)
+      );
+    }
+
+    // Filtrer par domaine si spécifié
+    if (filters.domain) {
+      filtered = filtered.filter(item => 
+        item.url.toLowerCase().includes(filters.domain!.toLowerCase())
+      );
+    }
+
+    // Filtrer par engagement minimum
+    if (filters.minEngagement) {
+      filtered = filtered.filter(item => {
+        const totalEngagement = item.engagement.likes + item.engagement.comments + item.engagement.shares;
+        return totalEngagement >= filters.minEngagement!;
+      });
+    }
+
+    // Filtrer par score d'influence
+    if (filters.minInfluenceScore) {
+      filtered = filtered.filter(item => 
+        (item.influenceScore || 0) >= filters.minInfluenceScore!
+      );
+    }
+
+    return filtered;
   }
 
   private calculatePlatformCounts(results: MentionResult[]): { [key: string]: number } {

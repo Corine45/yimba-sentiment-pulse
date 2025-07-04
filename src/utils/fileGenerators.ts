@@ -24,52 +24,159 @@ export class FileGenerators {
   ) {
     const pdf = new jsPDF();
     let yPosition = 20;
+    const pageHeight = pdf.internal.pageSize.height;
+    const margin = 20;
 
-    // Titre
-    pdf.setFontSize(18);
-    pdf.text('Rapport d\'analyse des mentions', 20, yPosition);
+    // En-tête du rapport
+    pdf.setFontSize(20);
+    pdf.setTextColor(51, 51, 51);
+    pdf.text('📊 Rapport d\'Analyse des Mentions', margin, yPosition);
+    yPosition += 15;
+
+    // Ligne de séparation
+    pdf.setLineWidth(0.5);
+    pdf.setDrawColor(200, 200, 200);
+    pdf.line(margin, yPosition, 190, yPosition);
+    yPosition += 15;
+
+    // Informations générales
+    pdf.setFontSize(14);
+    pdf.setTextColor(68, 68, 68);
+    pdf.text('📋 Informations Générales', margin, yPosition);
+    yPosition += 10;
+
+    pdf.setFontSize(11);
+    pdf.setTextColor(85, 85, 85);
+    pdf.text(`🔍 Mots-clés: ${keywords.join(', ')}`, margin, yPosition);
+    yPosition += 8;
+    pdf.text(`🌐 Plateformes: ${platforms.join(', ')}`, margin, yPosition);
+    yPosition += 8;
+    pdf.text(`📅 Date de génération: ${new Date().toLocaleDateString('fr-FR')}`, margin, yPosition);
+    yPosition += 15;
+
+    // Statistiques principales
+    pdf.setFontSize(14);
+    pdf.setTextColor(68, 68, 68);
+    pdf.text('📈 Statistiques Principales', margin, yPosition);
+    yPosition += 10;
+
+    // Boîtes colorées pour les stats
+    pdf.setFontSize(11);
+    
+    // Total mentions
+    pdf.setFillColor(59, 130, 246);
+    pdf.roundedRect(margin, yPosition, 40, 12, 2, 2, 'F');
+    pdf.setTextColor(255, 255, 255);
+    pdf.text(`${stats.total}`, margin + 20, yPosition + 8);
+    pdf.setTextColor(85, 85, 85);
+    pdf.text('Total Mentions', margin + 45, yPosition + 8);
     yPosition += 20;
 
-    // Statistiques générales
-    pdf.setFontSize(12);
-    pdf.text(`Mots-clés: ${keywords.join(', ')}`, 20, yPosition);
-    yPosition += 10;
-    pdf.text(`Plateformes: ${platforms.join(', ')}`, 20, yPosition);
-    yPosition += 10;
-    pdf.text(`Total mentions: ${stats.total}`, 20, yPosition);
-    yPosition += 10;
-    pdf.text(`Positives: ${stats.positive} | Neutres: ${stats.neutral} | Négatives: ${stats.negative}`, 20, yPosition);
-    yPosition += 10;
-    pdf.text(`Engagement total: ${stats.engagement.toLocaleString()}`, 20, yPosition);
-    yPosition += 20;
+    // Sentiment distribution
+    const sentimentY = yPosition;
+    
+    // Positif
+    pdf.setFillColor(34, 197, 94);
+    pdf.roundedRect(margin, sentimentY, 25, 10, 2, 2, 'F');
+    pdf.setTextColor(255, 255, 255);
+    pdf.text(`${stats.positive}`, margin + 12, sentimentY + 7);
+    pdf.setTextColor(85, 85, 85);
+    pdf.text('Positif', margin + 30, sentimentY + 7);
+
+    // Neutre
+    pdf.setFillColor(251, 191, 36);
+    pdf.roundedRect(margin + 70, sentimentY, 25, 10, 2, 2, 'F');
+    pdf.setTextColor(255, 255, 255);
+    pdf.text(`${stats.neutral}`, margin + 82, sentimentY + 7);
+    pdf.setTextColor(85, 85, 85);
+    pdf.text('Neutre', margin + 100, sentimentY + 7);
+
+    // Négatif
+    pdf.setFillColor(239, 68, 68);
+    pdf.roundedRect(margin + 140, sentimentY, 25, 10, 2, 2, 'F');
+    pdf.setTextColor(255, 255, 255);
+    pdf.text(`${stats.negative}`, margin + 152, sentimentY + 7);
+    pdf.setTextColor(85, 85, 85);
+    pdf.text('Négatif', margin + 170, sentimentY + 7);
+
+    yPosition += 25;
+
+    // Engagement total
+    pdf.setFillColor(251, 146, 60);
+    pdf.roundedRect(margin, yPosition, 50, 12, 2, 2, 'F');
+    pdf.setTextColor(255, 255, 255);
+    pdf.text(`${stats.engagement.toLocaleString()}`, margin + 25, yPosition + 8);
+    pdf.setTextColor(85, 85, 85);
+    pdf.text('Engagement Total', margin + 55, yPosition + 8);
+    yPosition += 25;
 
     // Mentions détaillées
     pdf.setFontSize(14);
-    pdf.text('Mentions détaillées:', 20, yPosition);
+    pdf.setTextColor(68, 68, 68);
+    pdf.text('📝 Mentions Détaillées', margin, yPosition);
     yPosition += 15;
 
-    pdf.setFontSize(10);
-    mentions.slice(0, 20).forEach((mention, index) => {
-      if (yPosition > 280) {
+    pdf.setFontSize(9);
+    const mentionsToShow = mentions.slice(0, 50); // Limiter à 50 mentions
+
+    mentionsToShow.forEach((mention, index) => {
+      if (yPosition > pageHeight - 40) {
         pdf.addPage();
-        yPosition = 20;
+        yPosition = margin;
       }
 
-      pdf.text(`${index + 1}. ${mention.platform} - ${mention.author}`, 20, yPosition);
-      yPosition += 7;
+      // Numéro et plateforme
+      pdf.setTextColor(59, 130, 246);
+      pdf.setFontSize(10);
+      pdf.text(`${index + 1}. ${mention.platform}`, margin, yPosition);
       
-      const content = mention.content.length > 80 
-        ? mention.content.substring(0, 80) + '...' 
+      // Auteur
+      pdf.setTextColor(107, 114, 128);
+      pdf.text(`par @${mention.author}`, margin + 60, yPosition);
+      
+      // Date
+      const date = new Date(mention.timestamp).toLocaleDateString('fr-FR');
+      pdf.text(date, 150, yPosition);
+      yPosition += 8;
+
+      // Contenu (tronqué)
+      pdf.setTextColor(51, 51, 51);
+      pdf.setFontSize(9);
+      const content = mention.content.length > 100 
+        ? mention.content.substring(0, 100) + '...' 
         : mention.content;
-      pdf.text(content, 25, yPosition);
-      yPosition += 7;
       
-      pdf.text(`Engagement: ${mention.engagement.likes + mention.engagement.comments + mention.engagement.shares} | Sentiment: ${mention.sentiment}`, 25, yPosition);
+      const lines = pdf.splitTextToSize(content, 160);
+      pdf.text(lines.slice(0, 2), margin + 5, yPosition); // Max 2 lignes
+      yPosition += lines.length > 1 ? 12 : 6;
+
+      // Métriques d'engagement
+      pdf.setFontSize(8);
+      pdf.setTextColor(107, 114, 128);
+      const engagement = `❤️ ${mention.engagement.likes} 💬 ${mention.engagement.comments} 🔄 ${mention.engagement.shares}`;
+      const sentiment = mention.sentiment ? `| 😊 ${mention.sentiment}` : '';
+      pdf.text(`${engagement} ${sentiment}`, margin + 5, yPosition);
       yPosition += 10;
+
+      // Ligne de séparation
+      pdf.setDrawColor(230, 230, 230);
+      pdf.line(margin, yPosition, 190, yPosition);
+      yPosition += 5;
     });
 
-    if (mentions.length > 20) {
-      pdf.text(`... et ${mentions.length - 20} autres mentions`, 20, yPosition);
+    if (mentions.length > 50) {
+      pdf.setFontSize(10);
+      pdf.setTextColor(107, 114, 128);
+      pdf.text(`... et ${mentions.length - 50} autres mentions`, margin, yPosition);
+    }
+
+    // Pied de page
+    const totalPages = pdf.getNumberOfPages();
+    for (let i = 1; i <= totalPages; i++) {
+      pdf.setPage(i);
+      pdf.setFontSize(8);
+      pdf.setTextColor(107, 114, 128);
+      pdf.text(`Page ${i}/${totalPages} - Généré par YimbaPulse`, margin, pageHeight - 10);
     }
 
     pdf.save(filename);
@@ -77,37 +184,58 @@ export class FileGenerators {
 
   static generateCSV(mentions: MentionResult[], filename: string) {
     const headers = [
+      'ID',
       'Plateforme',
       'Auteur',
       'Contenu',
       'URL',
       'Date',
+      'Heure',
       'Likes',
       'Commentaires',
       'Partages',
       'Vues',
+      'Engagement Total',
       'Sentiment',
-      'Score d\'influence'
+      'Score d\'influence',
+      'Lieu (Ville)',
+      'Lieu (Pays)',
+      'Coordonnées'
     ];
 
     const csvContent = [
       headers.join(','),
-      ...mentions.map(mention => [
-        mention.platform,
-        `"${mention.author.replace(/"/g, '""')}"`,
-        `"${mention.content.replace(/"/g, '""').substring(0, 100)}"`,
-        mention.url,
-        new Date(mention.timestamp).toLocaleDateString('fr-FR'),
-        mention.engagement.likes,
-        mention.engagement.comments,
-        mention.engagement.shares,
-        mention.engagement.views || 0,
-        mention.sentiment,
-        mention.influenceScore
-      ].join(','))
+      ...mentions.map((mention, index) => {
+        const date = new Date(mention.timestamp);
+        const totalEngagement = mention.engagement.likes + mention.engagement.comments + mention.engagement.shares;
+        const location = mention.location;
+        
+        return [
+          `"${mention.id || `mention_${index + 1}`}"`,
+          `"${mention.platform}"`,
+          `"${mention.author.replace(/"/g, '""')}"`,
+          `"${mention.content.replace(/"/g, '""').substring(0, 200)}"`,
+          `"${mention.url}"`,
+          `"${date.toLocaleDateString('fr-FR')}"`,
+          `"${date.toLocaleTimeString('fr-FR')}"`,
+          mention.engagement.likes,
+          mention.engagement.comments,
+          mention.engagement.shares,
+          mention.engagement.views || 0,
+          totalEngagement,
+          `"${mention.sentiment || 'N/A'}"`,
+          mention.influenceScore || 0,
+          `"${location?.city || 'N/A'}"`,
+          `"${location?.country || 'N/A'}"`,
+          location?.latitude && location?.longitude ? 
+            `"${location.latitude}, ${location.longitude}"` : '"N/A"'
+        ].join(',');
+      })
     ].join('\n');
 
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    // Ajouter BOM pour Excel
+    const BOM = '\uFEFF';
+    const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
@@ -124,26 +252,65 @@ export class FileGenerators {
     fileName: string,
     stats: MentionStats
   ) {
+    const timestamp = new Date().toISOString().split('T')[0];
+    const baseFileName = `${fileName}_${timestamp}`;
+
     switch (format) {
       case 'json':
         const jsonData = {
           metadata: {
+            title: 'Rapport YimbaPulse - Analyse des Mentions',
             keywords,
             platforms,
             generated_at: new Date().toISOString(),
-            stats
+            generated_by: 'YimbaPulse Analytics',
+            stats,
+            filters_applied: {},
+            total_mentions: mentions.length
           },
-          mentions
+          summary: {
+            sentiment_distribution: {
+              positive: stats.positive,
+              neutral: stats.neutral,
+              negative: stats.negative
+            },
+            engagement_metrics: {
+              total: stats.engagement,
+              average: Math.round(stats.engagement / mentions.length),
+              top_performers: mentions
+                .sort((a, b) => (b.engagement.likes + b.engagement.comments + b.engagement.shares) - 
+                               (a.engagement.likes + a.engagement.comments + a.engagement.shares))
+                .slice(0, 5)
+                .map(m => ({
+                  platform: m.platform,
+                  author: m.author,
+                  engagement: m.engagement.likes + m.engagement.comments + m.engagement.shares
+                }))
+            },
+            platform_breakdown: platforms.reduce((acc, platform) => {
+              acc[platform] = mentions.filter(m => m.platform.toLowerCase() === platform.toLowerCase()).length;
+              return acc;
+            }, {} as Record<string, number>)
+          },
+          mentions: mentions.map(mention => ({
+            ...mention,
+            extracted_at: new Date().toISOString(),
+            analysis: {
+              engagement_score: mention.engagement.likes + mention.engagement.comments + mention.engagement.shares,
+              reach_estimate: mention.engagement.views || mention.engagement.likes * 10,
+              virality_index: mention.influenceScore || 1
+            }
+          }))
         };
-        this.downloadJson(jsonData, `${fileName}.json`);
+        this.downloadJson(jsonData, `${baseFileName}.json`);
         break;
 
       case 'pdf':
-        await this.generatePDF(mentions, keywords, platforms, stats, `${fileName}.pdf`);
+        await this.generatePDF(mentions, keywords, platforms, stats, `${baseFileName}.pdf`);
         break;
 
       case 'csv':
-        this.generateCSV(mentions, `${fileName}.csv`);
+        this.generateCSV(mentions, `${baseFileName}.csv`);
         break;
     }
   }

@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Download, Trash2, Search, FileText, Calendar, TrendingUp } from "lucide-react";
 import { useSavedMentions } from "@/hooks/useSavedMentions";
 import { useToast } from "@/hooks/use-toast";
+import { FileGenerators } from '@/utils/fileGenerators';
 
 export const SavedMentionsHistory = () => {
   const { savedMentions, loading, deleteSavedMention } = useSavedMentions();
@@ -61,36 +62,41 @@ export const SavedMentionsHistory = () => {
     }
   };
 
-  const handleDownload = (mention: any) => {
-    // Recréer le fichier depuis les données sauvegardées
-    const jsonData = {
-      metadata: {
-        keywords: mention.search_keywords,
-        platforms: mention.platforms,
-        generated_at: mention.created_at,
-        stats: {
-          total: mention.total_mentions,
-          positive: mention.positive_mentions,
-          neutral: mention.neutral_mentions,
-          negative: mention.negative_mentions,
-          engagement: mention.total_engagement
-        }
-      },
-      mentions: mention.mentions_data
-    };
+  const handleDownload = async (mention: any) => {
+    try {
+      const stats = {
+        total: mention.total_mentions,
+        positive: mention.positive_mentions,
+        neutral: mention.neutral_mentions,
+        negative: mention.negative_mentions,
+        engagement: mention.total_engagement
+      };
 
-    const dataStr = JSON.stringify(jsonData, null, 2);
-    const dataBlob = new Blob([dataStr], { type: 'application/json' });
-    const url = URL.createObjectURL(dataBlob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `${mention.file_name}.json`;
-    link.click();
-    URL.revokeObjectURL(url);
+      await FileGenerators.generateFile(
+        mention.mentions_data,
+        mention.search_keywords,
+        mention.platforms,
+        mention.export_format as 'json' | 'pdf' | 'csv',
+        mention.file_name,
+        stats
+      );
+
+      toast({
+        title: "Téléchargement lancé",
+        description: `Le fichier "${mention.file_name}.${mention.export_format}" a été généré.`,
+      });
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de télécharger le fichier.",
+        variant: "destructive",
+      });
+    }
   };
 
   const getSentimentColor = (positive: number, neutral: number, negative: number) => {
     const total = positive + neutral + negative;
+    if (total === 0) return 'text-gray-600';
     if (positive / total > 0.6) return 'text-green-600';
     if (negative / total > 0.6) return 'text-red-600';
     return 'text-yellow-600';
@@ -181,6 +187,9 @@ export const SavedMentionsHistory = () => {
                         <div className="flex items-center space-x-2">
                           <FileText className="w-4 h-4 text-blue-600" />
                           <span>{mention.file_name}</span>
+                          <Badge variant="outline" className="ml-2 text-xs">
+                            {mention.export_format.toUpperCase()}
+                          </Badge>
                         </div>
                       </TableCell>
                       
