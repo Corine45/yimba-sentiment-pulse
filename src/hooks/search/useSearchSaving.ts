@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useSavedSearches } from '@/hooks/useSavedSearches';
-import { AdvancedFilters } from './useSearchState';
+import { SearchFilters } from '@/services/api/types';
 
 export const useSearchSaving = () => {
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
@@ -16,7 +16,7 @@ export const useSearchSaving = () => {
     selectedPlatforms: string[],
     language: string,
     period: string,
-    advancedFilters: AdvancedFilters
+    advancedFilters: SearchFilters
   ) => {
     if (!searchName.trim()) {
       toast({

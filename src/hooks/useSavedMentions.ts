@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -70,6 +69,7 @@ export const useSavedMentions = () => {
       const { data, error } = await supabase
         .from('mention_saves')
         .insert({
+          user_id: user.id,
           search_keywords: keywords,
           platforms: platforms,
           total_mentions: stats.total,
