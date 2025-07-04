@@ -21,7 +21,7 @@ class ApifyService {
 
   private async postData(path: string, payload: any, platform: string): Promise<any[]> {
     try {
-      console.log(`🚀 Appel API RÉEL ${platform} vers: ${this.backendUrl}/api/scrape/${path}`);
+      console.log(`🚀 APPEL API RÉEL ${platform} vers: ${this.backendUrl}/api/scrape/${path}`);
       console.log(`📤 Payload envoyé:`, payload);
       
       const response = await fetch(`${this.backendUrl}/api/scrape/${path}`, {
@@ -40,26 +40,27 @@ class ApifyService {
           statusText: response.statusText,
           errorText
         });
-        return []; // Retourner tableau vide en cas d'erreur
+        return [];
       }
 
       const data = await response.json();
-      console.log(`✅ ${platform} - Réponse API RÉELLE reçue:`, data);
+      console.log(`✅ ${platform} - Réponse API RÉELLE complète:`, data);
       
-      // Utiliser la structure exacte de votre API
+      // Structure exacte de votre API
       const items = data?.data?.items || [];
-      console.log(`📊 ${platform} - Items RÉELS extraits de l'API:`, items.length);
+      console.log(`📊 ${platform} - Items RÉELS extraits:`, items.length);
       
       return Array.isArray(items) ? items : [];
     } catch (error) {
-      console.error(`❌ Erreur appel API ${platform}:`, error);
-      return []; // Retourner tableau vide en cas d'erreur
+      console.error(`❌ Erreur réseau API ${platform}:`, error);
+      return [];
     }
   }
 
   async scrapeTikTok(searchTerm: string, language: string = 'fr', period: string = '7d'): Promise<EngagementData[]> {
-    console.log(`🎵 APPEL API TIKTOK RÉEL - Recherche: "${searchTerm}" (${language}, ${period})`);
+    console.log(`🎵 APPEL API TIKTOK - Recherche: "${searchTerm}"`);
     
+    // Conversion des mots-clés en hashtags pour TikTok
     const hashtags = searchTerm.split(',').map(term => term.trim().replace('#', ''));
     const items = await this.postData('tiktok', { hashtags }, 'TikTok');
 
@@ -68,23 +69,25 @@ class ApifyService {
       return [];
     }
 
+    // Transformation des données TikTok de votre API
     return items.map((item: any) => ({
       likes: item.diggCount ?? item.likes ?? 0,
       comments: item.commentCount ?? item.comments ?? 0,
       shares: item.shareCount ?? item.shares ?? 0,
       views: item.playCount ?? item.views ?? 0,
       platform: 'TikTok',
-      postId: item.id ?? item.postId ?? `tiktok_${Date.now()}_${Math.random()}`,
+      postId: item.id ?? `tiktok_${Date.now()}_${Math.random()}`,
       author: item.authorMeta?.name ?? item.author ?? item.username ?? 'Utilisateur TikTok',
       content: item.text ?? item.content ?? item.desc ?? '',
       url: item.webVideoUrl ?? item.url ?? `https://tiktok.com/@${item.author}`,
-      timestamp: item.createTime ? new Date(item.createTime * 1000).toISOString() : (item.timestamp ?? new Date().toISOString()),
+      timestamp: item.createTime ? new Date(item.createTime * 1000).toISOString() : new Date().toISOString(),
     }));
   }
 
   async scrapeInstagram(searchTerm: string, language: string = 'fr', period: string = '7d'): Promise<EngagementData[]> {
-    console.log(`📸 APPEL API INSTAGRAM RÉEL - Recherche: "${searchTerm}" (${language}, ${period})`);
+    console.log(`📸 APPEL API INSTAGRAM - Recherche: "${searchTerm}"`);
     
+    // Conversion en usernames pour Instagram
     const usernames = searchTerm.split(',').map(term => term.trim().replace('@', ''));
     const items = await this.postData('instagram', { usernames }, 'Instagram');
 
@@ -93,9 +96,9 @@ class ApifyService {
       return [];
     }
 
-    // Traitement des données Instagram selon votre structure API
+    // Transformation des données Instagram selon structure de votre API
     return items.map((item: any) => ({
-      likes: 0, // Instagram API ne retourne pas de likes dans cette structure
+      likes: 0, // Instagram API structure différente
       comments: 0,
       shares: 0,
       views: 0,
@@ -109,7 +112,7 @@ class ApifyService {
   }
 
   async scrapeFacebook(searchTerm: string, language: string = 'fr', period: string = '7d'): Promise<EngagementData[]> {
-    console.log(`📘 APPEL API FACEBOOK RÉEL - Recherche: "${searchTerm}" (${language}, ${period})`);
+    console.log(`📘 APPEL API FACEBOOK - Recherche: "${searchTerm}"`);
     
     const keywords = searchTerm.split(',').map(term => term.trim());
     const items = await this.postData('facebook', { keywords }, 'Facebook');
@@ -134,7 +137,7 @@ class ApifyService {
   }
 
   async scrapeTwitter(searchTerm: string, language: string = 'fr', period: string = '7d'): Promise<EngagementData[]> {
-    console.log(`🐦 APPEL API TWITTER RÉEL - Recherche: "${searchTerm}" (${language}, ${period})`);
+    console.log(`🐦 APPEL API TWITTER - Recherche: "${searchTerm}"`);
     
     const keywords = searchTerm.split(',').map(term => term.trim());
     const items = await this.postData('twitter', { keywords }, 'Twitter');
@@ -159,7 +162,7 @@ class ApifyService {
   }
 
   async scrapeYouTube(searchTerm: string, language: string = 'fr', period: string = '7d'): Promise<EngagementData[]> {
-    console.log(`📺 APPEL API YOUTUBE RÉEL - Recherche: "${searchTerm}" (${language}, ${period})`);
+    console.log(`📺 APPEL API YOUTUBE - Recherche: "${searchTerm}"`);
     
     const keywords = searchTerm.split(',').map(term => term.trim());
     const items = await this.postData('youtube', { keywords }, 'YouTube');

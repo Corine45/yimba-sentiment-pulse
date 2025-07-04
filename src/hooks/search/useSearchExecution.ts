@@ -39,7 +39,7 @@ export const useSearchExecution = () => {
     setCurrentSearchTerm(searchTerm);
 
     try {
-      console.log('🔍 RECHERCHE EXCLUSIVEMENT VIA VOTRE API BACKEND:');
+      console.log('🔍 RECHERCHE VIA VOTRE API BACKEND UNIQUEMENT:');
       console.log('📝 Mots-clés:', keywords);
       console.log('🎯 Plateformes SÉLECTIONNÉES:', selectedPlatforms);
       console.log('🌐 Langue:', language);
@@ -76,11 +76,11 @@ export const useSearchExecution = () => {
     const apifyService = new ApifyService('https://yimbapulseapi.a-car.ci');
     
     console.log('🚀 APPEL API BACKEND - DONNÉES 100% RÉELLES:');
-    console.log('📊 Plateformes filtrées à traiter:', selectedPlatforms);
+    console.log('📊 Plateformes à interroger:', selectedPlatforms);
     
     for (const platformName of selectedPlatforms) {
       try {
-        console.log(`\n🎯 === APPEL API ${platformName.toUpperCase()} RÉEL ===`);
+        console.log(`\n🎯 === APPEL API ${platformName.toUpperCase()} ===`);
         
         let engagementData: any[] = [];
         
@@ -106,13 +106,13 @@ export const useSearchExecution = () => {
             break;
             
           default:
-            console.log(`⚠️ Plateforme ${platformName} non supportée par l'API`);
+            console.log(`⚠️ Plateforme ${platformName} non supportée`);
             continue;
         }
 
-        console.log(`📊 ${platformName} - Données RÉELLES reçues de l'API:`, engagementData.length);
+        console.log(`📊 ${platformName} - Données API reçues:`, engagementData.length);
 
-        // TOUJOURS sauvegarder les données exactes de l'API (même si vides)
+        // SAUVEGARDER UNIQUEMENT les données de votre API (même si vides)
         const totalMentions = engagementData.length;
         let totalEngagement = 0;
         let totalReach = 0;
@@ -124,6 +124,7 @@ export const useSearchExecution = () => {
             sum + (item.views || item.likes * 10 || 0), 0);
         }
         
+        // Sentiment basé sur l'engagement réel
         let positiveSentiment = 0;
         let negativeSentiment = 0;
         let neutralSentiment = 0;
@@ -139,15 +140,14 @@ export const useSearchExecution = () => {
           neutralSentiment = totalMentions - positiveSentiment - negativeSentiment;
         }
 
-        console.log(`💾 Sauvegarde ${platformName} - MÉTRIQUES API RÉELLES:`, {
+        console.log(`💾 Sauvegarde ${platformName} - MÉTRIQUES API:`, {
           mentions: totalMentions,
           engagement: totalEngagement,
           reach: totalReach,
-          dataLength: engagementData.length,
-          apiBackend: 'https://yimbapulseapi.a-car.ci'
+          postsCount: engagementData.length
         });
 
-        // Sauvegarde avec UNIQUEMENT les données de votre API
+        // Sauvegarde avec données 100% de votre API
         const saveResult = await createSearchResult({
           search_id: null,
           search_term: searchTerm,
@@ -158,11 +158,11 @@ export const useSearchExecution = () => {
           neutral_sentiment: neutralSentiment,
           total_reach: totalReach,
           total_engagement: totalEngagement,
-          results_data: engagementData // DONNÉES 100% RÉELLES DE VOTRE API
+          results_data: engagementData // DONNÉES 100% DE VOTRE API
         });
 
         if (saveResult.success) {
-          console.log(`✅ ${platformName} - Données API réelles sauvegardées:`, saveResult.data?.id);
+          console.log(`✅ ${platformName} - Données sauvegardées:`, saveResult.data?.id);
         } else {
           console.error(`❌ ${platformName} - Erreur sauvegarde:`, saveResult.error);
         }
@@ -170,7 +170,7 @@ export const useSearchExecution = () => {
       } catch (platformError) {
         console.error(`❌ Erreur API ${platformName}:`, platformError);
         
-        // En cas d'erreur API, sauvegarder résultat vide
+        // En cas d'erreur, sauvegarder résultat vide
         await createSearchResult({
           search_id: null,
           search_term: searchTerm,
@@ -186,7 +186,7 @@ export const useSearchExecution = () => {
       }
     }
     
-    console.log(`🏁 Recherche API réelle terminée pour ${selectedPlatforms.length} plateformes`);
+    console.log(`🏁 Recherche terminée pour ${selectedPlatforms.length} plateformes`);
   };
 
   return {

@@ -30,24 +30,27 @@ interface PlatformDetailedResultsProps {
 }
 
 export const PlatformDetailedResults = ({ platformResults, platformName, canExportData }: PlatformDetailedResultsProps) => {
-  // Récupérer tous les posts de la plateforme
+  // Récupérer UNIQUEMENT les posts de votre API
   const allPlatformPosts = platformResults.flatMap(result => {
-    console.log(`📱 Traitement résultat ${platformName} RÉEL:`, {
+    console.log(`📱 Traitement résultat ${platformName}:`, {
       searchTerm: result.search_term,
       totalMentions: result.total_mentions,
       dataLength: result.results_data?.length || 0,
       platform: result.platform
     });
     
-    if (result.platform.toLowerCase() === platformName.toLowerCase() && result.results_data && Array.isArray(result.results_data)) {
-      console.log(`✅ Données ${platformName} RÉELLES trouvées:`, result.results_data.length);
+    if (result.platform.toLowerCase() === platformName.toLowerCase() && 
+        result.results_data && 
+        Array.isArray(result.results_data) &&
+        result.results_data.length > 0) {
+      console.log(`✅ Posts ${platformName} de votre API:`, result.results_data.length);
       return result.results_data;
     }
     
     return [];
   });
 
-  console.log(`📊 Posts ${platformName} RÉELS à afficher:`, allPlatformPosts.length);
+  console.log(`📊 Posts ${platformName} à afficher (API uniquement):`, allPlatformPosts.length);
 
   const exportToJSON = () => {
     const dataStr = JSON.stringify(allPlatformPosts, null, 2);
@@ -55,7 +58,7 @@ export const PlatformDetailedResults = ({ platformResults, platformName, canExpo
     const url = URL.createObjectURL(dataBlob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `${platformName.toLowerCase()}_results_${new Date().toISOString().split('T')[0]}.json`;
+    link.download = `${platformName.toLowerCase()}_api_results_${new Date().toISOString().split('T')[0]}.json`;
     link.click();
     URL.revokeObjectURL(url);
   };
@@ -63,7 +66,7 @@ export const PlatformDetailedResults = ({ platformResults, platformName, canExpo
   const exportToPDF = () => {
     const pdf = new jsPDF();
     pdf.setFontSize(16);
-    pdf.text(`Résultats ${platformName} - Données Réelles`, 20, 20);
+    pdf.text(`Résultats ${platformName} - API Backend`, 20, 20);
     
     let yPosition = 40;
     
@@ -87,7 +90,7 @@ export const PlatformDetailedResults = ({ platformResults, platformName, canExpo
       yPosition += 70;
     });
     
-    pdf.save(`${platformName.toLowerCase()}_results_${new Date().toISOString().split('T')[0]}.pdf`);
+    pdf.save(`${platformName.toLowerCase()}_api_results_${new Date().toISOString().split('T')[0]}.pdf`);
   };
 
   const exportToCSV = () => {
@@ -110,7 +113,7 @@ export const PlatformDetailedResults = ({ platformResults, platformName, canExpo
     const url = URL.createObjectURL(dataBlob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `${platformName.toLowerCase()}_results_${new Date().toISOString().split('T')[0]}.csv`;
+    link.download = `${platformName.toLowerCase()}_api_results_${new Date().toISOString().split('T')[0]}.csv`;
     link.click();
     URL.revokeObjectURL(url);
   };
@@ -137,33 +140,10 @@ export const PlatformDetailedResults = ({ platformResults, platformName, canExpo
     }
   };
 
-  const totalMentions = platformResults.reduce((sum, result) => 
-    result.platform.toLowerCase() === platformName.toLowerCase() ? sum + result.total_mentions : sum, 0);
-
+  // Si aucune donnée de votre API, n'afficher RIEN
   if (allPlatformPosts.length === 0) {
-    return (
-      <Card className={getPlatformColor()}>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <span>{getPlatformIcon()}</span>
-            <span>Résultats {platformName} détaillés</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center py-4">
-            <p className="text-gray-600 mb-2">
-              {totalMentions > 0 
-                ? `${totalMentions} mentions ${platformName} détectées mais données détaillées en cours de récupération via l'API.`
-                : `Aucun contenu ${platformName} trouvé pour cette recherche via l'API ${platformName}.`
-              }
-            </p>
-            <p className="text-sm text-gray-500">
-              Vérifiez votre configuration API {platformName} ou essayez d'autres mots-clés.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-    );
+    console.log(`⚠️ Aucun post ${platformName} de votre API - Rien à afficher`);
+    return null;
   }
 
   return (
@@ -172,7 +152,7 @@ export const PlatformDetailedResults = ({ platformResults, platformName, canExpo
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center space-x-2">
             <span>{getPlatformIcon()}</span>
-            <span>Résultats {platformName} détaillés - Données Réelles API ({allPlatformPosts.length} posts)</span>
+            <span>Résultats {platformName} - API Backend ({allPlatformPosts.length} posts)</span>
           </CardTitle>
           {canExportData && (
             <div className="flex space-x-2">
@@ -195,7 +175,7 @@ export const PlatformDetailedResults = ({ platformResults, platformName, canExpo
       <CardContent>
         <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
           <p className="text-sm text-green-800">
-            ✅ Données récupérées en temps réel via l'API {platformName}
+            ✅ Données récupérées de votre API backend: https://yimbapulseapi.a-car.ci/api/scrape/{platformName.toLowerCase()}
           </p>
         </div>
         
@@ -205,7 +185,7 @@ export const PlatformDetailedResults = ({ platformResults, platformName, canExpo
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center space-x-2">
                   <Badge className={`bg-${platformName.toLowerCase() === 'tiktok' ? 'pink' : platformName.toLowerCase() === 'instagram' ? 'purple' : platformName.toLowerCase() === 'facebook' ? 'blue' : platformName.toLowerCase() === 'twitter' ? 'cyan' : 'red'}-500 text-white`}>
-                    {platformName} API
+                    API Backend
                   </Badge>
                   <span className="text-sm text-gray-500">
                     {post.timestamp ? new Date(post.timestamp).toLocaleDateString('fr-FR', {
