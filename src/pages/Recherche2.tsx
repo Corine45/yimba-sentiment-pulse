@@ -9,10 +9,14 @@ export default function Recherche2() {
   const { user } = useAuth();
 
   if (!user) {
-    return <ProtectedRoute />;
+    return (
+      <ProtectedRoute>
+        <div>Loading...</div>
+      </ProtectedRoute>
+    );
   }
 
-  const permissions = getRolePermissions(user.role);
+  const permissions = getRolePermissions(user.role || 'observateur');
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -25,7 +29,7 @@ export default function Recherche2() {
         </div>
         
         <Recherche2Panel 
-          userRole={user.role}
+          userRole={user.role || 'observateur'}
           permissions={permissions}
         />
       </div>

@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import {
   Sheet,
@@ -18,10 +19,10 @@ import {
   Bell,
   HelpCircle,
   LogOut,
+  Menu,
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Link } from "react-router-dom";
-import { SidebarClose } from "@/components/ui/sidebar";
 
 interface AppSidebarProps {
   activeTab: string;
@@ -82,7 +83,7 @@ export const AppSidebar = ({ activeTab, onTabChange, user, permissions }: AppSid
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
         <Button variant="ghost" size="icon">
-          <SidebarClose />
+          <Menu className="h-4 w-4" />
         </Button>
       </SheetTrigger>
       <SheetContent className="w-full sm:w-64">
