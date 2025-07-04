@@ -119,17 +119,100 @@ export class DataTransformer {
   }
 
   private static calculateSentiment(item: any): 'positive' | 'negative' | 'neutral' {
+    console.log('🎭 CALCUL SENTIMENT pour item:', item.id || 'unknown');
+    
+    // 1. Si le sentiment est déjà fourni par l'API
     if (item.sentiment) {
       const sentiment = item.sentiment.toLowerCase();
-      if (sentiment.includes('positive') || sentiment.includes('pos')) return 'positive';
-      if (sentiment.includes('negative') || sentiment.includes('neg')) return 'negative';
+      console.log('📊 Sentiment API fourni:', sentiment);
+      
+      if (sentiment.includes('positive') || sentiment.includes('pos') || sentiment === 'positive') {
+        console.log('✅ Sentiment détecté: POSITIVE');
+        return 'positive';
+      }
+      if (sentiment.includes('negative') || sentiment.includes('neg') || sentiment === 'negative') {
+        console.log('❌ Sentiment détecté: NEGATIVE');
+        return 'negative';
+      }
+      if (sentiment.includes('neutral') || sentiment === 'neutral') {
+        console.log('⚪ Sentiment détecté: NEUTRAL');
+        return 'neutral';
+      }
     }
     
+    // 2. Analyse du contenu textuel
+    const content = DataTransformer.extractContent(item, '').toLowerCase();
+    console.log('📝 Analyse contenu:', content.substring(0, 100) + '...');
+    
+    // Mots-clés positifs
+    const positiveKeywords = [
+      'excellent', 'super', 'génial', 'parfait', 'merveilleux', 'fantastique',
+      'bravo', 'félicitations', 'love', 'amazing', 'awesome', 'great', 'wonderful',
+      '😍', '😊', '😃', '👍', '❤️', '🔥', '💪', '🎉', '✨', '👏',
+      'merci', 'thanks', 'grateful', 'happy', 'joy', 'best', 'good', 'nice'
+    ];
+    
+    // Mots-clés négatifs
+    const negativeKeywords = [
+      'horrible', 'nul', 'décevant', 'catastrophe', 'problème', 'erreur',
+      'hate', 'awful', 'terrible', 'worst', 'bad', 'disappointed', 'angry',
+      '😢', '😠', '😡', '👎', '💔', '😞', '😤', '🤬', '😭',
+      'sorry', 'problem', 'issue', 'wrong', 'fail', 'broken', 'bug'
+    ];
+    
+    let positiveCount = 0;
+    let negativeCount = 0;
+    
+    positiveKeywords.forEach(keyword => {
+      if (content.includes(keyword)) {
+        positiveCount++;
+        console.log(`✅ Mot positif trouvé: ${keyword}`);
+      }
+    });
+    
+    negativeKeywords.forEach(keyword => {
+      if (content.includes(keyword)) {
+        negativeCount++;
+        console.log(`❌ Mot négatif trouvé: ${keyword}`);
+      }
+    });
+    
+    // 3. Analyse basée sur l'engagement
     const engagement = DataTransformer.extractEngagement(item, '');
     const totalEngagement = engagement.likes + engagement.comments + engagement.shares;
+    const views = engagement.views || 0;
     
-    if (totalEngagement > 100) return 'positive';
-    if (totalEngagement < 5) return 'negative';
+    console.log('📊 Métriques engagement:', {
+      likes: engagement.likes,
+      comments: engagement.comments,
+      shares: engagement.shares,
+      views: views,
+      total: totalEngagement
+    });
+    
+    // 4. Logique de décision du sentiment
+    if (positiveCount > negativeCount) {
+      console.log(`✅ SENTIMENT FINAL: POSITIVE (pos:${positiveCount} vs neg:${negativeCount})`);
+      return 'positive';
+    }
+    
+    if (negativeCount > positiveCount) {
+      console.log(`❌ SENTIMENT FINAL: NEGATIVE (pos:${positiveCount} vs neg:${negativeCount})`);
+      return 'negative';
+    }
+    
+    // Si égalité, on regarde l'engagement
+    if (totalEngagement > 50 || views > 1000) {
+      console.log(`✅ SENTIMENT FINAL: POSITIVE (engagement élevé: ${totalEngagement})`);
+      return 'positive';
+    }
+    
+    if (totalEngagement < 5 && views < 100) {
+      console.log(`❌ SENTIMENT FINAL: NEGATIVE (engagement faible: ${totalEngagement})`);
+      return 'negative';  
+    }
+    
+    console.log('⚪ SENTIMENT FINAL: NEUTRAL (par défaut)');
     return 'neutral';
   }
 
@@ -138,7 +221,12 @@ export class DataTransformer {
     const total = engagement.likes + engagement.comments * 2 + engagement.shares * 3;
     const views = engagement.views || 0;
     
+    // Score basé sur l'engagement et les vues
     let score = Math.min(Math.round((total + views / 100) / 50), 10);
-    return Math.max(1, score);
+    score = Math.max(1, score);
+    
+    console.log(`🎯 Score d'influence calculé: ${score} (engagement: ${total}, vues: ${views})`);
+    
+    return score;
   }
 }

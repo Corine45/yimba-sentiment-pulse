@@ -88,6 +88,14 @@ class RealApiService {
     return this.postData('/api/scrape/facebook/page-search', { keywords }, filters);
   }
 
+  async scrapeFacebookPosts(query: string, filters?: SearchFilters): Promise<MentionResult[]> {
+    return this.postData('/api/scrape/facebook-posts', { query }, filters);
+  }
+
+  async scrapeFacebookReviews(query: string, filters?: SearchFilters): Promise<MentionResult[]> {
+    return this.postData('/api/scrape/facebook-reviews', { query }, filters);
+  }
+
   async scrapeTwitter(query: string, filters?: SearchFilters): Promise<MentionResult[]> {
     return this.postData('/api/scrape/twitter', { query }, filters);
   }
@@ -121,7 +129,7 @@ class RealApiService {
   }
 
   async scrapeInstagramComments(postUrl: string, filters?: SearchFilters): Promise<MentionResult[]> {
-    return this.postData('/api/scrape/instagram/comments', { postUrl }, filters);
+    return this.postData('/api/scrape/instagram-comments', { postUrl }, filters);
   }
 
   async scrapeInstagramHashtag(hashtag: string, filters?: SearchFilters): Promise<MentionResult[]> {
@@ -180,47 +188,120 @@ class RealApiService {
           case 'tiktok':
             platformResults = await this.scrapeTikTok(keywords, filters);
             break;
+            
           case 'facebook':
-            // Optimisation Facebook : utiliser l'endpoint approprié selon le type de recherche
+            console.log('🔍 RECHERCHE FACEBOOK COMPLÈTE AVEC TOUTES LES APIs');
             const fbQuery = keywords.join(' ');
             
-            // Si on recherche des pages spécifiques
+            // 1. Recherche générale Facebook
+            const generalResults = await this.scrapeFacebook(fbQuery, filters);
+            platformResults.push(...generalResults);
+            
+            // 2. NOUVELLE API: Posts Facebook
+            try {
+              const postsResults = await this.scrapeFacebookPosts(fbQuery, filters);
+              platformResults.push(...postsResults);
+              console.log(`✅ Facebook Posts: ${postsResults.length} résultats`);
+            } catch (error) {
+              console.error('❌ Erreur Facebook Posts:', error);
+            }
+            
+            // 3. NOUVELLE API: Reviews Facebook
+            try {
+              const reviewsResults = await this.scrapeFacebookReviews(fbQuery, filters);
+              platformResults.push(...reviewsResults);
+              console.log(`✅ Facebook Reviews: ${reviewsResults.length} résultats`);
+            } catch (error) {
+              console.error('❌ Erreur Facebook Reviews:', error);
+            }
+            
+            // 4. Recherche de pages spécifiques si mots-clés contiennent @
             if (keywords.some(k => k.startsWith('@') || k.includes('facebook.com/'))) {
               const pageNames = keywords.filter(k => k.startsWith('@')).map(k => k.substring(1));
-              if (pageNames.length > 0) {
-                // Récupérer les posts de la page
-                for (const page of pageNames) {
+              for (const page of pageNames) {
+                try {
                   const pagePosts = await this.scrapeFacebookPagePosts(page, filters);
                   platformResults.push(...pagePosts);
                   
-                  // Récupérer aussi les likes si demandé
                   if (filters.includePageLikes) {
                     const pageLikes = await this.scrapeFacebookPageLikes(page, filters);
                     platformResults.push(...pageLikes);
                   }
+                } catch (error) {
+                  console.error(`❌ Erreur page ${page}:`, error);
                 }
               }
-            } else {
-              // Recherche par mots-clés classique
-              platformResults = await this.scrapeFacebook(fbQuery, filters);
-              
-              // Recherche additionnelle dans les pages si demandé
-              if (filters.includePageSearch) {
+            }
+            
+            // 5. Recherche additionnelle dans les pages
+            if (filters.includePageSearch) {
+              try {
                 const pageSearchResults = await this.scrapeFacebookPageSearch(keywords, filters);
                 platformResults.push(...pageSearchResults);
+              } catch (error) {
+                console.error('❌ Erreur Facebook Page Search:', error);
               }
             }
+            
+            console.log(`🎯 FACEBOOK TOTAL: ${platformResults.length} résultats combinés`);
             break;
+            
+          case 'instagram':
+            console.log('🔍 RECHERCHE INSTAGRAM COMPLÈTE AVEC TOUTES LES APIs');
+            
+            // 1. Recherche générale Instagram
+            const instagramResults = await this.scrapeInstagram(keywords, filters);
+            platformResults.push(...instagramResults);
+            
+            // 2. Recherche par posts
+            for (const keyword of keywords) {
+              try {
+                const postsResults = await this.scrapeInstagramPosts(keyword, filters);
+                platformResults.push(...postsResults);
+              } catch (error) {
+                console.error(`❌ Erreur Instagram Posts ${keyword}:`, error);
+              }
+            }
+            
+            // 3. NOUVELLE API: Commentaires Instagram
+            // Pour les commentaires, on essaie d'utiliser les URLs des posts trouvés
+            const instagramUrls = platformResults
+              .filter(r => r.platform === 'Instagram' && r.url)
+              .slice(0, 5); // Limiter à 5 pour éviter trop d'appels
+              
+            for (const result of instagramUrls) {
+              try {
+                const commentsResults = await this.scrapeInstagramComments(result.url, filters);
+                platformResults.push(...commentsResults);
+                console.log(`✅ Instagram Comments pour ${result.url}: ${commentsResults.length} résultats`);
+              } catch (error) {
+                console.error(`❌ Erreur Instagram Comments:`, error);
+              }
+            }
+            
+            // 4. Recherche par hashtags
+            for (const keyword of keywords) {
+              if (keyword.startsWith('#')) {
+                try {
+                  const hashtagResults = await this.scrapeInstagramHashtag(keyword.substring(1), filters);
+                  platformResults.push(...hashtagResults);
+                } catch (error) {
+                  console.error(`❌ Erreur Instagram Hashtag ${keyword}:`, error);
+                }
+              }
+            }
+            
+            console.log(`🎯 INSTAGRAM TOTAL: ${platformResults.length} résultats combinés`);
+            break;
+            
           case 'twitter':
             const twitterQuery = keywords.join(' ');
             platformResults = await this.scrapeTwitter(twitterQuery, filters);
             break;
+            
           case 'youtube':
             const youtubeQuery = keywords.join(' ');
             platformResults = await this.scrapeYouTube(youtubeQuery, filters);
-            break;
-          case 'instagram':
-            platformResults = await this.scrapeInstagram(keywords, filters);
             break;
         }
 

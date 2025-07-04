@@ -1,26 +1,66 @@
-
 import { MentionResult, SearchFilters } from './types';
 
 export class FiltersManager {
   static applyFilters(results: MentionResult[], filters: SearchFilters): MentionResult[] {
     let filtered = [...results];
+    const originalCount = filtered.length;
+    
+    console.log('🔧 APPLICATION DES FILTRES:', filters);
+    console.log(`📊 Résultats avant filtrage: ${originalCount}`);
 
     // Filtrer par sentiment
     if (filters.sentiment) {
-      filtered = filtered.filter(item => item.sentiment === filters.sentiment);
+      const sentimentFilter = Array.isArray(filters.sentiment) ? filters.sentiment : [filters.sentiment];
+      
+      if (sentimentFilter.length > 0) {
+        const beforeSentiment = filtered.length;
+        filtered = filtered.filter(item => {
+          const itemSentiment = item.sentiment || 'neutral';
+          const matches = sentimentFilter.includes(itemSentiment);
+          if (!matches) {
+            console.log(`🚫 Item exclu par sentiment: ${item.id} (${itemSentiment} not in [${sentimentFilter.join(', ')}])`);
+          }
+          return matches;
+        });
+        console.log(`🎭 Filtre sentiment appliqué: ${beforeSentiment} → ${filtered.length} (critères: [${sentimentFilter.join(', ')}])`);
+      }
+    }
+
+    // Filtrer par score d'influence
+    if (filters.influenceScore !== undefined && filters.influenceScore > 0) {
+      const beforeInfluence = filtered.length;
+      filtered = filtered.filter(item => {
+        const itemScore = item.influenceScore || 0;
+        const matches = itemScore >= filters.influenceScore!;
+        if (!matches) {
+          console.log(`🚫 Item exclu par influence: ${item.id} (score ${itemScore} < ${filters.influenceScore})`);
+        }
+        return matches;
+      });
+      console.log(`🎯 Filtre influence appliqué: ${beforeInfluence} → ${filtered.length} (score min: ${filters.influenceScore})`);
     }
 
     // Filtrer par engagement
     if (filters.minEngagement !== undefined) {
-      filtered = filtered.filter(item => 
-        (item.engagement.likes + item.engagement.comments + item.engagement.shares) >= filters.minEngagement
-      );
+      const beforeEngagement = filtered.length;
+      filtered = filtered.filter(item => {
+        const totalEngagement = item.engagement.likes + item.engagement.comments + item.engagement.shares;
+        const matches = totalEngagement >= filters.minEngagement!;
+        if (!matches) {
+          console.log(`🚫 Item exclu par engagement: ${item.id} (${totalEngagement} < ${filters.minEngagement})`);
+        }
+        return matches;
+      });
+      console.log(`📈 Filtre engagement min appliqué: ${beforeEngagement} → ${filtered.length} (min: ${filters.minEngagement})`);
     }
 
     if (filters.maxEngagement !== undefined) {
-      filtered = filtered.filter(item => 
-        (item.engagement.likes + item.engagement.comments + item.engagement.shares) <= filters.maxEngagement
-      );
+      const beforeMaxEngagement = filtered.length;
+      filtered = filtered.filter(item => {
+        const totalEngagement = item.engagement.likes + item.engagement.comments + item.engagement.shares;
+        return totalEngagement <= filters.maxEngagement!;
+      });
+      console.log(`📉 Filtre engagement max appliqué: ${beforeMaxEngagement} → ${filtered.length} (max: ${filters.maxEngagement})`);
     }
 
     // Filtrer par période
@@ -74,14 +114,17 @@ export class FiltersManager {
     // Trier les résultats
     if (filters.sortBy === 'recent') {
       filtered.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+      console.log('📅 Tri par date récente appliqué');
     } else if (filters.sortBy === 'popular') {
       filtered.sort((a, b) => {
         const aEngagement = a.engagement.likes + a.engagement.comments + a.engagement.shares;
         const bEngagement = b.engagement.likes + b.engagement.comments + b.engagement.shares;
         return bEngagement - aEngagement;
       });
+      console.log('🔥 Tri par popularité appliqué');
     }
 
+    console.log(`✅ FILTRAGE TERMINÉ: ${originalCount} → ${filtered.length} résultats`);
     return filtered;
   }
 
