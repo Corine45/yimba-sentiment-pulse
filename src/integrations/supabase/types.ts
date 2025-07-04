@@ -156,6 +156,42 @@ export type Database = {
         }
         Relationships: []
       }
+      geographic_filters: {
+        Row: {
+          city: string | null
+          country_code: string | null
+          created_at: string
+          id: string
+          latitude: number | null
+          longitude: number | null
+          radius: number | null
+          region: string | null
+          user_id: string
+        }
+        Insert: {
+          city?: string | null
+          country_code?: string | null
+          created_at?: string
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          radius?: number | null
+          region?: string | null
+          user_id: string
+        }
+        Update: {
+          city?: string | null
+          country_code?: string | null
+          created_at?: string
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          radius?: number | null
+          region?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       influencer_data: {
         Row: {
           created_at: string
@@ -229,6 +265,60 @@ export type Database = {
           mentions?: number
           platform?: string
           sentiment?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      mention_saves: {
+        Row: {
+          created_at: string
+          export_format: string
+          file_name: string
+          filters_applied: Json
+          id: string
+          mentions_data: Json
+          negative_mentions: number
+          neutral_mentions: number
+          platforms: string[]
+          positive_mentions: number
+          search_keywords: string[]
+          total_engagement: number
+          total_mentions: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          export_format?: string
+          file_name: string
+          filters_applied?: Json
+          id?: string
+          mentions_data?: Json
+          negative_mentions?: number
+          neutral_mentions?: number
+          platforms: string[]
+          positive_mentions?: number
+          search_keywords: string[]
+          total_engagement?: number
+          total_mentions?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          export_format?: string
+          file_name?: string
+          filters_applied?: Json
+          id?: string
+          mentions_data?: Json
+          negative_mentions?: number
+          neutral_mentions?: number
+          platforms?: string[]
+          positive_mentions?: number
+          search_keywords?: string[]
+          total_engagement?: number
+          total_mentions?: number
           updated_at?: string
           user_id?: string
         }

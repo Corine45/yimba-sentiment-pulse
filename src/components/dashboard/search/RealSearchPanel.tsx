@@ -6,10 +6,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { X, Plus, Search, Save, Trash2, Database } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { X, Plus, Search, Save, Trash2, Database, Download, TrendingUp, Heart, MessageCircle, Share, Eye } from "lucide-react";
 import { Brand24StyleResults } from "./Brand24StyleResults";
 import { AdvancedSearchFilters } from "./AdvancedSearchFilters";
 import { SearchPagination } from "./SearchPagination";
+import { SavedMentionsHistory } from "./SavedMentionsHistory";
 import { useRealSearch } from "@/hooks/useRealSearch";
 import { SearchFilters } from "@/services/realApiService";
 
@@ -29,6 +32,7 @@ export const RealSearchPanel = () => {
   const [savedFilters, setSavedFilters] = useState<SearchFilters[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(25);
+  const [activeTab, setActiveTab] = useState('search');
   
   const { 
     mentions, 
@@ -36,6 +40,8 @@ export const RealSearchPanel = () => {
     platformCounts, 
     totalMentions, 
     fromCache,
+    sentimentStats,
+    totalEngagement,
     executeSearch, 
     saveMentions, 
     clearCache 
@@ -79,11 +85,11 @@ export const RealSearchPanel = () => {
     setFilters(loadedFilters);
   };
 
-  const handleSaveMentions = () => {
+  const handleSaveMentions = async (format: 'json' | 'pdf' | 'csv' = 'json') => {
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
     const mentionsToSave = mentions.slice(startIndex, endIndex);
-    saveMentions(mentionsToSave);
+    await saveMentions(mentionsToSave, keywords, selectedPlatforms, filters, format);
   };
 
   // Pagination des résultats
@@ -92,157 +98,245 @@ export const RealSearchPanel = () => {
   const endIndex = startIndex + itemsPerPage;
   const paginatedMentions = mentions.slice(startIndex, endIndex);
 
+  const formatNumber = (num: number) => {
+    if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
+    if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
+    return num.toString();
+  };
+
   return (
     <div className="space-y-6">
-      {/* Configuration de recherche */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            <span>Recherche en temps réel - API Backend</span>
-            <div className="flex items-center space-x-2">
-              {fromCache && (
-                <Badge variant="secondary" className="flex items-center space-x-1">
-                  <Database className="w-3 h-3" />
-                  <span>Cache</span>
-                </Badge>
-              )}
-              <Button variant="outline" size="sm" onClick={clearCache}>
-                <Trash2 className="w-4 h-4 mr-2" />
-                Vider cache
-              </Button>
-            </div>
-          </CardTitle>
-          <div className="text-sm text-gray-600">
-            Données scrapées depuis: <code>https://yimbapulseapi.a-car.ci</code>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Mots-clés */}
-          <div className="space-y-3">
-            <Label>Mots-clés à surveiller</Label>
-            <div className="flex space-x-2">
-              <Input
-                placeholder="Ajouter un mot-clé..."
-                value={currentKeyword}
-                onChange={(e) => setCurrentKeyword(e.target.value)}
-                onKeyPress={handleKeyPress}
-              />
-              <Button onClick={addKeyword} disabled={!currentKeyword.trim()}>
-                <Plus className="w-4 h-4" />
-              </Button>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {keywords.map((keyword) => (
-                <Badge key={keyword} variant="secondary" className="flex items-center space-x-1">
-                  <span>{keyword}</span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-4 w-4 p-0"
-                    onClick={() => removeKeyword(keyword)}
-                  >
-                    <X className="w-3 h-3" />
-                  </Button>
-                </Badge>
-              ))}
-            </div>
-          </div>
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="search">Recherche & Résultats</TabsTrigger>
+          <TabsTrigger value="history">Historique des sauvegardes</TabsTrigger>
+        </TabsList>
 
-          {/* Plateformes */}
-          <div className="space-y-3">
-            <Label>Plateformes à analyser</Label>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {AVAILABLE_PLATFORMS.map((platform) => (
-                <div key={platform.id} className="flex items-start space-x-2">
-                  <Checkbox
-                    id={platform.id}
-                    checked={selectedPlatforms.includes(platform.id)}
-                    onCheckedChange={() => togglePlatform(platform.id)}
+        <TabsContent value="search" className="space-y-6">
+          {/* Configuration de recherche */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                <span>Recherche en temps réel - API Backend</span>
+                <div className="flex items-center space-x-2">
+                  {fromCache && (
+                    <Badge variant="secondary" className="flex items-center space-x-1">
+                      <Database className="w-3 h-3" />
+                      <span>Cache 10min</span>
+                    </Badge>
+                  )}
+                  <Button variant="outline" size="sm" onClick={clearCache}>
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Vider cache
+                  </Button>
+                </div>
+              </CardTitle>
+              <div className="text-sm text-gray-600">
+                Données scrapées depuis: <code>https://yimbapulseapi.a-car.ci</code>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Mots-clés */}
+              <div className="space-y-3">
+                <Label>Mots-clés à surveiller</Label>
+                <div className="flex space-x-2">
+                  <Input
+                    placeholder="Ajouter un mot-clé..."
+                    value={currentKeyword}
+                    onChange={(e) => setCurrentKeyword(e.target.value)}
+                    onKeyPress={handleKeyPress}
                   />
-                  <div className="grid gap-1.5 leading-none">
-                    <label
-                      htmlFor={platform.id}
-                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                    >
-                      {platform.name}
-                      {platformCounts[platform.name] && (
-                        <Badge variant="outline" className="ml-2">
-                          {platformCounts[platform.name]}
-                        </Badge>
-                      )}
-                    </label>
-                    <p className="text-xs text-muted-foreground">
-                      {platform.description}
-                    </p>
+                  <Button onClick={addKeyword} disabled={!currentKeyword.trim()}>
+                    <Plus className="w-4 h-4" />
+                  </Button>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {keywords.map((keyword) => (
+                    <Badge key={keyword} variant="secondary" className="flex items-center space-x-1">
+                      <span>{keyword}</span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-4 w-4 p-0"
+                        onClick={() => removeKeyword(keyword)}
+                      >
+                        <X className="w-3 h-3" />
+                      </Button>
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+
+              {/* Plateformes */}
+              <div className="space-y-3">
+                <Label>Plateformes à analyser</Label>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {AVAILABLE_PLATFORMS.map((platform) => (
+                    <div key={platform.id} className="flex items-start space-x-2">
+                      <Checkbox
+                        id={platform.id}
+                        checked={selectedPlatforms.includes(platform.id)}
+                        onCheckedChange={() => togglePlatform(platform.id)}
+                      />
+                      <div className="grid gap-1.5 leading-none">
+                        <label
+                          htmlFor={platform.id}
+                          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                        >
+                          {platform.name}
+                          {platformCounts[platform.name] && (
+                            <Badge variant="outline" className="ml-2">
+                              {platformCounts[platform.name]}
+                            </Badge>
+                          )}
+                        </label>
+                        <p className="text-xs text-muted-foreground">
+                          {platform.description}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Bouton de recherche */}
+              <Button 
+                onClick={handleSearch} 
+                disabled={isLoading || keywords.length === 0 || selectedPlatforms.length === 0}
+                className="w-full"
+              >
+                <Search className="w-4 h-4 mr-2" />
+                {isLoading ? "Recherche en cours..." : "Lancer la recherche"}
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Filtres avancés */}
+          <AdvancedSearchFilters
+            filters={filters}
+            onFiltersChange={setFilters}
+            onSaveFilters={handleSaveFilters}
+            savedFilters={savedFilters}
+            onLoadFilters={handleLoadFilters}
+          />
+
+          {/* Statistiques détaillées */}
+          {totalMentions > 0 && (
+            <Card>
+              <CardContent className="pt-6">
+                <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-blue-600">{totalMentions}</div>
+                    <div className="text-sm text-gray-600">Total mentions</div>
+                  </div>
+                  
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-green-600">{sentimentStats.positive}</div>
+                    <div className="text-sm text-gray-600">Positives</div>
+                  </div>
+                  
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-yellow-600">{sentimentStats.neutral}</div>
+                    <div className="text-sm text-gray-600">Neutres</div>
+                  </div>
+                  
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-red-600">{sentimentStats.negative}</div>
+                    <div className="text-sm text-gray-600">Négatives</div>
+                  </div>
+                  
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-orange-600">{formatNumber(totalEngagement)}</div>
+                    <div className="text-sm text-gray-600">Engagement total</div>
+                  </div>
+                  
+                  <div className="text-center">
+                    <div className="flex space-x-1">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => handleSaveMentions('json')}
+                        className="text-blue-600"
+                      >
+                        <Save className="w-4 h-4 mr-1" />
+                        JSON
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => handleSaveMentions('pdf')}
+                        className="text-red-600"
+                      >
+                        PDF
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => handleSaveMentions('csv')}
+                        className="text-green-600"
+                      >
+                        CSV
+                      </Button>
+                    </div>
                   </div>
                 </div>
-              ))}
-            </div>
-          </div>
+                
+                {/* Engagement détaillé */}
+                {totalEngagement > 0 && (
+                  <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+                    <div className="text-sm font-medium text-gray-700 mb-3">Engagement détaillé</div>
+                    <div className="grid grid-cols-4 gap-4 text-center">
+                      <div className="flex items-center justify-center space-x-2">
+                        <Heart className="w-4 h-4 text-red-500" />
+                        <span className="font-medium">
+                          {formatNumber(mentions.reduce((sum, m) => sum + m.engagement.likes, 0))}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-center space-x-2">
+                        <MessageCircle className="w-4 h-4 text-blue-500" />
+                        <span className="font-medium">
+                          {formatNumber(mentions.reduce((sum, m) => sum + m.engagement.comments, 0))}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-center space-x-2">
+                        <Share className="w-4 h-4 text-green-500" />
+                        <span className="font-medium">
+                          {formatNumber(mentions.reduce((sum, m) => sum + m.engagement.shares, 0))}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-center space-x-2">
+                        <Eye className="w-4 h-4 text-purple-500" />
+                        <span className="font-medium">
+                          {formatNumber(mentions.reduce((sum, m) => sum + (m.engagement.views || 0), 0))}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
-          {/* Bouton de recherche */}
-          <Button 
-            onClick={handleSearch} 
-            disabled={isLoading || keywords.length === 0 || selectedPlatforms.length === 0}
-            className="w-full"
-          >
-            <Search className="w-4 h-4 mr-2" />
-            {isLoading ? "Recherche en cours..." : "Lancer la recherche"}
-          </Button>
-        </CardContent>
-      </Card>
+          {/* Résultats */}
+          <Brand24StyleResults mentions={paginatedMentions} isLoading={isLoading} />
 
-      {/* Filtres avancés */}
-      <AdvancedSearchFilters
-        filters={filters}
-        onFiltersChange={setFilters}
-        onSaveFilters={handleSaveFilters}
-        savedFilters={savedFilters}
-        onLoadFilters={handleLoadFilters}
-      />
+          {/* Pagination */}
+          {totalMentions > 0 && (
+            <SearchPagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={totalMentions}
+              itemsPerPage={itemsPerPage}
+              onPageChange={setCurrentPage}
+              onItemsPerPageChange={setItemsPerPage}
+            />
+          )}
+        </TabsContent>
 
-      {/* Statistiques */}
-      {totalMentions > 0 && (
-        <Card>
-          <CardContent className="pt-6">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-blue-600">{totalMentions}</div>
-                <div className="text-sm text-gray-600">Total mentions</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-green-600">{Object.keys(platformCounts).length}</div>
-                <div className="text-sm text-gray-600">Plateformes actives</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-orange-600">{keywords.length}</div>
-                <div className="text-sm text-gray-600">Mots-clés</div>
-              </div>
-              <div className="text-center">
-                <Button variant="outline" size="sm" onClick={handleSaveMentions}>
-                  <Save className="w-4 h-4 mr-2" />
-                  Sauvegarder
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Résultats */}
-      <Brand24StyleResults mentions={paginatedMentions} isLoading={isLoading} />
-
-      {/* Pagination */}
-      {totalMentions > 0 && (
-        <SearchPagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          totalItems={totalMentions}
-          itemsPerPage={itemsPerPage}
-          onPageChange={setCurrentPage}
-          onItemsPerPageChange={setItemsPerPage}
-        />
-      )}
+        <TabsContent value="history">
+          <SavedMentionsHistory />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

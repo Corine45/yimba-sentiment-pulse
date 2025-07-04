@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import RealApiService, { MentionResult, SearchFilters } from '@/services/realApiService';
+import { useSavedMentions } from './useSavedMentions';
 
 export const useRealSearch = () => {
   const [mentions, setMentions] = useState<MentionResult[]>([]);
@@ -9,7 +10,10 @@ export const useRealSearch = () => {
   const [platformCounts, setPlatformCounts] = useState<{ [key: string]: number }>({});
   const [totalMentions, setTotalMentions] = useState(0);
   const [fromCache, setFromCache] = useState(false);
+  const [sentimentStats, setSentimentStats] = useState({ positive: 0, neutral: 0, negative: 0 });
+  const [totalEngagement, setTotalEngagement] = useState(0);
   const { toast } = useToast();
+  const { saveMentions } = useSavedMentions();
 
   const executeSearch = async (
     keywords: string[],
@@ -30,7 +34,7 @@ export const useRealSearch = () => {
     try {
       const apiService = new RealApiService();
       
-      console.log('🔍 RECHERCHE API BACKEND AVEC CACHE ET FILTRES');
+      console.log('🔍 RECHERCHE API BACKEND AVEC CACHE 10 MIN ET FILTRES AVANCÉS');
       console.log('📝 Mots-clés:', keywords);
       console.log('🎯 Plateformes:', selectedPlatforms);
       console.log('🔧 Filtres:', filters);
@@ -42,18 +46,28 @@ export const useRealSearch = () => {
       );
 
       console.log(`🏁 TOTAL: ${results.length} mentions récupérées`);
-      console.log(`📦 Depuis le cache: ${cacheUsed ? 'Oui' : 'Non'}`);
+      console.log(`📦 Cache (10 min): ${cacheUsed ? 'Utilisé' : 'Nouvelle requête'}`);
       console.log(`📊 Répartition par plateforme:`, counts);
+
+      // Calculer les statistiques de sentiment
+      const positive = results.filter(m => m.sentiment === 'positive').length;
+      const neutral = results.filter(m => m.sentiment === 'neutral').length;
+      const negative = results.filter(m => m.sentiment === 'negative').length;
+      const engagement = results.reduce((sum, m) => 
+        sum + m.engagement.likes + m.engagement.comments + m.engagement.shares, 0
+      );
 
       setMentions(results);
       setPlatformCounts(counts);
       setTotalMentions(results.length);
       setFromCache(cacheUsed);
+      setSentimentStats({ positive, neutral, negative });
+      setTotalEngagement(engagement);
 
       if (results.length > 0) {
         toast({
           title: "Recherche terminée",
-          description: `${results.length} mention(s) trouvée(s) ${cacheUsed ? '(depuis le cache)' : 'via votre API backend'}`,
+          description: `${results.length} mention(s) trouvée(s) ${cacheUsed ? '(cache 10 min)' : 'via API backend'} • Positif: ${positive} • Neutre: ${neutral} • Négatif: ${negative}`,
         });
       } else {
         toast({
@@ -74,30 +88,39 @@ export const useRealSearch = () => {
       setPlatformCounts({});
       setTotalMentions(0);
       setFromCache(false);
+      setSentimentStats({ positive: 0, neutral: 0, negative: 0 });
+      setTotalEngagement(0);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const saveMentions = async (mentionsToSave: MentionResult[]) => {
+  const handleSaveMentions = async (
+    mentionsToSave: MentionResult[],
+    keywords: string[],
+    platforms: string[],
+    filters: SearchFilters,
+    format: 'json' | 'pdf' | 'csv' = 'json'
+  ) => {
     try {
-      const dataStr = JSON.stringify(mentionsToSave, null, 2);
-      const dataBlob = new Blob([dataStr], { type: 'application/json' });
-      const url = URL.createObjectURL(dataBlob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `mentions_${new Date().toISOString().split('T')[0]}.json`;
-      link.click();
-      URL.revokeObjectURL(url);
-
-      toast({
-        title: "Mentions sauvegardées",
-        description: `${mentionsToSave.length} mention(s) sauvegardée(s) avec succès`,
-      });
+      const result = await saveMentions(mentionsToSave, keywords, platforms, filters, format);
+      
+      if (result.success) {
+        toast({
+          title: "Mentions sauvegardées",
+          description: `${mentionsToSave.length} mention(s) sauvegardée(s) en format ${format.toUpperCase()}`,
+        });
+      } else {
+        toast({
+          title: "Erreur de sauvegarde",
+          description: "Impossible de sauvegarder les mentions",
+          variant: "destructive",
+        });
+      }
     } catch (error) {
       toast({
         title: "Erreur de sauvegarde",
-        description: "Impossible de sauvegarder les mentions",
+        description: "Une erreur est survenue lors de la sauvegarde",
         variant: "destructive",
       });
     }
@@ -108,7 +131,7 @@ export const useRealSearch = () => {
     apiService.clearCache();
     toast({
       title: "Cache vidé",
-      description: "Le cache des recherches a été vidé avec succès",
+      description: "Le cache des recherches (10 min) a été vidé avec succès",
     });
   };
 
@@ -118,8 +141,10 @@ export const useRealSearch = () => {
     platformCounts,
     totalMentions,
     fromCache,
+    sentimentStats,
+    totalEngagement,
     executeSearch,
-    saveMentions,
+    saveMentions: handleSaveMentions,
     clearCache
   };
 };

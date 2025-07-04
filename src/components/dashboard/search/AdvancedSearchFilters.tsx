@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
-import { X, Save, Filter } from "lucide-react";
+import { X, Save, Filter, MapPin } from "lucide-react";
 import { SearchFilters } from "@/services/realApiService";
 
 interface AdvancedSearchFiltersProps {
@@ -18,6 +18,14 @@ interface AdvancedSearchFiltersProps {
   savedFilters: SearchFilters[];
   onLoadFilters: (filters: SearchFilters) => void;
 }
+
+const COUNTRIES = [
+  { code: 'CI', name: 'Côte d\'Ivoire', regions: ['Abidjan', 'Yamoussoukro', 'Bouaké', 'Daloa', 'San-Pedro'] },
+  { code: 'FR', name: 'France', regions: ['Paris', 'Lyon', 'Marseille', 'Toulouse', 'Nice'] },
+  { code: 'SN', name: 'Sénégal', regions: ['Dakar', 'Thiès', 'Kaolack', 'Saint-Louis'] },
+  { code: 'GH', name: 'Ghana', regions: ['Accra', 'Kumasi', 'Tamale', 'Cape Coast'] },
+  { code: 'BF', name: 'Burkina Faso', regions: ['Ouagadougou', 'Bobo-Dioulasso', 'Koudougou'] }
+];
 
 export const AdvancedSearchFilters = ({
   filters,
@@ -32,11 +40,26 @@ export const AdvancedSearchFilters = ({
     onFiltersChange({ ...filters, [key]: value });
   };
 
+  const updateGeographyFilter = (key: string, value: any) => {
+    const geography = filters.geography || {};
+    onFiltersChange({ 
+      ...filters, 
+      geography: { ...geography, [key]: value }
+    });
+  };
+
   const clearFilters = () => {
     onFiltersChange({});
   };
 
-  const activeFiltersCount = Object.values(filters).filter(v => v !== undefined && v !== '').length;
+  const activeFiltersCount = Object.values(filters).filter(v => {
+    if (typeof v === 'object' && v !== null) {
+      return Object.values(v).some(val => val !== undefined && val !== '');
+    }
+    return v !== undefined && v !== '';
+  }).length;
+
+  const selectedCountry = COUNTRIES.find(c => c.code === filters.geography?.country);
 
   return (
     <Card>
@@ -75,6 +98,8 @@ export const AdvancedSearchFilters = ({
                   <SelectItem value="en">Anglais</SelectItem>
                   <SelectItem value="es">Espagnol</SelectItem>
                   <SelectItem value="ar">Arabe</SelectItem>
+                  <SelectItem value="pt">Portugais</SelectItem>
+                  <SelectItem value="de">Allemand</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -91,6 +116,8 @@ export const AdvancedSearchFilters = ({
                   <SelectItem value="7d">7 derniers jours</SelectItem>
                   <SelectItem value="30d">30 derniers jours</SelectItem>
                   <SelectItem value="3m">3 derniers mois</SelectItem>
+                  <SelectItem value="6m">6 derniers mois</SelectItem>
+                  <SelectItem value="12m">12 derniers mois</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -110,15 +137,99 @@ export const AdvancedSearchFilters = ({
             </div>
           </div>
 
+          {/* Filtres géographiques */}
+          <div className="space-y-4">
+            <div className="flex items-center space-x-2">
+              <MapPin className="w-4 h-4" />
+              <Label className="text-base font-medium">Localisation géographique</Label>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Pays</Label>
+                <Select 
+                  value={filters.geography?.country || ''} 
+                  onValueChange={(value) => updateGeographyFilter('country', value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionner un pays" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Tous les pays</SelectItem>
+                    {COUNTRIES.map(country => (
+                      <SelectItem key={country.code} value={country.code}>
+                        {country.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Région/Ville</Label>
+                <Select 
+                  value={filters.geography?.region || ''} 
+                  onValueChange={(value) => updateGeographyFilter('region', value)}
+                  disabled={!selectedCountry}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionner une région" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Toutes les régions</SelectItem>
+                    {selectedCountry?.regions.map(region => (
+                      <SelectItem key={region} value={region}>
+                        {region}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Coordonnées géographiques */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label>Latitude</Label>
+                <Input
+                  type="number"
+                  step="0.000001"
+                  placeholder="5.316667"
+                  value={filters.geography?.latitude || ''}
+                  onChange={(e) => updateGeographyFilter('latitude', parseFloat(e.target.value) || undefined)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Longitude</Label>
+                <Input
+                  type="number"
+                  step="0.000001"
+                  placeholder="-4.033333"
+                  value={filters.geography?.longitude || ''}
+                  onChange={(e) => updateGeographyFilter('longitude', parseFloat(e.target.value) || undefined)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Rayon (km)</Label>
+                <Input
+                  type="number"
+                  placeholder="1000"
+                  value={filters.geography?.radius || ''}
+                  onChange={(e) => updateGeographyFilter('radius', parseInt(e.target.value) || undefined)}
+                />
+              </div>
+            </div>
+          </div>
+
           {/* Filtres sentiment */}
           <div className="space-y-3">
             <Label>Sentiment</Label>
             <div className="flex space-x-4">
               {[
-                { value: '', label: 'Tous' },
-                { value: 'positive', label: 'Positif' },
-                { value: 'neutral', label: 'neutre' },
-                { value: 'negative', label: 'Négatif' }
+                { value: '', label: 'Tous', color: 'bg-gray-100' },
+                { value: 'positive', label: 'Positif', color: 'bg-green-100 text-green-800' },
+                { value: 'neutral', label: 'Neutre', color: 'bg-yellow-100 text-yellow-800' },
+                { value: 'negative', label: 'Négatif', color: 'bg-red-100 text-red-800' }
               ].map((sentiment) => (
                 <div key={sentiment.value} className="flex items-center space-x-2">
                   <Checkbox
@@ -128,7 +239,10 @@ export const AdvancedSearchFilters = ({
                       updateFilter('sentiment', checked ? sentiment.value : '')
                     }
                   />
-                  <Label htmlFor={`sentiment-${sentiment.value}`}>
+                  <Label 
+                    htmlFor={`sentiment-${sentiment.value}`}
+                    className={`px-2 py-1 rounded text-xs ${sentiment.color}`}
+                  >
                     {sentiment.label}
                   </Label>
                 </div>
@@ -149,7 +263,25 @@ export const AdvancedSearchFilters = ({
               />
               <div className="flex justify-between text-sm text-gray-500 mt-1">
                 <span>0</span>
-                <span>{filters.minEngagement || 0}</span>
+                <span className="font-medium">{filters.minEngagement || 0}</span>
+                <span>10K+</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <Label>Engagement maximum</Label>
+            <div className="px-3">
+              <Slider
+                value={[filters.maxEngagement || 10000]}
+                onValueChange={([value]) => updateFilter('maxEngagement', value)}
+                max={10000}
+                step={100}
+                className="w-full"
+              />
+              <div className="flex justify-between text-sm text-gray-500 mt-1">
+                <span>0</span>
+                <span className="font-medium">{filters.maxEngagement || 10000}</span>
                 <span>10K+</span>
               </div>
             </div>
