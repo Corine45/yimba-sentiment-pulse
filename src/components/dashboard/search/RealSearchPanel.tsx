@@ -6,24 +6,40 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { X, Plus, Search } from "lucide-react";
+import { X, Plus, Search, Save, Trash2, Database } from "lucide-react";
 import { Brand24StyleResults } from "./Brand24StyleResults";
+import { AdvancedSearchFilters } from "./AdvancedSearchFilters";
+import { SearchPagination } from "./SearchPagination";
 import { useRealSearch } from "@/hooks/useRealSearch";
+import { SearchFilters } from "@/services/realApiService";
 
 const AVAILABLE_PLATFORMS = [
-  { id: 'tiktok', name: 'TikTok', description: 'Hashtags' },
-  { id: 'facebook', name: 'Facebook', description: 'Requête texte' },
-  { id: 'twitter', name: 'Twitter', description: 'Requête texte' },
-  { id: 'youtube', name: 'YouTube', description: 'Mots-clés' },
-  { id: 'instagram', name: 'Instagram', description: 'Usernames' }
+  { id: 'tiktok', name: 'TikTok', description: 'Hashtags & Géolocalisation' },
+  { id: 'facebook', name: 'Facebook', description: 'Posts, Pages & URLs' },
+  { id: 'twitter', name: 'Twitter', description: 'Tweets & Réponses' },
+  { id: 'youtube', name: 'YouTube', description: 'Vidéos & Commentaires' },
+  { id: 'instagram', name: 'Instagram', description: 'Posts, Reels & Hashtags' }
 ];
 
 export const RealSearchPanel = () => {
   const [keywords, setKeywords] = useState<string[]>([]);
   const [currentKeyword, setCurrentKeyword] = useState('');
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
+  const [filters, setFilters] = useState<SearchFilters>({});
+  const [savedFilters, setSavedFilters] = useState<SearchFilters[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(25);
   
-  const { mentions, isLoading, executeSearch } = useRealSearch();
+  const { 
+    mentions, 
+    isLoading, 
+    platformCounts, 
+    totalMentions, 
+    fromCache,
+    executeSearch, 
+    saveMentions, 
+    clearCache 
+  } = useRealSearch();
 
   const addKeyword = () => {
     if (currentKeyword.trim() && !keywords.includes(currentKeyword.trim())) {
@@ -45,7 +61,8 @@ export const RealSearchPanel = () => {
   };
 
   const handleSearch = () => {
-    executeSearch(keywords, selectedPlatforms);
+    setCurrentPage(1);
+    executeSearch(keywords, selectedPlatforms, filters);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -54,12 +71,47 @@ export const RealSearchPanel = () => {
     }
   };
 
+  const handleSaveFilters = () => {
+    setSavedFilters([...savedFilters, filters]);
+  };
+
+  const handleLoadFilters = (loadedFilters: SearchFilters) => {
+    setFilters(loadedFilters);
+  };
+
+  const handleSaveMentions = () => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const mentionsToSave = mentions.slice(startIndex, endIndex);
+    saveMentions(mentionsToSave);
+  };
+
+  // Pagination des résultats
+  const totalPages = Math.ceil(mentions.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedMentions = mentions.slice(startIndex, endIndex);
+
   return (
     <div className="space-y-6">
       {/* Configuration de recherche */}
       <Card>
         <CardHeader>
-          <CardTitle>Recherche en temps réel - API Backend</CardTitle>
+          <CardTitle className="flex items-center justify-between">
+            <span>Recherche en temps réel - API Backend</span>
+            <div className="flex items-center space-x-2">
+              {fromCache && (
+                <Badge variant="secondary" className="flex items-center space-x-1">
+                  <Database className="w-3 h-3" />
+                  <span>Cache</span>
+                </Badge>
+              )}
+              <Button variant="outline" size="sm" onClick={clearCache}>
+                <Trash2 className="w-4 h-4 mr-2" />
+                Vider cache
+              </Button>
+            </div>
+          </CardTitle>
           <div className="text-sm text-gray-600">
             Données scrapées depuis: <code>https://yimbapulseapi.a-car.ci</code>
           </div>
@@ -99,7 +151,7 @@ export const RealSearchPanel = () => {
           {/* Plateformes */}
           <div className="space-y-3">
             <Label>Plateformes à analyser</Label>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {AVAILABLE_PLATFORMS.map((platform) => (
                 <div key={platform.id} className="flex items-start space-x-2">
                   <Checkbox
@@ -113,6 +165,11 @@ export const RealSearchPanel = () => {
                       className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                     >
                       {platform.name}
+                      {platformCounts[platform.name] && (
+                        <Badge variant="outline" className="ml-2">
+                          {platformCounts[platform.name]}
+                        </Badge>
+                      )}
                     </label>
                     <p className="text-xs text-muted-foreground">
                       {platform.description}
@@ -120,18 +177,6 @@ export const RealSearchPanel = () => {
                   </div>
                 </div>
               ))}
-            </div>
-          </div>
-
-          {/* Formats de payload API */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <h4 className="font-medium text-blue-900 mb-2">Formats de payload API :</h4>
-            <div className="text-xs text-blue-800 space-y-1">
-              <div><strong>TikTok:</strong> <code>{JSON.stringify({ hashtags: ["abidjan", "civbuzz"] })}</code></div>
-              <div><strong>Facebook:</strong> <code>{JSON.stringify({ query: "abidjan élections" })}</code></div>
-              <div><strong>Twitter:</strong> <code>{JSON.stringify({ query: "abidjan civbuzz" })}</code></div>
-              <div><strong>YouTube:</strong> <code>{JSON.stringify({ searchKeywords: "abidjan côte d'ivoire" })}</code></div>
-              <div><strong>Instagram:</strong> <code>{JSON.stringify({ usernames: ["aymeric", "kouassi_off"] })}</code></div>
             </div>
           </div>
 
@@ -147,8 +192,57 @@ export const RealSearchPanel = () => {
         </CardContent>
       </Card>
 
+      {/* Filtres avancés */}
+      <AdvancedSearchFilters
+        filters={filters}
+        onFiltersChange={setFilters}
+        onSaveFilters={handleSaveFilters}
+        savedFilters={savedFilters}
+        onLoadFilters={handleLoadFilters}
+      />
+
+      {/* Statistiques */}
+      {totalMentions > 0 && (
+        <Card>
+          <CardContent className="pt-6">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-blue-600">{totalMentions}</div>
+                <div className="text-sm text-gray-600">Total mentions</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-green-600">{Object.keys(platformCounts).length}</div>
+                <div className="text-sm text-gray-600">Plateformes actives</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-orange-600">{keywords.length}</div>
+                <div className="text-sm text-gray-600">Mots-clés</div>
+              </div>
+              <div className="text-center">
+                <Button variant="outline" size="sm" onClick={handleSaveMentions}>
+                  <Save className="w-4 h-4 mr-2" />
+                  Sauvegarder
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Résultats */}
-      <Brand24StyleResults mentions={mentions} isLoading={isLoading} />
+      <Brand24StyleResults mentions={paginatedMentions} isLoading={isLoading} />
+
+      {/* Pagination */}
+      {totalMentions > 0 && (
+        <SearchPagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={totalMentions}
+          itemsPerPage={itemsPerPage}
+          onPageChange={setCurrentPage}
+          onItemsPerPageChange={setItemsPerPage}
+        />
+      )}
     </div>
   );
 };

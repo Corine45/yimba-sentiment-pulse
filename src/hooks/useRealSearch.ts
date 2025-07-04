@@ -1,16 +1,20 @@
 
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import RealApiService, { MentionResult } from '@/services/realApiService';
+import RealApiService, { MentionResult, SearchFilters } from '@/services/realApiService';
 
 export const useRealSearch = () => {
   const [mentions, setMentions] = useState<MentionResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [platformCounts, setPlatformCounts] = useState<{ [key: string]: number }>({});
+  const [totalMentions, setTotalMentions] = useState(0);
+  const [fromCache, setFromCache] = useState(false);
   const { toast } = useToast();
 
   const executeSearch = async (
     keywords: string[],
-    selectedPlatforms: string[]
+    selectedPlatforms: string[],
+    filters: SearchFilters = {}
   ) => {
     if (keywords.length === 0 || selectedPlatforms.length === 0) {
       toast({
@@ -22,87 +26,34 @@ export const useRealSearch = () => {
     }
 
     setIsLoading(true);
-    setMentions([]); // Reset des résultats précédents
 
     try {
       const apiService = new RealApiService();
-      const allMentions: MentionResult[] = [];
-
-      console.log('🔍 RECHERCHE API BACKEND UNIQUEMENT - ZÉRO DONNÉES STATIQUES');
+      
+      console.log('🔍 RECHERCHE API BACKEND AVEC CACHE ET FILTRES');
       console.log('📝 Mots-clés:', keywords);
       console.log('🎯 Plateformes:', selectedPlatforms);
+      console.log('🔧 Filtres:', filters);
 
-      for (const platform of selectedPlatforms) {
-        try {
-          console.log(`\n🚀 === APPEL ${platform.toUpperCase()} API ===`);
-          let platformMentions: MentionResult[] = [];
+      const { results, fromCache: cacheUsed, platformCounts: counts } = await apiService.searchWithCache(
+        keywords,
+        selectedPlatforms,
+        filters
+      );
 
-          switch (platform.toLowerCase()) {
-            case 'tiktok':
-              // Pour TikTok, convertir les mots-clés en hashtags
-              const hashtags = keywords.map(k => k.replace('#', ''));
-              console.log(`📤 TikTok payload:`, { hashtags });
-              platformMentions = await apiService.scrapeTikTok(hashtags);
-              break;
+      console.log(`🏁 TOTAL: ${results.length} mentions récupérées`);
+      console.log(`📦 Depuis le cache: ${cacheUsed ? 'Oui' : 'Non'}`);
+      console.log(`📊 Répartition par plateforme:`, counts);
 
-            case 'facebook':
-              // Pour Facebook, joindre les mots-clés en une requête
-              const fbQuery = keywords.join(' ');
-              console.log(`📤 Facebook payload:`, { query: fbQuery });
-              platformMentions = await apiService.scrapeFacebook(fbQuery);
-              break;
+      setMentions(results);
+      setPlatformCounts(counts);
+      setTotalMentions(results.length);
+      setFromCache(cacheUsed);
 
-            case 'twitter':
-              // Pour Twitter, joindre les mots-clés
-              const twitterQuery = keywords.join(' ');
-              console.log(`📤 Twitter payload:`, { query: twitterQuery });
-              platformMentions = await apiService.scrapeTwitter(twitterQuery);
-              break;
-
-            case 'youtube':
-              // Pour YouTube, joindre les mots-clés
-              const youtubeQuery = keywords.join(' ');
-              console.log(`📤 YouTube payload:`, { searchKeywords: youtubeQuery });
-              platformMentions = await apiService.scrapeYouTube(youtubeQuery);
-              break;
-
-            case 'instagram':
-              // Pour Instagram, utiliser les mots-clés comme usernames
-              console.log(`📤 Instagram payload:`, { usernames: keywords });
-              platformMentions = await apiService.scrapeInstagram(keywords);
-              break;
-
-            default:
-              console.log(`⚠️ Plateforme ${platform} non supportée`);
-              continue;
-          }
-
-          console.log(`✅ ${platform}: ${platformMentions.length} mentions RÉELLES récupérées`);
-          
-          if (platformMentions.length > 0) {
-            allMentions.push(...platformMentions);
-            console.log(`📊 Aperçu données ${platform}:`, platformMentions[0]);
-          } else {
-            console.log(`⚠️ ${platform}: Aucune donnée retournée par l'API`);
-          }
-
-        } catch (platformError) {
-          console.error(`❌ Erreur ${platform}:`, platformError);
-          toast({
-            title: `Erreur ${platform}`,
-            description: `Impossible de récupérer les données de ${platform}: ${platformError instanceof Error ? platformError.message : 'Erreur inconnue'}`,
-            variant: "destructive",
-          });
-        }
-      }
-
-      console.log(`🏁 TOTAL: ${allMentions.length} mentions RÉELLES de votre API`);
-      setMentions(allMentions);
-
-      if (allMentions.length > 0) {
+      if (results.length > 0) {
         toast({
           title: "Recherche terminée",
-          description: `${allMentions.length} mention(s) trouvée(s) via votre API backend (AUCUNE donnée statique)`,
+          description: `${results.length} mention(s) trouvée(s) ${cacheUsed ? '(depuis le cache)' : 'via votre API backend'}`,
         });
       } else {
         toast({
@@ -119,15 +70,56 @@ export const useRealSearch = () => {
         description: "Une erreur est survenue pendant la recherche via votre API backend",
         variant: "destructive",
       });
-      setMentions([]); // S'assurer qu'aucune donnée statique n'est affichée
+      setMentions([]);
+      setPlatformCounts({});
+      setTotalMentions(0);
+      setFromCache(false);
     } finally {
       setIsLoading(false);
     }
   };
 
+  const saveMentions = async (mentionsToSave: MentionResult[]) => {
+    try {
+      const dataStr = JSON.stringify(mentionsToSave, null, 2);
+      const dataBlob = new Blob([dataStr], { type: 'application/json' });
+      const url = URL.createObjectURL(dataBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `mentions_${new Date().toISOString().split('T')[0]}.json`;
+      link.click();
+      URL.revokeObjectURL(url);
+
+      toast({
+        title: "Mentions sauvegardées",
+        description: `${mentionsToSave.length} mention(s) sauvegardée(s) avec succès`,
+      });
+    } catch (error) {
+      toast({
+        title: "Erreur de sauvegarde",
+        description: "Impossible de sauvegarder les mentions",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const clearCache = () => {
+    const apiService = new RealApiService();
+    apiService.clearCache();
+    toast({
+      title: "Cache vidé",
+      description: "Le cache des recherches a été vidé avec succès",
+    });
+  };
+
   return {
     mentions,
     isLoading,
-    executeSearch
+    platformCounts,
+    totalMentions,
+    fromCache,
+    executeSearch,
+    saveMentions,
+    clearCache
   };
 };
