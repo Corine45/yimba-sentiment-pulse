@@ -3,177 +3,202 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FileText, Download, Calendar, BarChart3, PieChart, TrendingUp, Share } from "lucide-react";
+import { Download, FileText, BarChart3, Calendar, Filter, Search, TrendingUp, Users, Globe } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
 interface Report {
   id: string;
-  title: string;
-  type: 'summary' | 'detailed' | 'comparison' | 'trend';
-  period: string;
-  platforms: string[];
-  keywords: string[];
+  name: string;
+  type: 'mentions' | 'sentiment' | 'engagement' | 'demographics' | 'geographic';
+  status: 'completed' | 'processing' | 'failed';
   created_at: string;
-  status: 'generating' | 'ready' | 'error';
+  data_summary: {
+    total_mentions: number;
+    platforms: string[];
+    keywords: string[];
+    date_range: string;
+  };
   file_url?: string;
+  scheduled?: boolean;
 }
 
-interface ReportData {
-  total_mentions: number;
-  sentiment_breakdown: {
-    positive: number;
-    neutral: number;
-    negative: number;
-  };
-  platform_breakdown: { [key: string]: number };
-  top_keywords: { keyword: string; count: number }[];
-  engagement_stats: {
-    total_likes: number;
-    total_comments: number;
-    total_shares: number;
-  };
+interface ReportStats {
+  total_reports: number;
+  completed_reports: number;
+  processing_reports: number;
+  failed_reports: number;
+  total_mentions_analyzed: number;
 }
 
 export const ReportsPanel = () => {
   const [reports, setReports] = useState<Report[]>([]);
-  const [reportData, setReportData] = useState<ReportData | null>(null);
-  const [selectedPeriod, setSelectedPeriod] = useState('7d');
-  const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>(['all']);
-  const [reportTitle, setReportTitle] = useState('');
+  const [stats, setStats] = useState<ReportStats>({
+    total_reports: 0,
+    completed_reports: 0,
+    processing_reports: 0,
+    failed_reports: 0,
+    total_mentions_analyzed: 0
+  });
+  const [selectedType, setSelectedType] = useState('all');
+  const [selectedStatus, setSelectedStatus] = useState('all');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
     loadReports();
-    loadReportData();
+    loadStats();
   }, []);
 
   const loadReports = async () => {
     try {
-      // Simuler des rapports connectés à Supabase
+      // Simuler des données de rapports connectées à Supabase et vos APIs
       const mockReports: Report[] = [
         {
           id: '1',
-          title: 'Rapport mensuel - Janvier 2025',
-          type: 'summary',
-          period: '30d',
-          platforms: ['TikTok', 'Facebook', 'Instagram'],
-          keywords: ['abidjan', 'civbuzz', 'côte d\'ivoire'],
+          name: 'Rapport Mensuel Abidjan - Janvier 2025',
+          type: 'mentions',
+          status: 'completed',
           created_at: new Date().toISOString(),
-          status: 'ready',
-          file_url: '/reports/monthly-jan-2025.pdf'
+          data_summary: {
+            total_mentions: 1250,
+            platforms: ['TikTok', 'Facebook', 'Instagram', 'Twitter'],
+            keywords: ['abidjan', 'civbuzz', 'côte d\'ivoire'],
+            date_range: '01/01/2025 - 31/01/2025'
+          },
+          file_url: '#',
+          scheduled: true
         },
         {
           id: '2',
-          title: 'Analyse sentiment - Semaine 1',
-          type: 'detailed',
-          period: '7d',
-          platforms: ['Twitter', 'Facebook'],
-          keywords: ['politique', 'élections'],
-          created_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-          status: 'ready',
-          file_url: '/reports/sentiment-week1.pdf'
+          name: 'Analyse Sentiment Réseaux Sociaux',
+          type: 'sentiment',
+          status: 'completed',
+          created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+          data_summary: {
+            total_mentions: 850,
+            platforms: ['Facebook', 'Instagram', 'YouTube'],
+            keywords: ['elections', 'politique', 'gouvernement'],
+            date_range: '15/12/2024 - 15/01/2025'
+          },
+          file_url: '#'
         },
         {
           id: '3',
-          title: 'Tendances en cours',
-          type: 'trend',
-          period: '24h',
-          platforms: ['TikTok', 'Instagram'],
-          keywords: ['actualité', 'news'],
-          created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-          status: 'generating'
+          name: 'Rapport Engagement TikTok',
+          type: 'engagement',
+          status: 'processing',
+          created_at: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
+          data_summary: {
+            total_mentions: 500,
+            platforms: ['TikTok'],
+            keywords: ['danse', 'musique', 'jeunesse'],
+            date_range: '01/01/2025 - 07/01/2025'
+          }
+        },
+        {
+          id: '4',
+          name: 'Démographie Utilisateurs',
+          type: 'demographics',
+          status: 'failed',
+          created_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+          data_summary: {
+            total_mentions: 0,
+            platforms: ['Instagram', 'Facebook'],
+            keywords: ['mode', 'lifestyle'],
+            date_range: '20/12/2024 - 27/12/2024'
+          }
         }
       ];
+
       setReports(mockReports);
     } catch (error) {
       console.error('Erreur lors du chargement des rapports:', error);
-    }
-  };
-
-  const loadReportData = async () => {
-    try {
-      // Simuler des données de rapport connectées aux APIs
-      const mockData: ReportData = {
-        total_mentions: 1247,
-        sentiment_breakdown: {
-          positive: 524,
-          neutral: 498,
-          negative: 225
-        },
-        platform_breakdown: {
-          'TikTok': 387,
-          'Facebook': 298,
-          'Instagram': 234,
-          'Twitter': 189,
-          'YouTube': 98,
-          'Google': 41
-        },
-        top_keywords: [
-          { keyword: 'abidjan', count: 156 },
-          { keyword: 'civbuzz', count: 134 },
-          { keyword: 'côte d\'ivoire', count: 89 },
-          { keyword: 'actualité', count: 67 },
-          { keyword: 'news', count: 43 }
-        ],
-        engagement_stats: {
-          total_likes: 15847,
-          total_comments: 3289,
-          total_shares: 1456
-        }
-      };
-      setReportData(mockData);
-    } catch (error) {
-      console.error('Erreur lors du chargement des données:', error);
-    }
-  };
-
-  const generateReport = async () => {
-    if (!reportTitle) {
       toast({
         title: "Erreur",
-        description: "Veuillez saisir un titre pour le rapport",
+        description: "Impossible de charger les rapports",
         variant: "destructive",
       });
-      return;
     }
+  };
 
+  const loadStats = async () => {
     try {
+      // Calculer les statistiques à partir des rapports
+      const completed = reports.filter(r => r.status === 'completed').length;
+      const processing = reports.filter(r => r.status === 'processing').length;
+      const failed = reports.filter(r => r.status === 'failed').length;
+      const totalMentions = reports.reduce((sum, r) => sum + r.data_summary.total_mentions, 0);
+
+      setStats({
+        total_reports: reports.length,
+        completed_reports: completed,
+        processing_reports: processing,
+        failed_reports: failed,
+        total_mentions_analyzed: totalMentions
+      });
+    } catch (error) {
+      console.error('Erreur lors du chargement des statistiques:', error);
+    }
+  };
+
+  const generateReport = async (type: string) => {
+    setIsGenerating(true);
+    try {
+      console.log('🔄 GÉNÉRATION RAPPORT VIA YIMBA PULSE APIs');
+      console.log('📊 Type de rapport:', type);
+      
+      // Simuler la génération d'un rapport
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
       const newReport: Report = {
         id: Date.now().toString(),
-        title: reportTitle,
-        type: 'summary',
-        period: selectedPeriod,
-        platforms: selectedPlatforms,
-        keywords: [], // Récupérer depuis les recherches actives
+        name: `Nouveau Rapport ${type.charAt(0).toUpperCase() + type.slice(1)} - ${new Date().toLocaleDateString('fr-FR')}`,
+        type: type as any,
+        status: 'processing',
         created_at: new Date().toISOString(),
-        status: 'generating'
+        data_summary: {
+          total_mentions: 0,
+          platforms: ['TikTok', 'Facebook', 'Instagram'],
+          keywords: ['abidjan', 'civbuzz'],
+          date_range: 'En cours...'
+        }
       };
 
       setReports([newReport, ...reports]);
-      setReportTitle('');
+      
+      toast({
+        title: "Rapport en cours de génération",
+        description: `Le rapport ${type} est en cours de création via vos APIs Yimba Pulse`,
+      });
 
-      // Simuler la génération du rapport
+      // Simuler la finalisation du rapport après 30 secondes
       setTimeout(() => {
-        setReports(prev => prev.map(report => 
-          report.id === newReport.id 
-            ? { ...report, status: 'ready', file_url: `/reports/${newReport.id}.pdf` }
-            : report
+        setReports(prev => prev.map(r => 
+          r.id === newReport.id 
+            ? { 
+                ...r, 
+                status: 'completed' as const,
+                data_summary: {
+                  ...r.data_summary,
+                  total_mentions: Math.floor(Math.random() * 1000) + 100,
+                  date_range: `${new Date().toLocaleDateString('fr-FR')} - ${new Date().toLocaleDateString('fr-FR')}`
+                },
+                file_url: '#'
+              }
+            : r
         ));
         
         toast({
-          title: "Rapport généré",
-          description: `Le rapport "${newReport.title}" a été généré avec succès`,
+          title: "Rapport terminé",
+          description: "Votre rapport est maintenant disponible au téléchargement",
         });
-      }, 3000);
+      }, 30000);
 
-      toast({
-        title: "Génération en cours",
-        description: "Votre rapport est en cours de génération...",
-      });
     } catch (error) {
       console.error('Erreur lors de la génération du rapport:', error);
       toast({
@@ -181,260 +206,236 @@ export const ReportsPanel = () => {
         description: "Impossible de générer le rapport",
         variant: "destructive",
       });
+    } finally {
+      setIsGenerating(false);
     }
   };
 
   const downloadReport = (report: Report) => {
+    if (report.status !== 'completed' || !report.file_url) {
+      toast({
+        title: "Rapport non disponible",
+        description: "Ce rapport n'est pas encore prêt au téléchargement",
+        variant: "destructive",
+      });
+      return;
+    }
+
     // Simuler le téléchargement
     toast({
-      title: "Téléchargement",
-      description: `Téléchargement de "${report.title}" en cours...`,
-    });
-  };
-
-  const deleteReport = (id: string) => {
-    setReports(reports.filter(report => report.id !== id));
-    toast({
-      title: "Rapport supprimé",
-      description: "Le rapport a été supprimé avec succès",
+      title: "Téléchargement démarré",
+      description: `Téléchargement du rapport "${report.name}"`,
     });
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'ready': return 'bg-green-100 text-green-800';
-      case 'generating': return 'bg-blue-100 text-blue-800';
-      case 'error': return 'bg-red-100 text-red-800';
+      case 'completed': return 'bg-green-100 text-green-800';
+      case 'processing': return 'bg-blue-100 text-blue-800';
+      case 'failed': return 'bg-red-100 text-red-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'ready': return '✅';
-      case 'generating': return '🔄';
-      case 'error': return '❌';
+      case 'completed': return '✅';
+      case 'processing': return '⏳';
+      case 'failed': return '❌';
       default: return '⚪';
     }
   };
 
   const getTypeIcon = (type: string) => {
     switch (type) {
-      case 'summary': return '📋';
-      case 'detailed': return '📊';
-      case 'comparison': return '📈';
-      case 'trend': return '📉';
+      case 'mentions': return '📊';
+      case 'sentiment': return '😊';
+      case 'engagement': return '❤️';
+      case 'demographics': return '👥';
+      case 'geographic': return '🌍';
       default: return '📄';
     }
   };
 
+  const filteredReports = reports.filter(report => {
+    const matchesSearch = report.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         report.data_summary.keywords.some(k => k.toLowerCase().includes(searchTerm.toLowerCase()));
+    const matchesType = selectedType === 'all' || report.type === selectedType;
+    const matchesStatus = selectedStatus === 'all' || report.status === selectedStatus;
+    return matchesSearch && matchesType && matchesStatus;
+  });
+
   return (
     <div className="space-y-6">
-      {/* Tableau de bord des statistiques */}
-      {reportData && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center space-x-2">
-                <BarChart3 className="w-5 h-5 text-blue-600" />
-                <div>
-                  <p className="text-sm font-medium">Total mentions</p>
-                  <p className="text-2xl font-bold text-blue-600">{reportData.total_mentions.toLocaleString()}</p>
-                </div>
+      {/* En-tête avec statistiques */}
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-2">
+              <FileText className="w-5 h-5 text-blue-600" />
+              <div>
+                <p className="text-sm font-medium">Total rapports</p>
+                <p className="text-2xl font-bold text-blue-600">{stats.total_reports}</p>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </CardContent>
+        </Card>
 
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center space-x-2">
-                <PieChart className="w-5 h-5 text-green-600" />
-                <div>
-                  <p className="text-sm font-medium">Sentiment positif</p>
-                  <p className="text-2xl font-bold text-green-600">
-                    {Math.round((reportData.sentiment_breakdown.positive / reportData.total_mentions) * 100)}%
-                  </p>
-                </div>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-2">
+              <Download className="w-5 h-5 text-green-600" />
+              <div>
+                <p className="text-sm font-medium">Terminés</p>
+                <p className="text-2xl font-bold text-green-600">{stats.completed_reports}</p>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </CardContent>
+        </Card>
 
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center space-x-2">
-                <TrendingUp className="w-5 h-5 text-orange-600" />
-                <div>
-                  <p className="text-sm font-medium">Engagement total</p>
-                  <p className="text-2xl font-bold text-orange-600">
-                    {(reportData.engagement_stats.total_likes + 
-                      reportData.engagement_stats.total_comments + 
-                      reportData.engagement_stats.total_shares).toLocaleString()}
-                  </p>
-                </div>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-2">
+              <BarChart3 className="w-5 h-5 text-orange-600" />
+              <div>
+                <p className="text-sm font-medium">En cours</p>
+                <p className="text-2xl font-bold text-orange-600">{stats.processing_reports}</p>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </CardContent>
+        </Card>
 
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center space-x-2">
-                <FileText className="w-5 h-5 text-purple-600" />
-                <div>
-                  <p className="text-sm font-medium">Rapports générés</p>
-                  <p className="text-2xl font-bold text-purple-600">{reports.length}</p>
-                </div>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-2">
+              <TrendingUp className="w-5 h-5 text-red-600" />
+              <div>
+                <p className="text-sm font-medium">Échoués</p>
+                <p className="text-2xl font-bold text-red-600">{stats.failed_reports}</p>
               </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+            </div>
+          </CardContent>
+        </Card>
 
-      <Tabs defaultValue="generate" className="space-y-4">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-2">
+              <Users className="w-5 h-5 text-purple-600" />
+              <div>
+                <p className="text-sm font-medium">Mentions totales</p>
+                <p className="text-2xl font-bold text-purple-600">{stats.total_mentions_analyzed.toLocaleString()}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Tabs defaultValue="list" className="space-y-4">
         <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="list">📋 Liste des rapports</TabsTrigger>
           <TabsTrigger value="generate">➕ Générer un rapport</TabsTrigger>
-          <TabsTrigger value="history">📚 Historique</TabsTrigger>
-          <TabsTrigger value="analytics">📊 Analyses</TabsTrigger>
+          <TabsTrigger value="scheduled">📅 Rapports programmés</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="generate" className="space-y-4">
+        <TabsContent value="list" className="space-y-4">
+          {/* Filtres et recherche */}
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <FileText className="w-5 h-5" />
-                <span>Générer un nouveau rapport</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Titre du rapport</label>
-                  <Input
-                    placeholder="ex: Rapport mensuel janvier 2025..."
-                    value={reportTitle}
-                    onChange={(e) => setReportTitle(e.target.value)}
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Période</label>
-                    <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="24h">Dernières 24h</SelectItem>
-                        <SelectItem value="7d">7 derniers jours</SelectItem>
-                        <SelectItem value="30d">30 derniers jours</SelectItem>
-                        <SelectItem value="3m">3 derniers mois</SelectItem>
-                        <SelectItem value="12m">12 derniers mois</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Type de rapport</label>
-                    <Select defaultValue="summary">
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="summary">📋 Résumé exécutif</SelectItem>
-                        <SelectItem value="detailed">📊 Analyse détaillée</SelectItem>
-                        <SelectItem value="comparison">📈 Comparaison</SelectItem>
-                        <SelectItem value="trend">📉 Analyse de tendances</SelectItem>
-                      </SelectContent>
-                    </Select>
+            <CardContent className="p-4">
+              <div className="flex flex-col md:flex-row gap-4">
+                <div className="flex-1">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                    <Input
+                      placeholder="Rechercher par nom ou mots-clés..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10"
+                    />
                   </div>
                 </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Plateformes à inclure</label>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                    {['TikTok', 'Facebook', 'Instagram', 'Twitter', 'YouTube', 'Google', 'Web'].map((platform) => (
-                      <label key={platform} className="flex items-center space-x-2">
-                        <input 
-                          type="checkbox" 
-                          defaultChecked
-                          className="rounded"
-                        />
-                        <span className="text-sm">{platform}</span>
-                      </label>
-                    ))}
-                  </div>
+                <div className="flex gap-2">
+                  <Select value={selectedType} onValueChange={setSelectedType}>
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Tous les types</SelectItem>
+                      <SelectItem value="mentions">📊 Mentions</SelectItem>
+                      <SelectItem value="sentiment">😊 Sentiment</SelectItem>
+                      <SelectItem value="engagement">❤️ Engagement</SelectItem>
+                      <SelectItem value="demographics">👥 Démographie</SelectItem>
+                      <SelectItem value="geographic">🌍 Géographique</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+                    <SelectTrigger className="w-[150px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Tous statuts</SelectItem>
+                      <SelectItem value="completed">✅ Terminés</SelectItem>
+                      <SelectItem value="processing">⏳ En cours</SelectItem>
+                      <SelectItem value="failed">❌ Échoués</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
-
-              <div className="bg-blue-50 p-4 rounded-lg">
-                <h4 className="font-medium mb-2">📋 Contenu du rapport</h4>
-                <ul className="text-sm text-blue-700 space-y-1">
-                  <li>• Résumé des mentions et engagement par plateforme</li>
-                  <li>• Analyse de sentiment détaillée</li>
-                  <li>• Top des mots-clés et hashtags</li>
-                  <li>• Graphiques et visualisations</li>
-                  <li>• Recommandations stratégiques</li>
-                  <li>• Export PDF et Excel disponibles</li>
-                </ul>
-              </div>
-
-              <Button onClick={generateReport} className="w-full" size="lg">
-                <FileText className="w-4 h-4 mr-2" />
-                Générer le rapport
-              </Button>
             </CardContent>
           </Card>
-        </TabsContent>
 
-        <TabsContent value="history" className="space-y-4">
+          {/* Liste des rapports */}
           <div className="space-y-4">
-            {reports.map((report) => (
-              <Card key={report.id}>
+            {filteredReports.map((report) => (
+              <Card key={report.id} className="hover:shadow-md transition-shadow">
                 <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
-                      <div className="flex items-center space-x-2">
-                        <span className="text-2xl">{getTypeIcon(report.type)}</span>
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2 mb-2">
+                        <span className="text-lg">{getTypeIcon(report.type)}</span>
+                        <h3 className="font-medium">{report.name}</h3>
                         <Badge className={getStatusColor(report.status)}>
-                          {getStatusIcon(report.status)} {report.status === 'ready' ? 'Prêt' : 
-                                                           report.status === 'generating' ? 'En cours' : 'Erreur'}
+                          {getStatusIcon(report.status)} {report.status.charAt(0).toUpperCase() + report.status.slice(1)}
                         </Badge>
+                        {report.scheduled && (
+                          <Badge variant="outline" className="bg-purple-50 text-purple-700">
+                            📅 Programmé
+                          </Badge>
+                        )}
                       </div>
-                      <div>
-                        <h3 className="font-medium">{report.title}</h3>
-                        <div className="flex items-center space-x-4 text-sm text-gray-600">
-                          <span className="flex items-center">
-                            <Calendar className="w-3 h-3 mr-1" />
-                            {new Date(report.created_at).toLocaleDateString('fr-FR')}
-                          </span>
-                          <span>Période: {report.period}</span>
-                          <span>Plateformes: {report.platforms.join(', ')}</span>
+                      
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-600 mb-2">
+                        <div>
+                          <span className="font-medium">Mentions:</span> {report.data_summary.total_mentions.toLocaleString()}
+                        </div>
+                        <div>
+                          <span className="font-medium">Plateformes:</span> {report.data_summary.platforms.join(', ')}
+                        </div>
+                        <div>
+                          <span className="font-medium">Mots-clés:</span> {report.data_summary.keywords.join(', ')}
+                        </div>
+                        <div>
+                          <span className="font-medium">Période:</span> {report.data_summary.date_range}
                         </div>
                       </div>
+                      
+                      <p className="text-xs text-gray-500">
+                        Créé le {new Date(report.created_at).toLocaleString('fr-FR')}
+                      </p>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      {report.status === 'ready' && (
-                        <>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => downloadReport(report)}
-                          >
-                            <Download className="w-4 h-4 mr-1" />
-                            Télécharger
-                          </Button>
-                          <Button variant="outline" size="sm">
-                            <Share className="w-4 h-4 mr-1" />
-                            Partager
-                          </Button>
-                        </>
+                    
+                    <div className="flex items-center space-x-2 ml-4">
+                      {report.status === 'completed' && (
+                        <Button
+                          size="sm"
+                          onClick={() => downloadReport(report)}
+                          className="bg-green-600 hover:bg-green-700"
+                        >
+                          <Download className="w-4 h-4 mr-1" />
+                          Télécharger
+                        </Button>
                       )}
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => deleteReport(report.id)}
-                        className="text-red-600 hover:text-red-700"
-                      >
-                        Supprimer
+                      <Button variant="outline" size="sm">
+                        Détails
                       </Button>
                     </div>
                   </div>
@@ -442,16 +443,19 @@ export const ReportsPanel = () => {
               </Card>
             ))}
 
-            {reports.length === 0 && (
+            {filteredReports.length === 0 && (
               <Card>
                 <CardContent className="p-8 text-center">
                   <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium mb-2">Aucun rapport généré</h3>
+                  <h3 className="text-lg font-medium mb-2">Aucun rapport trouvé</h3>
                   <p className="text-gray-600 mb-4">
-                    Commencez par générer votre premier rapport d'analyse
+                    {searchTerm || selectedType !== 'all' || selectedStatus !== 'all'
+                      ? 'Aucun rapport ne correspond à vos critères de recherche'
+                      : 'Vous n\'avez pas encore généré de rapports'
+                    }
                   </p>
-                  <Button>
-                    Générer un rapport
+                  <Button onClick={() => setSearchTerm('')}>
+                    Effacer les filtres
                   </Button>
                 </CardContent>
               </Card>
@@ -459,105 +463,143 @@ export const ReportsPanel = () => {
           </div>
         </TabsContent>
 
-        <TabsContent value="analytics">
+        <TabsContent value="generate">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <BarChart3 className="w-5 h-5" />
-                <span>Analyses et métriques</span>
+                <span>Générer un nouveau rapport</span>
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              {reportData && (
-                <div className="space-y-6">
-                  {/* Répartition par plateforme */}
-                  <div>
-                    <h4 className="font-medium mb-3">📊 Répartition par plateforme</h4>
-                    <div className="space-y-2">
-                      {Object.entries(reportData.platform_breakdown).map(([platform, count]) => (
-                        <div key={platform} className="flex items-center justify-between">
-                          <span className="flex items-center space-x-2">
-                            <span className="font-medium">{platform}</span>
-                          </span>
-                          <div className="flex items-center space-x-2">
-                            <div className="w-24 bg-gray-200 rounded-full h-2">
-                              <div 
-                                className="bg-blue-600 h-2 rounded-full"
-                                style={{ width: `${(count / reportData.total_mentions) * 100}%` }}
-                              ></div>
-                            </div>
-                            <span className="text-sm font-medium w-12 text-right">{count}</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <Card className="cursor-pointer hover:shadow-md transition-shadow border-2 border-dashed border-gray-300 hover:border-blue-400" 
+                      onClick={() => generateReport('mentions')}>
+                  <CardContent className="p-6 text-center">
+                    <div className="text-3xl mb-2">📊</div>
+                    <h3 className="font-medium mb-2">Rapport de Mentions</h3>
+                    <p className="text-sm text-gray-600">
+                      Analyse complète des mentions sur toutes vos plateformes
+                    </p>
+                  </CardContent>
+                </Card>
 
-                  {/* Top mots-clés */}
-                  <div>
-                    <h4 className="font-medium mb-3">🔥 Top mots-clés</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {reportData.top_keywords.map((item, index) => (
-                        <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                          <span className="font-medium">#{item.keyword}</span>
-                          <Badge variant="outline">{item.count} mentions</Badge>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                <Card className="cursor-pointer hover:shadow-md transition-shadow border-2 border-dashed border-gray-300 hover:border-blue-400" 
+                      onClick={() => generateReport('sentiment')}>
+                  <CardContent className="p-6 text-center">
+                    <div className="text-3xl mb-2">😊</div>
+                    <h3 className="font-medium mb-2">Analyse de Sentiment</h3>
+                    <p className="text-sm text-gray-600">
+                      Sentiment positif, négatif et neutre des conversations
+                    </p>
+                  </CardContent>
+                </Card>
 
-                  {/* Statistiques d'engagement */}
-                  <div>
-                    <h4 className="font-medium mb-3">❤️ Engagement</h4>
-                    <div className="grid grid-cols-3 gap-4">
-                      <div className="text-center p-4 bg-red-50 rounded-lg">
-                        <p className="text-2xl font-bold text-red-600">
-                          {reportData.engagement_stats.total_likes.toLocaleString()}
-                        </p>
-                        <p className="text-sm text-red-700">Likes</p>
-                      </div>
-                      <div className="text-center p-4 bg-blue-50 rounded-lg">
-                        <p className="text-2xl font-bold text-blue-600">
-                          {reportData.engagement_stats.total_comments.toLocaleString()}
-                        </p>
-                        <p className="text-sm text-blue-700">Commentaires</p>
-                      </div>
-                      <div className="text-center p-4 bg-green-50 rounded-lg">
-                        <p className="text-2xl font-bold text-green-600">
-                          {reportData.engagement_stats.total_shares.toLocaleString()}
-                        </p>
-                        <p className="text-sm text-green-700">Partages</p>
-                      </div>
-                    </div>
+                <Card className="cursor-pointer hover:shadow-md transition-shadow border-2 border-dashed border-gray-300 hover:border-blue-400" 
+                      onClick={() => generateReport('engagement')}>
+                  <CardContent className="p-6 text-center">
+                    <div className="text-3xl mb-2">❤️</div>
+                    <h3 className="font-medium mb-2">Rapport d'Engagement</h3>
+                    <p className="text-sm text-gray-600">
+                      Likes, partages, commentaires et interactions
+                    </p>
+                  </CardContent>
+                </Card>
+
+                <Card className="cursor-pointer hover:shadow-md transition-shadow border-2 border-dashed border-gray-300 hover:border-blue-400" 
+                      onClick={() => generateReport('demographics')}>
+                  <CardContent className="p-6 text-center">
+                    <div className="text-3xl mb-2">👥</div>
+                    <h3 className="font-medium mb-2">Rapport Démographique</h3>
+                    <p className="text-sm text-gray-600">
+                      Âge, genre et profils des utilisateurs
+                    </p>
+                  </CardContent>
+                </Card>
+
+                <Card className="cursor-pointer hover:shadow-md transition-shadow border-2 border-dashed border-gray-300 hover:border-blue-400" 
+                      onClick={() => generateReport('geographic')}>
+                  <CardContent className="p-6 text-center">
+                    <div className="text-3xl mb-2">🌍</div>
+                    <h3 className="font-medium mb-2">Rapport Géographique</h3>
+                    <p className="text-sm text-gray-600">
+                      Répartition par pays, régions et villes
+                    </p>
+                  </CardContent>
+                </Card>
+
+                <Card className="cursor-pointer hover:shadow-md transition-shadow border-2 border-dashed border-gray-300 hover:border-blue-400">
+                  <CardContent className="p-6 text-center">
+                    <div className="text-3xl mb-2">🔄</div>
+                    <h3 className="font-medium mb-2">Rapport Personnalisé</h3>
+                    <p className="text-sm text-gray-600">
+                      Créer un rapport avec vos propres critères
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {isGenerating && (
+                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                  <div className="flex items-center space-x-2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                    <span className="text-blue-700 font-medium">Génération en cours via vos APIs Yimba Pulse...</span>
                   </div>
                 </div>
               )}
             </CardContent>
           </Card>
         </TabsContent>
+
+        <TabsContent value="scheduled">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Calendar className="w-5 h-5" />
+                <span>Rapports programmés</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                  <h4 className="font-medium mb-2">📅 Fonctionnalité en développement</h4>
+                  <p className="text-sm text-yellow-700">
+                    La programmation automatique de rapports sera bientôt disponible. Vous pourrez :
+                  </p>
+                  <ul className="text-sm text-yellow-600 mt-2 space-y-1">
+                    <li>• Programmer des rapports quotidiens, hebdomadaires ou mensuels</li>
+                    <li>• Recevoir les rapports par email automatiquement</li>
+                    <li>• Configurer des alertes basées sur les seuils</li>
+                    <li>• Intégrer avec vos systèmes via API</li>
+                  </ul>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
 
-      {/* Information sur l'intégration */}
-      <Card className="bg-gradient-to-r from-purple-50 to-blue-50">
+      {/* Informations sur l'intégration */}
+      <Card className="bg-gradient-to-r from-green-50 to-blue-50">
         <CardContent className="p-6">
-          <h3 className="font-medium mb-3">🚀 Rapports automatisés connectés</h3>
+          <h3 className="font-medium mb-3">🔄 Rapports connectés Yimba Pulse</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
             <div>
-              <h4 className="font-medium mb-2">📡 Sources de données</h4>
+              <h4 className="font-medium mb-2">📊 Génération automatique</h4>
               <ul className="space-y-1 text-gray-600">
-                <li>• 30+ APIs Yimba Pulse harmonisées</li>
-                <li>• Données temps réel et historiques</li>
-                <li>• Filtres avancés et segmentation</li>
-                <li>• Géolocalisation et démographie</li>
+                <li>• Données en temps réel via vos 30+ APIs</li>
+                <li>• Exports PDF, Excel, CSV disponibles</li>
+                <li>• Sauvegarde automatique dans Supabase</li>
+                <li>• Historique complet des rapports</li>
               </ul>
             </div>
             <div>
-              <h4 className="font-medium mb-2">📊 Formats de sortie</h4>
+              <h4 className="font-medium mb-2">🎯 Types de rapports disponibles</h4>
               <ul className="space-y-1 text-gray-600">
-                <li>• PDF exécutif avec graphiques</li>
-                <li>• Excel détaillé avec données brutes</li>
-                <li>• Dashboards interactifs en ligne</li>
-                <li>• Rapports automatiques programmés</li>
+                <li>• Mentions et veille média</li>
+                <li>• Analyse de sentiment avancée</li>
+                <li>• Engagement et viralité</li>
+                <li>• Démographie et géolocalisation</li>
               </ul>
             </div>
           </div>

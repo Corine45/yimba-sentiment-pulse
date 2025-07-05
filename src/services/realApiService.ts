@@ -1,4 +1,3 @@
-
 import { PlatformTransformers } from './api/platformTransformers';
 import { MentionResult, SearchFilters, CachedResult } from './api/types';
 import { FiltersManager } from './api/filtersManager';
@@ -150,7 +149,7 @@ export default class RealApiService {
     return counts;
   }
 
-  // === TIKTOK AVEC TOUTES LES APIs DISPONIBLES ===
+  // === TIKTOK AVEC TOUTES LES APIs DISPONIBLES - CORRECTION DU PARSING ===
   private async searchTikTokWithAllAPIs(keywords: string[], filters: SearchFilters): Promise<MentionResult[]> {
     const results: MentionResult[] = [];
     
@@ -174,12 +173,16 @@ export default class RealApiService {
           if (response1.ok) {
             const data = await response1.json();
             console.log('🎵 TikTok hashtag API response:', data);
-            if (data && (data.posts || data.data || data.items || data.results)) {
-              const posts = data.posts || data.data || data.items || data.results || [];
-              if (posts.length > 0) {
-                const transformed = PlatformTransformers.transformTikTokData(posts);
+            
+            // CORRECTION: Traiter la vraie structure de données
+            if (data && data.status && data.data) {
+              const items = data.data.items || data.data || [];
+              console.log(`🎵 TikTok items found: ${items.length}`);
+              
+              if (items.length > 0) {
+                const transformed = PlatformTransformers.transformTikTokData(items);
                 results.push(...transformed);
-                console.log(`✅ TikTok hashtag: ${transformed.length} résultats`);
+                console.log(`✅ TikTok hashtag: ${transformed.length} résultats transformés`);
               }
             }
           } else {
@@ -207,10 +210,10 @@ export default class RealApiService {
 
             if (response2.ok) {
               const data = await response2.json();
-              if (data && (data.posts || data.data || data.items || data.results)) {
-                const posts = data.posts || data.data || data.items || data.results || [];
-                if (posts.length > 0) {
-                  const transformed = PlatformTransformers.transformTikTokData(posts);
+              if (data && data.status && data.data) {
+                const items = data.data.items || data.data || [];
+                if (items.length > 0) {
+                  const transformed = PlatformTransformers.transformTikTokData(items);
                   results.push(...transformed);
                   console.log(`✅ TikTok location: ${transformed.length} résultats`);
                 }
