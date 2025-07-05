@@ -57,7 +57,7 @@ const Auth = () => {
     setLoading(true);
     
     try {
-      const { error } = await signUp(signupEmail, signupPassword, signupName);
+      const { error } = await signUp(signupEmail, signupPassword);
       
       if (error) {
         toast({
