@@ -40,7 +40,12 @@ export const RealSearchPanel = () => {
 
   const handleSearch = () => {
     setCurrentPage(1);
-    console.log('🔍 LANCEMENT RECHERCHE AVEC FILTRES AVANCÉS:', filters);
+    console.log('🚀 LANCEMENT RECHERCHE AVEC API BACKEND:', {
+      keywords,
+      platforms: selectedPlatforms,
+      filters,
+      api: 'https://yimbapulseapi.a-car.ci'
+    });
     executeSearch(keywords, selectedPlatforms, filters);
   };
 
@@ -77,17 +82,17 @@ export const RealSearchPanel = () => {
   };
 
   const handleFiltersChange = (newFilters: SearchFilters) => {
-    console.log('🔧 MISE À JOUR FILTRES:', newFilters);
+    console.log('🔧 MISE À JOUR FILTRES CONNECTÉS API:', newFilters);
     setFilters(newFilters);
   };
 
   const handleSaveFilters = () => {
     setSavedFilters([...savedFilters, filters]);
-    console.log('💾 Filtres sauvegardés:', filters);
+    console.log('💾 Filtres sauvegardés pour API backend:', filters);
   };
 
   const handleApplyFilters = () => {
-    console.log('✅ APPLICATION DES FILTRES AVANCÉS:', filters);
+    console.log('✅ APPLICATION FILTRES + RECHERCHE API BACKEND:', filters);
     handleSearch();
   };
 
@@ -100,8 +105,8 @@ export const RealSearchPanel = () => {
     <div className="space-y-6">
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="search">Recherche & Résultats</TabsTrigger>
-          <TabsTrigger value="history">Historique des sauvegardes</TabsTrigger>
+          <TabsTrigger value="search">🔍 Recherche API Backend</TabsTrigger>
+          <TabsTrigger value="history">📚 Historique</TabsTrigger>
         </TabsList>
 
         <TabsContent value="search" className="space-y-6">
@@ -111,12 +116,14 @@ export const RealSearchPanel = () => {
               <CardTitle>
                 <SearchHeader fromCache={fromCache} onClearCache={clearCache} />
               </CardTitle>
-              <div className="text-sm text-gray-600">
-                Données scrapées depuis: <code>https://yimbapulseapi.a-car.ci</code>
-                <br />
-                <span className="text-green-600 font-medium">
-                  ✨ APIs harmonisées: Facebook Posts Ideal, Instagram Profile, Google Search, YouTube Channel, Web Cheerio
-                </span>
+              <div className="text-sm text-gray-600 bg-blue-50 p-3 rounded-lg">
+                <div className="flex items-center space-x-2">
+                  <span className="text-blue-600 font-semibold">🚀 API Backend:</span>
+                  <code className="bg-white px-2 py-1 rounded">https://yimbapulseapi.a-car.ci</code>
+                </div>
+                <div className="mt-2 text-xs text-green-600">
+                  ✨ <strong>APIs harmonisées actives:</strong> Facebook Posts Ideal • Instagram Profile • Google Search • YouTube Channel • Web Cheerio • Twitter/X
+                </div>
               </div>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -145,7 +152,7 @@ export const RealSearchPanel = () => {
                   size="lg"
                 >
                   <Search className="w-5 h-5 mr-2" />
-                  {isLoading ? "Recherche enrichie..." : "🚀 Lancer la recherche"}
+                  {isLoading ? "🔄 Recherche API backend..." : "🚀 Rechercher via API"}
                 </Button>
               </div>
             </CardContent>

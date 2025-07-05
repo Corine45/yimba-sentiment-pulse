@@ -1,5 +1,7 @@
+
 import { PlatformTransformers } from './api/platformTransformers';
 import { MentionResult, SearchFilters, CachedResult } from './api/types';
+import { FiltersManager } from './api/filtersManager';
 
 const CACHE_EXPIRY_MS = 10 * 60 * 1000; // 10 minutes
 
@@ -22,15 +24,19 @@ export default class RealApiService {
   private checkCache(cacheKey: string): CachedResult | undefined {
     const cachedData = this.cache.get(cacheKey);
     if (cachedData && Date.now() - cachedData.timestamp < CACHE_EXPIRY_MS) {
-      console.log('📦 Données trouvées dans le cache');
+      console.log('📦 Cache trouvé - données récupérées');
       return cachedData;
+    }
+    if (cachedData) {
+      console.log('🕐 Cache expiré - suppression');
+      this.cache.delete(cacheKey);
     }
     return undefined;
   }
 
   clearCache(): void {
     this.cache.clear();
-    console.log('🧹 Cache vidé manuellement');
+    console.log('🧹 Cache complètement vidé');
   }
 
   async searchWithCache(
@@ -42,25 +48,28 @@ export default class RealApiService {
     const cachedResult = this.checkCache(cacheKey);
 
     if (cachedResult) {
-      console.log('✅ Récupération des résultats depuis le cache');
+      console.log('✅ Résultats récupérés depuis le cache');
+      const platformCounts = this.calculatePlatformCounts(cachedResult.data);
       return {
         results: cachedResult.data,
         fromCache: true,
-        platformCounts: cachedResult.platforms.reduce((acc, platform) => {
-          acc[platform] = cachedResult.data.filter(item => item.platform === platform).length;
-          return acc;
-        }, {} as { [key: string]: number })
+        platformCounts
       };
     }
 
     try {
-      console.log('🚀 RECHERCHE API BACKEND ENRICHIE - HARMONISATION COMPLÈTE');
+      console.log('🚀 NOUVELLE RECHERCHE API BACKEND ENRICHIE');
+      console.log('🔗 Endpoint:', this.baseUrl);
+      console.log('📝 Mots-clés:', keywords);
+      console.log('🎯 Plateformes:', platforms);
+      console.log('🔧 Filtres:', filters);
       
       const allResults: MentionResult[] = [];
       const platformCounts: { [key: string]: number } = {};
       
-      for (const platform of platforms) {
-        console.log(`\n🔍 TRAITEMENT PLATEFORME: ${platform.toUpperCase()}`);
+      // Traitement parallèle des plateformes pour de meilleures performances
+      const platformPromises = platforms.map(async (platform) => {
+        console.log(`\n🔍 TRAITEMENT ${platform.toUpperCase()}`);
         
         try {
           let platformResults: MentionResult[] = [];
@@ -85,25 +94,33 @@ export default class RealApiService {
             case 'web':
               platformResults = await this.searchWebEnriched(keywords, filters);
               break;
+            case 'tiktok':
+              platformResults = await this.searchTikTokEnriched(keywords, filters);
+              break;
             default:
               console.warn(`⚠️ Plateforme non supportée: ${platform}`);
           }
 
-          if (platformResults.length > 0) {
-            allResults.push(...platformResults);
-            platformCounts[platform] = platformResults.length;
-          } else {
-            platformCounts[platform] = 0;
-          }
+          console.log(`✅ ${platform}: ${platformResults.length} résultats`);
+          return { platform, results: platformResults };
           
         } catch (error) {
           console.error(`❌ Erreur ${platform}:`, error);
-          platformCounts[platform] = 0;
+          return { platform, results: [] };
         }
-      }
+      });
 
-      const filteredResults = this.applyAdvancedFilters(allResults, filters);
+      const platformResultsArray = await Promise.all(platformPromises);
       
+      platformResultsArray.forEach(({ platform, results }) => {
+        allResults.push(...results);
+        platformCounts[platform] = results.length;
+      });
+
+      // Application des filtres avancés
+      const filteredResults = FiltersManager.applyFilters(allResults, filters);
+      
+      // Mise en cache
       this.cache.set(cacheKey, {
         data: filteredResults,
         timestamp: Date.now(),
@@ -112,10 +129,12 @@ export default class RealApiService {
         platforms
       });
 
+      console.log(`🏁 RECHERCHE TERMINÉE: ${filteredResults.length} mentions après filtrage`);
+
       return {
         results: filteredResults,
         fromCache: false,
-        platformCounts
+        platformCounts: this.calculatePlatformCounts(filteredResults)
       };
 
     } catch (error) {
@@ -124,12 +143,50 @@ export default class RealApiService {
     }
   }
 
+  private calculatePlatformCounts(results: MentionResult[]): { [key: string]: number } {
+    const counts: { [key: string]: number } = {};
+    results.forEach(result => {
+      counts[result.platform] = (counts[result.platform] || 0) + 1;
+    });
+    return counts;
+  }
+
+  private async searchTikTokEnriched(keywords: string[], filters: SearchFilters): Promise<MentionResult[]> {
+    const results: MentionResult[] = [];
+    
+    for (const keyword of keywords) {
+      try {
+        const response = await fetch(`${this.baseUrl}/api/scrape/tiktok-posts`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            hashtag: keyword.startsWith('#') ? keyword : `#${keyword}`,
+            max_posts: 50
+          })
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          const transformed = PlatformTransformers.transformTikTokData(data.posts || data.data || []);
+          results.push(...transformed);
+          console.log(`✅ TikTok: ${transformed.length} posts pour "${keyword}"`);
+        }
+      } catch (error) {
+        console.error('❌ Erreur TikTok:', error);
+      }
+    }
+
+    return results;
+  }
+
   private async searchFacebookEnriched(keywords: string[], filters: SearchFilters): Promise<MentionResult[]> {
     const results: MentionResult[] = [];
     
     for (const keyword of keywords) {
       try {
         let searchInput = keyword;
+        
+        // Détection automatique des URLs Facebook
         if (keyword.includes('facebook.com') || keyword.includes('fb.com')) {
           searchInput = keyword;
         } else {
@@ -149,6 +206,7 @@ export default class RealApiService {
           const data = await response.json();
           const transformed = PlatformTransformers.transformFacebookData(data.posts || data.data || []);
           results.push(...transformed);
+          console.log(`✅ Facebook: ${transformed.length} posts pour "${keyword}"`);
         }
       } catch (error) {
         console.error('❌ Erreur Facebook:', error);
@@ -182,6 +240,7 @@ export default class RealApiService {
           const data = await response.json();
           const transformed = PlatformTransformers.transformInstagramData(data.posts || data.data || []);
           results.push(...transformed);
+          console.log(`✅ Instagram: ${transformed.length} posts pour "${keyword}"`);
         }
       } catch (error) {
         console.error('❌ Erreur Instagram:', error);
@@ -209,6 +268,7 @@ export default class RealApiService {
           const data = await response.json();
           const transformed = PlatformTransformers.transformGoogleData(data.results || data.data || []);
           results.push(...transformed);
+          console.log(`✅ Google: ${transformed.length} résultats pour "${keyword}"`);
         }
       } catch (error) {
         console.error('❌ Erreur Google:', error);
@@ -243,6 +303,7 @@ export default class RealApiService {
           const data = await response.json();
           const transformed = PlatformTransformers.transformWebData(data.results || data.data || []);
           results.push(...transformed);
+          console.log(`✅ Web: ${transformed.length} articles pour "${keyword}"`);
         }
       } catch (error) {
         console.error('❌ Erreur Web:', error);
@@ -275,6 +336,7 @@ export default class RealApiService {
           const data = await response.json();
           const transformed = PlatformTransformers.transformYouTubeData(data.videos || data.data || []);
           results.push(...transformed);
+          console.log(`✅ YouTube: ${transformed.length} vidéos pour "${keyword}"`);
         }
       } catch (error) {
         console.error('❌ Erreur YouTube:', error);
@@ -302,6 +364,7 @@ export default class RealApiService {
           const data = await response.json();
           const transformed = PlatformTransformers.transformTwitterData(data.tweets || data.data || []);
           results.push(...transformed);
+          console.log(`✅ Twitter/X: ${transformed.length} tweets pour "${keyword}"`);
         }
       } catch (error) {
         console.error('❌ Erreur Twitter:', error);
@@ -309,35 +372,5 @@ export default class RealApiService {
     }
 
     return results;
-  }
-
-  private applyAdvancedFilters(mentions: MentionResult[], filters: SearchFilters): MentionResult[] {
-    let filteredResults = [...mentions];
-
-    if (filters.sentiment) {
-      filteredResults = filteredResults.filter(mention => mention.sentiment === filters.sentiment);
-    }
-
-    if (filters.minInfluenceScore) {
-      filteredResults = filteredResults.filter(mention => (mention.influenceScore || 0) >= filters.minInfluenceScore!);
-    }
-
-    if (filters.language) {
-      filteredResults = filteredResults.filter(mention => mention.content.toLowerCase().includes(filters.language!.toLowerCase()));
-    }
-
-    if (filters.author) {
-      filteredResults = filteredResults.filter(mention => 
-        mention.author.toLowerCase().includes(filters.author!.toLowerCase())
-      );
-    }
-
-    if (filters.domain) {
-      filteredResults = filteredResults.filter(mention => 
-        mention.url.toLowerCase().includes(filters.domain!.toLowerCase())
-      );
-    }
-
-    return filteredResults;
   }
 }

@@ -3,6 +3,27 @@ import { MentionResult } from './types';
 import { SentimentAnalyzer } from '../sentiment/sentimentAnalyzer';
 
 export class PlatformTransformers {
+  static transformTikTokData(items: any[]): MentionResult[] {
+    return items.map((item, index) => ({
+      id: item.id || `tiktok_${Date.now()}_${index}`,
+      platform: 'TikTok',
+      content: item.description || item.text || item.caption || 'Vidéo TikTok',
+      author: item.username || item.author?.username || 'Utilisateur TikTok',
+      url: item.url || `https://tiktok.com/@${item.username}`,
+      timestamp: this.extractTimestamp(item),
+      engagement: {
+        likes: item.likes || item.digg_count || 0,
+        comments: item.comments || item.comment_count || 0,
+        shares: item.shares || item.share_count || 0,
+        views: item.views || item.play_count || undefined
+      },
+      sentiment: SentimentAnalyzer.analyzeSentiment(item.description || item.text || ''),
+      influenceScore: this.calculateInfluenceScore({ ...item, platform: 'TikTok' }),
+      sourceUrl: item.url || '',
+      location: this.extractLocation(item)
+    }));
+  }
+
   static transformFacebookData(items: any[]): MentionResult[] {
     return items.map((item, index) => ({
       id: item.id || `facebook_${Date.now()}_${index}`,
@@ -130,7 +151,7 @@ export class PlatformTransformers {
   }
 
   private static extractTimestamp(item: any): string {
-    const timeFields = ['timestamp', 'created_at', 'createTime', 'publishedAt', 'date', 'createdAt'];
+    const timeFields = ['timestamp', 'created_at', 'createTime', 'publishedAt', 'date', 'createdAt', 'create_time'];
     for (const field of timeFields) {
       if (item[field]) {
         const date = typeof item[field] === 'number' ? 
@@ -146,10 +167,10 @@ export class PlatformTransformers {
 
   private static calculateInfluenceScore(item: any): number {
     const engagement = {
-      likes: this.extractNumber(item, ['likes', 'like_count', 'likesCount', 'favorite_count']),
+      likes: this.extractNumber(item, ['likes', 'like_count', 'likesCount', 'favorite_count', 'digg_count']),
       comments: this.extractNumber(item, ['comments', 'comment_count', 'commentsCount', 'reply_count']),
       shares: this.extractNumber(item, ['shares', 'share_count', 'sharesCount', 'retweet_count']),
-      views: this.extractNumber(item, ['views', 'view_count', 'viewCount'])
+      views: this.extractNumber(item, ['views', 'view_count', 'viewCount', 'play_count'])
     };
 
     const total = engagement.likes + engagement.comments * 2 + engagement.shares * 3;
