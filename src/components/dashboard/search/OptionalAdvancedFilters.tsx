@@ -402,7 +402,7 @@ export const OptionalAdvancedFilters = ({
             <div className="bg-gray-50 p-4 rounded-lg text-sm text-gray-600">
               <h5 className="font-medium mb-2">📌 Comment fonctionnent les filtres :</h5>
               <ul className="space-y-1 text-xs">
-                <li>• <strong>Désactivés :</strong> Toutes les données de vos {apiEndpoints?.length || 30}+ APIs sont affichées</li>
+                <li>• <strong>Désactivés :</strong> Toutes les données de vos 30+ APIs sont affichées</li>
                 <li>• <strong>Activés :</strong> Les données sont filtrées après récupération via vos APIs</li>
                 <li>• Les filtres n'affectent pas les requêtes API, seulement l'affichage des résultats</li>
                 <li>• Vous pouvez activer/désactiver les filtres à tout moment</li>
