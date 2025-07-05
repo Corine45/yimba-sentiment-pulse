@@ -35,7 +35,7 @@ export const DashboardTabs = ({ activeTab, onTabChange, user, permissions }: Das
         )}
 
         <TabsContent value="analysis" className="space-y-6">
-          <SentimentAnalysis />
+          <SentimentAnalysis userRole={user.role} permissions={permissions} />
         </TabsContent>
 
         <TabsContent value="alerts" className="space-y-6">
@@ -43,7 +43,7 @@ export const DashboardTabs = ({ activeTab, onTabChange, user, permissions }: Das
         </TabsContent>
 
         <TabsContent value="reports" className="space-y-6">
-          <ReportsPanel userRole={user.role} permissions={permissions} />
+          <ReportsPanel />
         </TabsContent>
 
         {permissions.canAccessHealthSurveillance && (
