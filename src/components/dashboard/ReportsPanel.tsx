@@ -1,4 +1,4 @@
-import { Eye, RefreshCw, BarChart3, PieChart, TrendingUp } from "lucide-react";
+import { Eye, RefreshCw, BarChart3, TrendingUp } from "lucide-react";
 import { ReportGenerator } from "./reports/ReportGenerator";
 import { WidgetPreviews } from "./reports/WidgetPreviews";
 import { ReportTemplates } from "./reports/ReportTemplates";
@@ -28,7 +28,6 @@ export const ReportsPanel = ({ userRole, permissions }: ReportsPanelProps) => {
   const [apiEnrichedData, setApiEnrichedData] = useState<any>(null);
   const { toast } = useToast();
 
-  // Enrichissement via l'API backend
   const enrichReportsWithApi = async () => {
     try {
       console.log('🚀 Enrichissement rapports via API backend...');
@@ -194,7 +193,7 @@ export const ReportsPanel = ({ userRole, permissions }: ReportsPanelProps) => {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
-                <PieChart className="w-5 h-5" />
+                <span>📊</span>
                 <span>Analyse du sentiment</span>
                 <Badge className="bg-green-100 text-green-800">API Enrichi</Badge>
               </CardTitle>
@@ -281,7 +280,6 @@ export const ReportsPanel = ({ userRole, permissions }: ReportsPanelProps) => {
                       <span>{mention.total_mentions} mentions</span>
                     </div>
                     
-                    {/* Statistiques de sentiment */}
                     <div className="flex items-center space-x-4 mt-2 text-xs">
                       <span className="text-green-600">
                         Positif: {mention.positive_mentions}
