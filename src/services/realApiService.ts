@@ -58,7 +58,7 @@ export default class RealApiService {
     }
 
     try {
-      console.log('🚀 NOUVELLE RECHERCHE API BACKEND ENRICHIE');
+      console.log('🚀 NOUVELLE RECHERCHE API BACKEND CORRIGÉE');
       console.log('🔗 Endpoint:', this.baseUrl);
       console.log('📝 Mots-clés:', keywords);
       console.log('🎯 Plateformes:', platforms);
@@ -69,43 +69,43 @@ export default class RealApiService {
       
       // Traitement parallèle des plateformes pour de meilleures performances
       const platformPromises = platforms.map(async (platform) => {
-        console.log(`\n🔍 TRAITEMENT ${platform.toUpperCase()}`);
+        console.log(`\n🔍 TRAITEMENT ${platform.toUpperCase()} - CORRIGÉ`);
         
         try {
           let platformResults: MentionResult[] = [];
           
           switch (platform.toLowerCase()) {
+            case 'tiktok':
+              platformResults = await this.searchTikTokCorriged(keywords, filters);
+              break;
             case 'facebook':
-              platformResults = await this.searchFacebookEnriched(keywords, filters);
+              platformResults = await this.searchFacebookCorriged(keywords, filters);
               break;
             case 'instagram':
-              platformResults = await this.searchInstagramEnriched(keywords, filters);
+              platformResults = await this.searchInstagramCorriged(keywords, filters);
               break;
             case 'twitter':
             case 'x-post':
-              platformResults = await this.searchTwitterEnriched(keywords, filters);
+              platformResults = await this.searchTwitterCorriged(keywords, filters);
               break;
             case 'youtube':
-              platformResults = await this.searchYouTubeEnriched(keywords, filters);
+              platformResults = await this.searchYouTubeCorriged(keywords, filters);
               break;
             case 'google':
-              platformResults = await this.searchGoogleEnriched(keywords, filters);
+              platformResults = await this.searchGoogleCorriged(keywords, filters);
               break;
             case 'web':
-              platformResults = await this.searchWebEnriched(keywords, filters);
-              break;
-            case 'tiktok':
-              platformResults = await this.searchTikTokEnriched(keywords, filters);
+              platformResults = await this.searchWebCorriged(keywords, filters);
               break;
             default:
               console.warn(`⚠️ Plateforme non supportée: ${platform}`);
           }
 
-          console.log(`✅ ${platform}: ${platformResults.length} résultats`);
+          console.log(`✅ ${platform} CORRIGÉ: ${platformResults.length} résultats`);
           return { platform, results: platformResults };
           
         } catch (error) {
-          console.error(`❌ Erreur ${platform}:`, error);
+          console.error(`❌ Erreur ${platform} CORRIGÉE:`, error);
           return { platform, results: [] };
         }
       });
@@ -129,7 +129,7 @@ export default class RealApiService {
         platforms
       });
 
-      console.log(`🏁 RECHERCHE TERMINÉE: ${filteredResults.length} mentions après filtrage`);
+      console.log(`🏁 RECHERCHE CORRIGÉE TERMINÉE: ${filteredResults.length} mentions après filtrage`);
 
       return {
         results: filteredResults,
@@ -138,7 +138,7 @@ export default class RealApiService {
       };
 
     } catch (error) {
-      console.error('❌ Erreur générale de recherche:', error);
+      console.error('❌ Erreur générale de recherche CORRIGÉE:', error);
       throw error;
     }
   }
@@ -151,45 +151,55 @@ export default class RealApiService {
     return counts;
   }
 
-  private async searchTikTokEnriched(keywords: string[], filters: SearchFilters): Promise<MentionResult[]> {
+  private async searchTikTokCorriged(keywords: string[], filters: SearchFilters): Promise<MentionResult[]> {
     const results: MentionResult[] = [];
     
     for (const keyword of keywords) {
       try {
+        console.log(`🎵 TIKTOK RECHERCHE CORRIGÉE: "${keyword}"`);
+        
+        const hashtagKeyword = keyword.startsWith('#') ? keyword : `#${keyword}`;
+        
         const response = await fetch(`${this.baseUrl}/api/scrape/tiktok-posts`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            hashtag: keyword.startsWith('#') ? keyword : `#${keyword}`,
-            max_posts: 50
+            hashtag: hashtagKeyword,
+            max_posts: 100 // Augmenté pour plus de résultats
           })
         });
 
+        console.log(`🎵 TikTok Response Status: ${response.status}`);
+        
         if (response.ok) {
           const data = await response.json();
-          const transformed = PlatformTransformers.transformTikTokData(data.posts || data.data || []);
+          console.log(`🎵 TikTok Raw Data:`, data);
+          
+          const posts = data.posts || data.data || data.items || [];
+          const transformed = PlatformTransformers.transformTikTokData(posts);
           results.push(...transformed);
-          console.log(`✅ TikTok: ${transformed.length} posts pour "${keyword}"`);
+          console.log(`✅ TikTok CORRIGÉ: ${transformed.length} posts pour "${keyword}"`);
+        } else {
+          const errorText = await response.text();
+          console.error(`❌ TikTok Error: ${response.status} - ${errorText}`);
         }
       } catch (error) {
-        console.error('❌ Erreur TikTok:', error);
+        console.error('❌ Erreur TikTok CORRIGÉE:', error);
       }
     }
 
     return results;
   }
 
-  private async searchFacebookEnriched(keywords: string[], filters: SearchFilters): Promise<MentionResult[]> {
+  private async searchFacebookCorriged(keywords: string[], filters: SearchFilters): Promise<MentionResult[]> {
     const results: MentionResult[] = [];
     
     for (const keyword of keywords) {
       try {
-        let searchInput = keyword;
+        console.log(`📘 FACEBOOK RECHERCHE CORRIGÉE: "${keyword}"`);
         
-        // Détection automatique des URLs Facebook
-        if (keyword.includes('facebook.com') || keyword.includes('fb.com')) {
-          searchInput = keyword;
-        } else {
+        let searchInput = keyword;
+        if (!keyword.includes('facebook.com')) {
           searchInput = `https://www.facebook.com/search/posts/?q=${encodeURIComponent(keyword)}`;
         }
         
@@ -198,29 +208,39 @@ export default class RealApiService {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             url: searchInput,
-            max_posts: 50
+            max_posts: 100
           })
         });
 
+        console.log(`📘 Facebook Response Status: ${response.status}`);
+
         if (response.ok) {
           const data = await response.json();
-          const transformed = PlatformTransformers.transformFacebookData(data.posts || data.data || []);
+          console.log(`📘 Facebook Raw Data:`, data);
+          
+          const posts = data.posts || data.data || data.items || [];
+          const transformed = PlatformTransformers.transformFacebookData(posts);
           results.push(...transformed);
-          console.log(`✅ Facebook: ${transformed.length} posts pour "${keyword}"`);
+          console.log(`✅ Facebook CORRIGÉ: ${transformed.length} posts pour "${keyword}"`);
+        } else {
+          const errorText = await response.text();
+          console.error(`❌ Facebook Error: ${response.status} - ${errorText}`);
         }
       } catch (error) {
-        console.error('❌ Erreur Facebook:', error);
+        console.error('❌ Erreur Facebook CORRIGÉE:', error);
       }
     }
 
     return results;
   }
 
-  private async searchInstagramEnriched(keywords: string[], filters: SearchFilters): Promise<MentionResult[]> {
+  private async searchInstagramCorriged(keywords: string[], filters: SearchFilters): Promise<MentionResult[]> {
     const results: MentionResult[] = [];
     
     for (const keyword of keywords) {
       try {
+        console.log(`📸 INSTAGRAM RECHERCHE CORRIGÉE: "${keyword}"`);
+        
         let username = keyword;
         if (keyword.includes('instagram.com')) {
           const match = keyword.match(/instagram\.com\/([^\/\?]+)/);
@@ -232,53 +252,152 @@ export default class RealApiService {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             username: username.replace('@', ''),
-            max_posts: 30
+            max_posts: 50
           })
         });
 
+        console.log(`📸 Instagram Response Status: ${response.status}`);
+
         if (response.ok) {
           const data = await response.json();
-          const transformed = PlatformTransformers.transformInstagramData(data.posts || data.data || []);
+          console.log(`📸 Instagram Raw Data:`, data);
+          
+          const posts = data.posts || data.data || data.items || [];
+          const transformed = PlatformTransformers.transformInstagramData(posts);
           results.push(...transformed);
-          console.log(`✅ Instagram: ${transformed.length} posts pour "${keyword}"`);
+          console.log(`✅ Instagram CORRIGÉ: ${transformed.length} posts pour "${keyword}"`);
+        } else {
+          const errorText = await response.text();
+          console.error(`❌ Instagram Error: ${response.status} - ${errorText}`);
         }
       } catch (error) {
-        console.error('❌ Erreur Instagram:', error);
+        console.error('❌ Erreur Instagram CORRIGÉE:', error);
       }
     }
 
     return results;
   }
 
-  private async searchGoogleEnriched(keywords: string[], filters: SearchFilters): Promise<MentionResult[]> {
+  private async searchTwitterCorriged(keywords: string[], filters: SearchFilters): Promise<MentionResult[]> {
+    const results: MentionResult[] = [];
+
+    for (const keyword of keywords) {
+      try {
+        console.log(`🐦 TWITTER RECHERCHE CORRIGÉE: "${keyword}"`);
+        
+        const response = await fetch(`${this.baseUrl}/api/scrape/x-twitter`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            query: keyword,
+            max_tweets: 80
+          })
+        });
+
+        console.log(`🐦 Twitter Response Status: ${response.status}`);
+
+        if (response.ok) {
+          const data = await response.json();
+          console.log(`🐦 Twitter Raw Data:`, data);
+          
+          const tweets = data.tweets || data.data || data.items || [];
+          const transformed = PlatformTransformers.transformTwitterData(tweets);
+          results.push(...transformed);
+          console.log(`✅ Twitter CORRIGÉ: ${transformed.length} tweets pour "${keyword}"`);
+        } else {
+          const errorText = await response.text();
+          console.error(`❌ Twitter Error: ${response.status} - ${errorText}`);
+        }
+      } catch (error) {
+        console.error('❌ Erreur Twitter CORRIGÉE:', error);
+      }
+    }
+
+    return results;
+  }
+
+  private async searchYouTubeCorriged(keywords: string[], filters: SearchFilters): Promise<MentionResult[]> {
     const results: MentionResult[] = [];
     
     for (const keyword of keywords) {
       try {
+        console.log(`📺 YOUTUBE RECHERCHE CORRIGÉE: "${keyword}"`);
+        
+        let query = keyword;
+        if (!keyword.includes('youtube.com')) {
+          query = `https://www.youtube.com/results?search_query=${encodeURIComponent(keyword)}`;
+        }
+        
+        const response = await fetch(`${this.baseUrl}/api/scrape/youtube-channel-video`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            query: query,
+            max_videos: 50
+          })
+        });
+
+        console.log(`📺 YouTube Response Status: ${response.status}`);
+
+        if (response.ok) {
+          const data = await response.json();
+          console.log(`📺 YouTube Raw Data:`, data);
+          
+          const videos = data.videos || data.data || data.items || [];
+          const transformed = PlatformTransformers.transformYouTubeData(videos);
+          results.push(...transformed);
+          console.log(`✅ YouTube CORRIGÉ: ${transformed.length} vidéos pour "${keyword}"`);
+        } else {
+          const errorText = await response.text();
+          console.error(`❌ YouTube Error: ${response.status} - ${errorText}`);
+        }
+      } catch (error) {
+        console.error('❌ Erreur YouTube CORRIGÉE:', error);
+      }
+    }
+
+    return results;
+  }
+
+  private async searchGoogleCorriged(keywords: string[], filters: SearchFilters): Promise<MentionResult[]> {
+    const results: MentionResult[] = [];
+    
+    for (const keyword of keywords) {
+      try {
+        console.log(`🔍 GOOGLE RECHERCHE CORRIGÉE: "${keyword}"`);
+        
         const response = await fetch(`${this.baseUrl}/api/scrape/google-search`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             query: keyword,
-            max_results: 20
+            max_results: 30
           })
         });
 
+        console.log(`🔍 Google Response Status: ${response.status}`);
+
         if (response.ok) {
           const data = await response.json();
-          const transformed = PlatformTransformers.transformGoogleData(data.results || data.data || []);
+          console.log(`🔍 Google Raw Data:`, data);
+          
+          const searchResults = data.results || data.data || data.items || [];
+          const transformed = PlatformTransformers.transformGoogleData(searchResults);
           results.push(...transformed);
-          console.log(`✅ Google: ${transformed.length} résultats pour "${keyword}"`);
+          console.log(`✅ Google CORRIGÉ: ${transformed.length} résultats pour "${keyword}"`);
+        } else {
+          const errorText = await response.text();
+          console.error(`❌ Google Error: ${response.status} - ${errorText}`);
         }
       } catch (error) {
-        console.error('❌ Erreur Google:', error);
+        console.error('❌ Erreur Google CORRIGÉE:', error);
       }
     }
 
     return results;
   }
 
-  private async searchWebEnriched(keywords: string[], filters: SearchFilters): Promise<MentionResult[]> {
+  private async searchWebCorriged(keywords: string[], filters: SearchFilters): Promise<MentionResult[]> {
     const results: MentionResult[] = [];
     
     const baseUrls = [
@@ -290,84 +409,33 @@ export default class RealApiService {
     
     for (const keyword of keywords) {
       try {
+        console.log(`🌐 WEB RECHERCHE CORRIGÉE: "${keyword}"`);
+        
         const response = await fetch(`${this.baseUrl}/api/scrape/cheerio`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             startUrls: baseUrls.map(url => `${url}/search?q=${encodeURIComponent(keyword)}`),
-            max_pages: 5
+            max_pages: 10
           })
         });
 
-        if (response.ok) {
-          const data = await response.json();
-          const transformed = PlatformTransformers.transformWebData(data.results || data.data || []);
-          results.push(...transformed);
-          console.log(`✅ Web: ${transformed.length} articles pour "${keyword}"`);
-        }
-      } catch (error) {
-        console.error('❌ Erreur Web:', error);
-      }
-    }
-
-    return results;
-  }
-
-  private async searchYouTubeEnriched(keywords: string[], filters: SearchFilters): Promise<MentionResult[]> {
-    const results: MentionResult[] = [];
-    
-    for (const keyword of keywords) {
-      try {
-        let query = keyword;
-        if (!keyword.includes('youtube.com')) {
-          query = `https://www.youtube.com/results?search_query=${encodeURIComponent(keyword)}`;
-        }
-        
-        const response = await fetch(`${this.baseUrl}/api/scrape/youtube-channel-video`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            query: query,
-            max_videos: 25
-          })
-        });
+        console.log(`🌐 Web Response Status: ${response.status}`);
 
         if (response.ok) {
           const data = await response.json();
-          const transformed = PlatformTransformers.transformYouTubeData(data.videos || data.data || []);
+          console.log(`🌐 Web Raw Data:`, data);
+          
+          const webResults = data.results || data.data || data.items || [];
+          const transformed = PlatformTransformers.transformWebData(webResults);
           results.push(...transformed);
-          console.log(`✅ YouTube: ${transformed.length} vidéos pour "${keyword}"`);
+          console.log(`✅ Web CORRIGÉ: ${transformed.length} articles pour "${keyword}"`);
+        } else {
+          const errorText = await response.text();
+          console.error(`❌ Web Error: ${response.status} - ${errorText}`);
         }
       } catch (error) {
-        console.error('❌ Erreur YouTube:', error);
-      }
-    }
-
-    return results;
-  }
-
-  private async searchTwitterEnriched(keywords: string[], filters: SearchFilters): Promise<MentionResult[]> {
-    const results: MentionResult[] = [];
-
-    for (const keyword of keywords) {
-      try {
-        const response = await fetch(`${this.baseUrl}/api/scrape/x-twitter`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            query: keyword,
-            max_tweets: 40
-          })
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          const transformed = PlatformTransformers.transformTwitterData(data.tweets || data.data || []);
-          results.push(...transformed);
-          console.log(`✅ Twitter/X: ${transformed.length} tweets pour "${keyword}"`);
-        }
-      } catch (error) {
-        console.error('❌ Erreur Twitter:', error);
+        console.error('❌ Erreur Web CORRIGÉE:', error);
       }
     }
 

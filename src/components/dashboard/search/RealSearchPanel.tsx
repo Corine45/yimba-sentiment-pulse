@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,6 +12,7 @@ import { PlatformSelector } from "./PlatformSelector";
 import { SearchStats } from "./SearchStats";
 import { AdvancedFiltersSection } from "./AdvancedFiltersSection";
 import { SearchHeader } from "./SearchHeader";
+import { ApiEndpointsList } from "./ApiEndpointsList";
 import { useRealSearch } from "@/hooks/useRealSearch";
 import { SearchFilters } from "@/services/api/types";
 
@@ -40,7 +40,7 @@ export const RealSearchPanel = () => {
 
   const handleSearch = () => {
     setCurrentPage(1);
-    console.log('🚀 LANCEMENT RECHERCHE AVEC API BACKEND:', {
+    console.log('🚀 LANCEMENT RECHERCHE AVEC API BACKEND CORRIGÉ:', {
       keywords,
       platforms: selectedPlatforms,
       filters,
@@ -104,8 +104,9 @@ export const RealSearchPanel = () => {
   return (
     <div className="space-y-6">
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="search">🔍 Recherche API Backend</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="search">🔍 Recherche API</TabsTrigger>
+          <TabsTrigger value="apis">🔗 Mes APIs</TabsTrigger>
           <TabsTrigger value="history">📚 Historique</TabsTrigger>
         </TabsList>
 
@@ -122,7 +123,7 @@ export const RealSearchPanel = () => {
                   <code className="bg-white px-2 py-1 rounded">https://yimbapulseapi.a-car.ci</code>
                 </div>
                 <div className="mt-2 text-xs text-green-600">
-                  ✨ <strong>APIs harmonisées actives:</strong> Facebook Posts Ideal • Instagram Profile • Google Search • YouTube Channel • Web Cheerio • Twitter/X
+                  ✨ <strong>7 APIs harmonisées actives</strong> - TikTok • Facebook • Instagram • Twitter/X • YouTube • Google • Web
                 </div>
               </div>
             </CardHeader>
@@ -152,9 +153,21 @@ export const RealSearchPanel = () => {
                   size="lg"
                 >
                   <Search className="w-5 h-5 mr-2" />
-                  {isLoading ? "🔄 Recherche API backend..." : "🚀 Rechercher via API"}
+                  {isLoading ? "🔄 Recherche en cours..." : "🚀 Rechercher via mes APIs"}
                 </Button>
               </div>
+              
+              {/* Debug des API */}
+              {isLoading && (
+                <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <p className="text-sm text-yellow-800">
+                    🔍 Recherche en cours sur vos 7 APIs...
+                  </p>
+                  <div className="text-xs text-yellow-600 mt-1">
+                    Plateformes: {selectedPlatforms.join(', ')} | Mots-clés: {keywords.join(', ')}
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -183,6 +196,10 @@ export const RealSearchPanel = () => {
               onItemsPerPageChange={setItemsPerPage}
             />
           )}
+        </TabsContent>
+
+        <TabsContent value="apis">
+          <ApiEndpointsList />
         </TabsContent>
 
         <TabsContent value="history">
