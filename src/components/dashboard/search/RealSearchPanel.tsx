@@ -35,8 +35,8 @@ export const RealSearchPanel = () => {
   const [excludedCountries, setExcludedCountries] = useState<string[]>([]);
   const [authorFilter, setAuthorFilter] = useState<string>('');
   const [domainFilter, setDomainFilter] = useState<string>('');
-  const [importanceLevel, setImportanceLevel] = useState<string>('all');
-  const [visitedFilter, setVisitedFilter] = useState<string>('all');
+  const [importanceLevel, setImportanceLevel] = useState<'all' | 'high' | 'medium' | 'low'>('all');
+  const [visitedFilter, setVisitedFilter] = useState<'all' | 'visited' | 'unvisited'>('all');
   const [influenceScore, setInfluenceScore] = useState<number[]>([0]);
   const [sentimentFilter, setSentimentFilter] = useState<string[]>([]);
   

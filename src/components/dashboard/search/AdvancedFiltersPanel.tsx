@@ -41,10 +41,10 @@ interface AdvancedFiltersPanelProps {
   setAuthorFilter: (author: string) => void;
   domainFilter: string;
   setDomainFilter: (domain: string) => void;
-  importanceLevel: string;
-  setImportanceLevel: (level: string) => void;
-  visitedFilter: string;
-  setVisitedFilter: (filter: string) => void;
+  importanceLevel: 'all' | 'high' | 'medium' | 'low';
+  setImportanceLevel: (level: 'all' | 'high' | 'medium' | 'low') => void;
+  visitedFilter: 'all' | 'visited' | 'unvisited';
+  setVisitedFilter: (filter: 'all' | 'visited' | 'unvisited') => void;
   savedFilters: SearchFilters[];
   setSavedFilters: (filters: SearchFilters[]) => void;
   getActiveFiltersCount: () => number;
@@ -236,8 +236,8 @@ export const AdvancedFiltersPanel = ({
           <Label>Importance</Label>
           <div className="grid grid-cols-2 gap-3">
             {[
-              { value: 'all', label: 'All Mentions' },
-              { value: 'important', label: 'Important Mentions' }
+              { value: 'all' as const, label: 'All Mentions' },
+              { value: 'high' as const, label: 'Important Mentions' }
             ].map((option) => (
               <div key={option.value} className="flex items-center space-x-2">
                 <Checkbox
@@ -258,9 +258,9 @@ export const AdvancedFiltersPanel = ({
           <Label>Visited</Label>
           <div className="grid grid-cols-3 gap-3">
             {[
-              { value: 'all', label: 'All Mentions' },
-              { value: 'visited', label: 'Only visited' },
-              { value: 'not-visited', label: 'Only not visited' }
+              { value: 'all' as const, label: 'All Mentions' },
+              { value: 'visited' as const, label: 'Only visited' },
+              { value: 'unvisited' as const, label: 'Only not visited' }
             ].map((option) => (
               <div key={option.value} className="flex items-center space-x-2">
                 <Checkbox
@@ -302,7 +302,7 @@ export const AdvancedFiltersPanel = ({
             </Button>
             <Button onClick={() => {
               // Sauvegarder les filtres actuels
-              const currentFilters = {
+              const currentFilters: SearchFilters = {
                 language: selectedLanguage,
                 excludedLanguages,
                 country: selectedCountry,

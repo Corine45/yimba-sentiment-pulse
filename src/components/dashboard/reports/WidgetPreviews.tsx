@@ -32,7 +32,7 @@ export const WidgetPreviews = ({ canGenerateReports }: WidgetPreviewsProps) => {
           </TabsContent>
           
           <TabsContent value="wordcloud" className="mt-6">
-            <WordCloud />
+            <WordCloud mentions={[]} />
           </TabsContent>
           
           <TabsContent value="ai" className="mt-6">
@@ -40,7 +40,7 @@ export const WidgetPreviews = ({ canGenerateReports }: WidgetPreviewsProps) => {
           </TabsContent>
           
           <TabsContent value="frequency" className="mt-6">
-            <KeywordFrequency />
+            <KeywordFrequency mentions={[]} />
           </TabsContent>
         </Tabs>
       </CardContent>

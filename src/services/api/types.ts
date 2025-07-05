@@ -1,3 +1,4 @@
+
 export interface MentionResult {
   id: string;
   platform: string;
@@ -27,12 +28,13 @@ export interface SearchFilters {
   influenceScore?: number;
   minEngagement?: number;
   maxEngagement?: number;
-  period?: '1d' | '7d' | '30d' | '3m';
+  period?: '1d' | '7d' | '30d' | '3m' | '6m' | '12m';
   
   sortBy?: 'recent' | 'popular' | 'engagement' | 'influence';
   
   language?: string;
   excludedLanguages?: string[];
+  languages?: string[];
   
   geography?: {
     country?: string;
@@ -40,6 +42,7 @@ export interface SearchFilters {
     latitude?: number;
     longitude?: number;
     radius?: number; // en km
+    region?: string;
   };
   country?: string;
   excludedCountries?: string[];
@@ -51,6 +54,8 @@ export interface SearchFilters {
   
   dateFrom?: string;
   dateTo?: string;
+  customStartDate?: string;
+  customEndDate?: string;
   
   importance?: 'all' | 'high' | 'medium' | 'low';
   visited?: 'all' | 'visited' | 'unvisited';
@@ -61,6 +66,10 @@ export interface SearchFilters {
   
   minInfluenceScore?: number;
   maxInfluenceScore?: number;
+  
+  platforms?: string[];
+  importanceFilter?: 'all' | 'high' | 'medium' | 'low';
+  visitedFilter?: 'all' | 'visited' | 'unvisited';
 }
 
 export interface CachedResult {

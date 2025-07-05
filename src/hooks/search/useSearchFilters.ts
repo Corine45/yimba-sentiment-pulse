@@ -6,7 +6,6 @@ export const useSearchFilters = () => {
   const [advancedFilters, setAdvancedFilters] = useState<SearchFilters>({
     language: 'fr',
     period: '7d',
-    platforms: ['Instagram', 'Twitter', 'Facebook'],
     sentiment: undefined,
     minEngagement: undefined,
     maxEngagement: undefined,
