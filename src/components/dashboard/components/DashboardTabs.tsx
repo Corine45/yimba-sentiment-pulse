@@ -6,7 +6,7 @@ import { SentimentAnalysis } from "../SentimentAnalysis";
 import { AlertsPanel } from "../AlertsPanel";
 import { ReportsPanel } from "../ReportsPanel";
 import { UserManagement } from "../UserManagement";
-import { HealthSurveillance } from "../HealthSurveillance";
+import { HealthSurveillance } from "../health/HealthSurveillance";
 import { HealthRole } from "../utils/healthPermissions";
 
 interface DashboardTabsProps {
@@ -35,11 +35,11 @@ export const DashboardTabs = ({ activeTab, onTabChange, user, permissions }: Das
         )}
 
         <TabsContent value="analysis" className="space-y-6">
-          <SentimentAnalysis userRole={user.role} permissions={permissions} />
+          <SentimentAnalysis />
         </TabsContent>
 
         <TabsContent value="alerts" className="space-y-6">
-          <AlertsPanel userRole={user.role} permissions={permissions} />
+          <AlertsPanel />
         </TabsContent>
 
         <TabsContent value="reports" className="space-y-6">
@@ -48,10 +48,7 @@ export const DashboardTabs = ({ activeTab, onTabChange, user, permissions }: Das
 
         {permissions.canAccessHealthSurveillance && (
           <TabsContent value="health" className="space-y-6">
-            <HealthSurveillance 
-              healthRole={healthUserProfile.healthRole}
-              userProfile={healthUserProfile}
-            />
+            <HealthSurveillance />
           </TabsContent>
         )}
 
