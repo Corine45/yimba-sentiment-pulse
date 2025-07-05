@@ -1,499 +1,469 @@
-import { MentionResult, SearchFilters, CachedResult } from './api/types';
-import { CacheManager } from './api/cacheManager';
 import { DataTransformer } from './api/dataTransformer';
-import { FiltersManager } from './api/filtersManager';
+import { MentionResult, SearchFilters, CachedResult } from './api/types';
 
-class RealApiService {
-  private backendUrl: string;
-  private cacheManager: CacheManager;
+const CACHE_EXPIRY_MS = 10 * 60 * 1000; // 10 minutes
 
-  constructor(backendUrl: string = 'https://yimbapulseapi.a-car.ci') {
-    this.backendUrl = backendUrl;
-    this.cacheManager = new CacheManager();
+export default class RealApiService {
+  private baseUrl: string;
+  private cache: Map<string, CachedResult>;
+
+  constructor() {
+    this.baseUrl = 'https://yimbapulseapi.a-car.ci';
+    this.cache = new Map();
   }
 
-  private async postData(endpoint: string, payload: any, filters?: SearchFilters): Promise<MentionResult[]> {
+  private generateCacheKey(
+    keywords: string[],
+    platforms: string[],
+    filters: SearchFilters
+  ): string {
+    const sortedKeywords = [...keywords].sort().join(',');
+    const sortedPlatforms = [...platforms].sort().join(',');
+    const filterString = JSON.stringify(filters);
+    return `${sortedKeywords}-${sortedPlatforms}-${filterString}`;
+  }
+
+  private checkCache(cacheKey: string): CachedResult | undefined {
+    const cachedData = this.cache.get(cacheKey);
+    if (cachedData && Date.now() - cachedData.timestamp < CACHE_EXPIRY_MS) {
+      console.log('📦 Données trouvées dans le cache');
+      return cachedData;
+    }
+    return undefined;
+  }
+
+  clearCache(): void {
+    this.cache.clear();
+    console.log('🧹 Cache vidé manuellement');
+  }
+
+  async searchWithCache(
+    keywords: string[],
+    platforms: string[],
+    filters: SearchFilters = {}
+  ): Promise<{ results: MentionResult[], fromCache: boolean, platformCounts: { [key: string]: number } }> {
+    const cacheKey = this.generateCacheKey(keywords, platforms, filters);
+    const cachedResult = this.checkCache(cacheKey);
+
+    if (cachedResult) {
+      console.log('✅ Récupération des résultats depuis le cache');
+      return {
+        results: cachedResult.data,
+        fromCache: true,
+        platformCounts: cachedResult.platforms.reduce((acc, platform) => {
+          acc[platform] = cachedResult.data.filter(item => item.platform === platform).length;
+          return acc;
+        }, {} as { [key: string]: number })
+      };
+    }
+
     try {
-      console.log(`🚀 APPEL API RÉEL vers: ${this.backendUrl}${endpoint}`);
-      console.log(`📤 Payload:`, payload);
+      console.log('🚀 RECHERCHE API BACKEND ENRICHIE - HARMONISATION COMPLÈTE');
+      console.log('📝 Mots-clés:', keywords);
+      console.log('🎯 Plateformes sélectionnées:', platforms);
+      console.log('🔧 Filtres appliqués:', filters);
+
+      const allResults: MentionResult[] = [];
+      const platformCounts: { [key: string]: number } = {};
       
-      const response = await fetch(`${this.backendUrl}${endpoint}`, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify(payload),
+      // Traitement harmonisé pour chaque plateforme
+      for (const platform of platforms) {
+        console.log(`\n🔍 TRAITEMENT PLATEFORME: ${platform.toUpperCase()}`);
+        
+        try {
+          let platformResults: MentionResult[] = [];
+          
+          switch (platform.toLowerCase()) {
+            case 'facebook':
+              platformResults = await this.searchFacebookEnriched(keywords, filters);
+              break;
+            case 'instagram':
+              platformResults = await this.searchInstagramEnriched(keywords, filters);
+              break;
+            case 'twitter':
+            case 'x-post':
+              platformResults = await this.searchTwitterEnriched(keywords, filters);
+              break;
+            case 'tiktok':
+              platformResults = await this.searchTikTokEnriched(keywords, filters);
+              break;
+            case 'youtube':
+              platformResults = await this.searchYouTubeEnriched(keywords, filters);
+              break;
+            case 'google':
+              platformResults = await this.searchGoogleEnriched(keywords, filters);
+              break;
+            case 'web':
+              platformResults = await this.searchWebEnriched(keywords, filters);
+              break;
+            default:
+              console.warn(`⚠️ Plateforme non supportée: ${platform}`);
+          }
+
+          if (platformResults.length > 0) {
+            allResults.push(...platformResults);
+            platformCounts[platform] = platformResults.length;
+            console.log(`✅ ${platform}: ${platformResults.length} résultats récupérés`);
+          } else {
+            console.log(`⚪ ${platform}: Aucun résultat`);
+            platformCounts[platform] = 0;
+          }
+          
+        } catch (error) {
+          console.error(`❌ Erreur ${platform}:`, error);
+          platformCounts[platform] = 0;
+        }
+      }
+
+      // Application des filtres avancés sur tous les résultats
+      const filteredResults = this.applyAdvancedFilters(allResults, filters);
+      
+      console.log(`\n🏁 RÉSULTAT FINAL HARMONISÉ:`);
+      console.log(`📊 Total mentions: ${filteredResults.length}`);
+      console.log(`🎯 Répartition:`, platformCounts);
+
+      // Mise en cache
+      this.cache.set(cacheKey, {
+        data: filteredResults,
+        timestamp: Date.now(),
+        filters,
+        keywords,
+        platforms
       });
 
-      if (!response.ok) {
-        console.error(`❌ Erreur API:`, response.status, response.statusText);
-        throw new Error(`API Error: ${response.status} ${response.statusText}`);
-      }
+      return {
+        results: filteredResults,
+        fromCache: false,
+        platformCounts
+      };
 
-      const data = await response.json();
-      console.log(`✅ Réponse API complète:`, data);
-      
-      const items = data?.data?.items || data?.items || data || [];
-      
-      if (!Array.isArray(items)) {
-        console.log('⚠️ Données API non-array, retour vide');
-        return [];
-      }
-      
-      if (items.length === 0) {
-        console.log('⚠️ API retourne 0 éléments');
-        return [];
-      }
-      
-      let results = DataTransformer.transformToMentions(items, endpoint);
-      
-      // Appliquer les filtres
-      if (filters) {
-        results = FiltersManager.applyFilters(results, filters);
-      }
-      
-      return results;
     } catch (error) {
-      console.error(`❌ Erreur réseau:`, error);
+      console.error('❌ Erreur générale de recherche:', error);
       throw error;
     }
   }
 
-  async scrapeTikTok(hashtags: string[], filters?: SearchFilters): Promise<MentionResult[]> {
-    return this.postData('/api/scrape/tiktok', { hashtags }, filters);
-  }
-
-  async scrapeTikTokByLocation(latitude: number, longitude: number, radius: number, filters?: SearchFilters): Promise<MentionResult[]> {
-    return this.postData('/api/scrape/tiktok/location', { latitude, longitude, radius }, filters);
-  }
-
-  async scrapeFacebook(query: string, filters?: SearchFilters): Promise<MentionResult[]> {
-    return this.postData('/api/scrape/facebook', { query }, filters);
-  }
-
-  async scrapeFacebookByUrl(url: string, filters?: SearchFilters): Promise<MentionResult[]> {
-    return this.postData('/api/scrape/facebook-url-id', { url }, filters);
-  }
-
-  async scrapeFacebookPagePosts(page: string, filters?: SearchFilters): Promise<MentionResult[]> {
-    return this.postData('/api/scrape/facebook-page-posts', { page }, filters);
-  }
-
-  async scrapeFacebookPageLikes(page: string, filters?: SearchFilters): Promise<MentionResult[]> {
-    return this.postData('/api/scrape/facebook-page-likes', { page }, filters);
-  }
-
-  async scrapeFacebookPageSearch(keywords: string[], filters?: SearchFilters): Promise<MentionResult[]> {
-    return this.postData('/api/scrape/facebook/page-search', { keywords }, filters);
-  }
-
-  async scrapeFacebookPosts(query: string, filters?: SearchFilters): Promise<MentionResult[]> {
-    return this.postData('/api/scrape/facebook-posts', { query }, filters);
-  }
-
-  async scrapeFacebookReviews(query: string, filters?: SearchFilters): Promise<MentionResult[]> {
-    return this.postData('/api/scrape/facebook-reviews', { query }, filters);
-  }
-
-  async scrapeFacebookPostsIdeal(pageUrl: string, filters?: SearchFilters): Promise<MentionResult[]> {
-    return this.postData('/api/scrape/facebook-posts-ideal', { pageUrl }, filters);
-  }
-
-  // NOUVELLES APIs AJOUTÉES
-  async scrapeGoogleSearch(query: string, filters?: SearchFilters): Promise<MentionResult[]> {
-    return this.postData('/api/scrape/google-search', { query }, filters);
-  }
-
-  async scrapeInstagramProfile(username: string, filters?: SearchFilters): Promise<MentionResult[]> {
-    return this.postData('/api/scrape/instagram-profile', { username }, filters);
-  }
-
-  async scrapeCheerio(startUrls: string[], filters?: SearchFilters): Promise<MentionResult[]> {
-    return this.postData('/api/scrape/cheerio', { startUrls }, filters);
-  }
-
-  async scrapeYouTubeChannelVideo(query: string, filters?: SearchFilters): Promise<MentionResult[]> {
-    return this.postData('/api/scrape/youtube-channel-video', { query }, filters);
-  }
-
-  async scrapeTwitter(query: string, filters?: SearchFilters): Promise<MentionResult[]> {
-    return this.postData('/api/scrape/twitter', { query }, filters);
-  }
-
-  async scrapeTwitterTweets(username: string, filters?: SearchFilters): Promise<MentionResult[]> {
-    return this.postData('/api/scrape/twitter/tweets', { username }, filters);
-  }
-
-  async scrapeTwitterReplies(postId: string, maxReplies: number = 100, filters?: SearchFilters): Promise<MentionResult[]> {
-    return this.postData('/api/scrape/x-post-replies', { postId, maxReplies }, filters);
-  }
-
-  async scrapeYouTube(searchKeywords: string, filters?: SearchFilters): Promise<MentionResult[]> {
-    return this.postData('/api/scrape/youtube', { searchKeywords }, filters);
-  }
-
-  async scrapeYouTubeComments(videoId: string, maxComments: number = 50, filters?: SearchFilters): Promise<MentionResult[]> {
-    return this.postData('/api/scrape/youtube-comments', { videoId, maxComments }, filters);
-  }
-
-  async scrapeInstagram(usernames: string[], filters?: SearchFilters): Promise<MentionResult[]> {
-    return this.postData('/api/scrape/instagram', { usernames }, filters);
-  }
-
-  async scrapeInstagramPosts(username: string, filters?: SearchFilters): Promise<MentionResult[]> {
-    return this.postData('/api/scrape/instagram-posts', { username }, filters);
-  }
-
-  async scrapeInstagramGeneral(searchType: string, searchInput: string, filters?: SearchFilters): Promise<MentionResult[]> {
-    return this.postData('/api/scrape/instagram-general', { searchType, searchInput }, filters);
-  }
-
-  async scrapeInstagramComments(postUrl: string, filters?: SearchFilters): Promise<MentionResult[]> {
-    return this.postData('/api/scrape/instagram-comments', { postUrl }, filters);
-  }
-
-  async scrapeInstagramHashtag(hashtag: string, filters?: SearchFilters): Promise<MentionResult[]> {
-    return this.postData('/api/scrape/instagram/hashtag', { hashtag }, filters);
-  }
-
-  async scrapeInstagramApi(usernames: string[], filters?: SearchFilters): Promise<MentionResult[]> {
-    return this.postData('/api/scrape/instagram/api', { usernames }, filters);
-  }
-
-  async scrapeInstagramReels(usernames: string[], filters?: SearchFilters): Promise<MentionResult[]> {
-    return this.postData('/api/scrape/instagram/reels', { usernames }, filters);
-  }
-
-  async scrapeInstagramLocation(locationIds: string[], filters?: SearchFilters): Promise<MentionResult[]> {
-    return this.postData('/api/scrape/instagram/location', { locationIds }, filters);
-  }
-
-  async scrapeSocialEmails(keyword: string, filters?: SearchFilters): Promise<MentionResult[]> {
-    return this.postData('/api/scrape/social-emails', { keyword }, filters);
-  }
-
-  async scrapeSocialAnalytics(profiles: string[], filters?: SearchFilters): Promise<MentionResult[]> {
-    return this.postData('/api/scrape/social/analytics', { profiles }, filters);
-  }
-
-  async scrapeWebsiteContent(startUrls: string[], filters?: SearchFilters): Promise<MentionResult[]> {
-    return this.postData('/api/scrape/website-content', { startUrls }, filters);
-  }
-
-  async scrapeBlogContent(startUrls: string[], filters?: SearchFilters): Promise<MentionResult[]> {
-    return this.postData('/api/scrape/blog-content', { startUrls }, filters);
-  }
-
-  async searchWithCache(
-    keywords: string[], 
-    platforms: string[], 
-    filters: SearchFilters = {}
-  ): Promise<{ results: MentionResult[]; fromCache: boolean; platformCounts: { [key: string]: number } }> {
-    const cacheKey = this.cacheManager.getCacheKey(keywords, platforms, filters);
-    const cached = this.cacheManager.getCache(cacheKey);
-
-    if (cached && this.cacheManager.isValidCache(cached)) {
-      console.log('📦 Résultats récupérés du cache (valide 10 minutes)');
-      const platformCounts = this.calculatePlatformCounts(cached.data);
-      return { results: cached.data, fromCache: true, platformCounts };
-    }
-
-    const allResults: MentionResult[] = [];
+  private async searchFacebookEnriched(keywords: string[], filters: SearchFilters): Promise<MentionResult[]> {
+    console.log('📘 FACEBOOK ENRICHI - Utilisation facebook-posts-ideal');
     
-    for (const platform of platforms) {
-      try {
-        let platformResults: MentionResult[] = [];
-
-        switch (platform.toLowerCase()) {
-          case 'tiktok':
-            platformResults = await this.scrapeTikTok(keywords, filters);
-            break;
-            
-          case 'facebook':
-            console.log('🔍 RECHERCHE FACEBOOK ENRICHIE AVEC TOUTES LES APIs DISPONIBLES');
-            const fbQuery = keywords.join(' ');
-            
-            // 1. Recherche générale Facebook
-            const generalResults = await this.scrapeFacebook(fbQuery, filters);
-            platformResults.push(...generalResults);
-            
-            // 2. API: Posts Facebook
-            try {
-              const postsResults = await this.scrapeFacebookPosts(fbQuery, filters);
-              platformResults.push(...postsResults);
-              console.log(`✅ Facebook Posts: ${postsResults.length} résultats`);
-            } catch (error) {
-              console.error('❌ Erreur Facebook Posts:', error);
-            }
-            
-            // 3. API: Facebook Posts Ideal (URL Facebook détectées dans les mots-clés)
-            try {
-              const facebookUrls = keywords.filter(k => k.includes('facebook.com/') || k.includes('web.facebook.com/'));
-              for (const url of facebookUrls) {
-                console.log(`🎯 RECHERCHE Facebook Posts Ideal pour: ${url}`);
-                const idealResults = await this.scrapeFacebookPostsIdeal(url, filters);
-                platformResults.push(...idealResults);
-                console.log(`✅ Facebook Posts Ideal pour ${url}: ${idealResults.length} résultats`);
-              }
-            } catch (error) {
-              console.error('❌ Erreur Facebook Posts Ideal:', error);
-            }
-            
-            // 4. API: Reviews Facebook
-            try {
-              const reviewsResults = await this.scrapeFacebookReviews(fbQuery, filters);
-              platformResults.push(...reviewsResults);
-              console.log(`✅ Facebook Reviews: ${reviewsResults.length} résultats`);
-            } catch (error) {
-              console.error('❌ Erreur Facebook Reviews:', error);
-            }
-            
-            // 5. Recherche de pages spécifiques si mots-clés contiennent @
-            if (keywords.some(k => k.startsWith('@') || k.includes('facebook.com/'))) {
-              const pageNames = keywords.filter(k => k.startsWith('@')).map(k => k.substring(1));
-              for (const page of pageNames) {
-                try {
-                  const pagePosts = await this.scrapeFacebookPagePosts(page, filters);
-                  platformResults.push(...pagePosts);
-                  
-                  if (filters.includePageLikes) {
-                    const pageLikes = await this.scrapeFacebookPageLikes(page, filters);
-                    platformResults.push(...pageLikes);
-                  }
-                } catch (error) {
-                  console.error(`❌ Erreur page ${page}:`, error);
-                }
-              }
-            }
-            
-            // 6. Recherche additionnelle dans les pages
-            if (filters.includePageSearch) {
-              try {
-                const pageSearchResults = await this.scrapeFacebookPageSearch(keywords, filters);
-                platformResults.push(...pageSearchResults);
-              } catch (error) {
-                console.error('❌ Erreur Facebook Page Search:', error);
-              }
-            }
-            
-            console.log(`🎯 FACEBOOK ENRICHI TOTAL: ${platformResults.length} résultats combinés`);
-            break;
-            
-          case 'instagram':
-            console.log('🔍 RECHERCHE INSTAGRAM ENRICHIE AVEC TOUTES LES APIs DISPONIBLES');
-            
-            // 1. Recherche générale Instagram
-            const instagramResults = await this.scrapeInstagram(keywords, filters);
-            platformResults.push(...instagramResults);
-            
-            // 2. NOUVELLE API: Instagram Profile pour les profils spécifiques
-            for (const keyword of keywords) {
-              if (keyword.startsWith('@') || keyword.includes('instagram.com/')) {
-                const username = keyword.replace('@', '').replace(/.*instagram\.com\//, '').split('/')[0];
-                try {
-                  const profileResults = await this.scrapeInstagramProfile(username, filters);
-                  platformResults.push(...profileResults);
-                  console.log(`✅ Instagram Profile pour ${username}: ${profileResults.length} résultats`);
-                } catch (error) {
-                  console.error(`❌ Erreur Instagram Profile ${username}:`, error);
-                }
-              }
-            }
-            
-            // 3. Recherche par posts
-            for (const keyword of keywords) {
-              try {
-                const postsResults = await this.scrapeInstagramPosts(keyword, filters);
-                platformResults.push(...postsResults);
-              } catch (error) {
-                console.error(`❌ Erreur Instagram Posts ${keyword}:`, error);
-              }
-            }
-            
-            // 4. API: Commentaires Instagram
-            const instagramUrls = platformResults
-              .filter(r => r.platform === 'Instagram' && r.url)
-              .slice(0, 5);
-              
-            for (const result of instagramUrls) {
-              try {
-                const commentsResults = await this.scrapeInstagramComments(result.url, filters);
-                platformResults.push(...commentsResults);
-                console.log(`✅ Instagram Comments pour ${result.url}: ${commentsResults.length} résultats`);
-              } catch (error) {
-                console.error(`❌ Erreur Instagram Comments:`, error);
-              }
-            }
-            
-            // 5. Recherche par hashtags
-            for (const keyword of keywords) {
-              if (keyword.startsWith('#')) {
-                try {
-                  const hashtagResults = await this.scrapeInstagramHashtag(keyword.substring(1), filters);
-                  platformResults.push(...hashtagResults);
-                } catch (error) {
-                  console.error(`❌ Erreur Instagram Hashtag ${keyword}:`, error);
-                }
-              }
-            }
-            
-            console.log(`🎯 INSTAGRAM ENRICHI TOTAL: ${platformResults.length} résultats combinés`);
-            break;
-            
-          case 'twitter':
-            const twitterQuery = keywords.join(' ');
-            platformResults = await this.scrapeTwitter(twitterQuery, filters);
-            break;
-            
-          case 'youtube':
-            console.log('🔍 RECHERCHE YOUTUBE ENRICHIE');
-            const youtubeQuery = keywords.join(' ');
-            
-            // 1. Recherche générale YouTube
-            const youtubeResults = await this.scrapeYouTube(youtubeQuery, filters);
-            platformResults.push(...youtubeResults);
-            
-            // 2. NOUVELLE API: YouTube Channel Video pour les chaînes spécifiques
-            for (const keyword of keywords) {
-              if (keyword.includes('youtube.com/@') || keyword.includes('@')) {
-                try {
-                  const channelResults = await this.scrapeYouTubeChannelVideo(keyword, filters);
-                  platformResults.push(...channelResults);
-                  console.log(`✅ YouTube Channel pour ${keyword}: ${channelResults.length} résultats`);
-                } catch (error) {
-                  console.error(`❌ Erreur YouTube Channel ${keyword}:`, error);
-                }
-              }
-            }
-            
-            console.log(`🎯 YOUTUBE ENRICHI TOTAL: ${platformResults.length} résultats combinés`);
-            break;
-
-          case 'google':
-            console.log('🔍 RECHERCHE GOOGLE SEARCH');
-            const googleQuery = keywords.join(' ');
-            try {
-              platformResults = await this.scrapeGoogleSearch(googleQuery, filters);
-              console.log(`✅ Google Search: ${platformResults.length} résultats`);
-            } catch (error) {
-              console.error('❌ Erreur Google Search:', error);
-            }
-            break;
-
-          case 'web':
-            console.log('🔍 RECHERCHE WEB AVEC CHEERIO');
-            try {
-              // Extraire les URLs des mots-clés ou utiliser des sites par défaut
-              const webUrls = keywords.filter(k => k.includes('http'));
-              if (webUrls.length > 0) {
-                platformResults = await this.scrapeCheerio(webUrls, filters);
-                console.log(`✅ Web Scraping: ${platformResults.length} résultats`);
-              }
-            } catch (error) {
-              console.error('❌ Erreur Web Scraping:', error);
-            }
-            break;
+    try {
+      const results: MentionResult[] = [];
+      
+      // 1. API facebook-posts-ideal pour pages spécifiques et recherche générale
+      for (const keyword of keywords) {
+        console.log(`🔍 Facebook Posts Ideal pour: "${keyword}"`);
+        
+        // Détection si c'est une URL de page Facebook
+        let searchInput = keyword;
+        if (keyword.includes('facebook.com') || keyword.includes('fb.com')) {
+          searchInput = keyword;
+          console.log('🎯 URL Facebook détectée, recherche directe');
+        } else {
+          // Recherche par mot-clé
+          console.log('🔤 Mot-clé détecté, recherche textuelle');
         }
+        
+        try {
+          const response = await fetch(`${this.baseUrl}/api/scrape/facebook-posts-ideal`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              url: searchInput.includes('facebook.com') ? searchInput : `https://www.facebook.com/search/posts/?q=${encodeURIComponent(searchInput)}`,
+              max_posts: 50
+            })
+          });
 
-        // Filtrer les résultats selon les critères avancés
-        if (platformResults.length > 0) {
-          platformResults = this.applyAdvancedFilters(platformResults, filters);
+          if (response.ok) {
+            const data = await response.json();
+            const transformed = DataTransformer.transformToMentions(data.posts || data.data || [], 'facebook-posts-ideal');
+            results.push(...transformed);
+            console.log(`✅ Facebook Posts Ideal: ${transformed.length} posts`);
+          }
+        } catch (error) {
+          console.error('❌ Erreur Facebook Posts Ideal:', error);
         }
-
-        allResults.push(...platformResults);
-      } catch (error) {
-        console.error(`Erreur pour ${platform}:`, error);
       }
+
+      return results;
+
+    } catch (error) {
+      console.error('❌ Erreur Facebook enrichi:', error);
+      return [];
     }
-
-    this.cacheManager.setCache(cacheKey, allResults, filters, keywords, platforms);
-
-    const platformCounts = this.calculatePlatformCounts(allResults);
-    return { results: allResults, fromCache: false, platformCounts };
   }
 
-  private applyAdvancedFilters(results: MentionResult[], filters: SearchFilters): MentionResult[] {
-    let filtered = [...results];
+  private async searchInstagramEnriched(keywords: string[], filters: SearchFilters): Promise<MentionResult[]> {
+    console.log('📷 INSTAGRAM ENRICHI - Utilisation instagram-profile');
+    
+    try {
+      const results: MentionResult[] = [];
+      
+      for (const keyword of keywords) {
+        console.log(`🔍 Instagram Profile pour: "${keyword}"`);
+        
+        // Détecter si c'est un username ou un mot-clé
+        let username = keyword;
+        if (keyword.includes('instagram.com')) {
+          // Extraire le username de l'URL
+          const match = keyword.match(/instagram\.com\/([^\/\?]+)/);
+          username = match ? match[1] : keyword;
+        } else if (!keyword.startsWith('@')) {
+          // Si ce n'est pas une URL ni un @username, rechercher comme hashtag
+          username = keyword;
+        }
 
-    console.log('🔧 APPLICATION DES FILTRES AVANCÉS CÔTÉ SERVICE:', filters);
+        try {
+          const response = await fetch(`${this.baseUrl}/api/scrape/instagram-profile`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              username: username.replace('@', ''),
+              max_posts: 30
+            })
+          });
 
-    // Tri par popularité/engagement
-    if (filters.sortBy === 'popular' || filters.sortBy === 'engagement') {
-      filtered.sort((a, b) => {
-        const aEngagement = a.engagement.likes + a.engagement.comments + a.engagement.shares;
-        const bEngagement = b.engagement.likes + b.engagement.comments + b.engagement.shares;
-        return bEngagement - aEngagement;
-      });
-      console.log('🔥 Tri par popularité appliqué');
+          if (response.ok) {
+            const data = await response.json();
+            const transformed = DataTransformer.transformToMentions(data.posts || data.data || [], 'instagram-profile');
+            results.push(...transformed);
+            console.log(`✅ Instagram Profile: ${transformed.length} posts`);
+          }
+        } catch (error) {
+          console.error('❌ Erreur Instagram Profile:', error);
+        }
+      }
+
+      return results;
+
+    } catch (error) {
+      console.error('❌ Erreur Instagram enrichi:', error);
+      return [];
     }
+  }
 
-    // Tri par récence
-    if (filters.sortBy === 'recent') {
-      filtered.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-      console.log('📅 Tri par récence appliqué');
+  private async searchGoogleEnriched(keywords: string[], filters: SearchFilters): Promise<MentionResult[]> {
+    console.log('🔍 GOOGLE SEARCH ENRICHI');
+    
+    try {
+      const results: MentionResult[] = [];
+      
+      for (const keyword of keywords) {
+        console.log(`🔍 Google Search pour: "${keyword}"`);
+        
+        try {
+          const response = await fetch(`${this.baseUrl}/api/scrape/google-search`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              query: keyword,
+              max_results: 20
+            })
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            const transformed = DataTransformer.transformToMentions(data.results || data.data || [], 'google-search');
+            results.push(...transformed);
+            console.log(`✅ Google Search: ${transformed.length} résultats`);
+          }
+        } catch (error) {
+          console.error('❌ Erreur Google Search:', error);
+        }
+      }
+
+      return results;
+
+    } catch (error) {
+      console.error('❌ Erreur Google enrichi:', error);
+      return [];
     }
+  }
 
-    // Tri par influence
-    if (filters.sortBy === 'influence') {
-      filtered.sort((a, b) => (b.influenceScore || 0) - (a.influenceScore || 0));
-      console.log('⭐ Tri par influence appliqué');
+  private async searchWebEnriched(keywords: string[], filters: SearchFilters): Promise<MentionResult[]> {
+    console.log('🌐 WEB SCRAPING ENRICHI - Cheerio');
+    
+    try {
+      const results: MentionResult[] = [];
+      
+      // URLs par défaut pour le web scraping basées sur les mots-clés
+      const baseUrls = [
+        'https://news.google.com',
+        'https://www.bbc.com',
+        'https://www.lemonde.fr',
+        'https://www.rfi.fr'
+      ];
+      
+      for (const keyword of keywords) {
+        console.log(`🔍 Web Scraping pour: "${keyword}"`);
+        
+        try {
+          const response = await fetch(`${this.baseUrl}/api/scrape/cheerio`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              startUrls: baseUrls.map(url => `${url}/search?q=${encodeURIComponent(keyword)}`),
+              max_pages: 5
+            })
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            const transformed = DataTransformer.transformToMentions(data.results || data.data || [], 'cheerio');
+            results.push(...transformed);
+            console.log(`✅ Web Scraping: ${transformed.length} pages`);
+          }
+        } catch (error) {
+          console.error('❌ Erreur Web Scraping:', error);
+        }
+      }
+
+      return results;
+
+    } catch (error) {
+      console.error('❌ Erreur Web enrichi:', error);
+      return [];
     }
+  }
 
-    // Filtrer par auteur si spécifié
-    if (filters.author) {
-      const authorFilter = filters.author.toLowerCase().replace('@', '');
-      filtered = filtered.filter(item => 
-        item.author.toLowerCase().includes(authorFilter)
-      );
-      console.log(`👤 Filtre auteur appliqué: ${filters.author}`);
+  private async searchYouTubeEnriched(keywords: string[], filters: SearchFilters): Promise<MentionResult[]> {
+    console.log('📺 YOUTUBE ENRICHI - Channel Video');
+    
+    try {
+      const results: MentionResult[] = [];
+      
+      for (const keyword of keywords) {
+        console.log(`🔍 YouTube Channel pour: "${keyword}"`);
+        
+        // Détecter si c'est une URL de chaîne ou un mot-clé
+        let query = keyword;
+        if (!keyword.includes('youtube.com')) {
+          query = `https://www.youtube.com/results?search_query=${encodeURIComponent(keyword)}`;
+        }
+        
+        try {
+          const response = await fetch(`${this.baseUrl}/api/scrape/youtube-channel-video`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              query: query,
+              max_videos: 25
+            })
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            const transformed = DataTransformer.transformToMentions(data.videos || data.data || [], 'youtube-channel-video');
+            results.push(...transformed);
+            console.log(`✅ YouTube Channel: ${transformed.length} vidéos`);
+          }
+        } catch (error) {
+          console.error('❌ Erreur YouTube Channel:', error);
+        }
+      }
+
+      return results;
+
+    } catch (error) {
+      console.error('❌ Erreur YouTube enrichi:', error);
+      return [];
     }
+  }
 
-    // Filtrer par domaine si spécifié
-    if (filters.domain) {
-      filtered = filtered.filter(item => 
-        item.url.toLowerCase().includes(filters.domain!.toLowerCase())
-      );
-      console.log(`🌐 Filtre domaine appliqué: ${filters.domain}`);
+  private async searchTwitterEnriched(keywords: string[], filters: SearchFilters): Promise<MentionResult[]> {
+    console.log('🐦 TWITTER/X ENRICHI');
+    try {
+      const results: MentionResult[] = [];
+  
+      for (const keyword of keywords) {
+        console.log(`🔍 Twitter/X pour: "${keyword}"`);
+  
+        try {
+          const response = await fetch(`${this.baseUrl}/api/scrape/x-twitter`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              query: keyword,
+              max_tweets: 40
+            })
+          });
+  
+          if (response.ok) {
+            const data = await response.json();
+            const transformed = DataTransformer.transformToMentions(data.tweets || data.data || [], 'x-twitter');
+            results.push(...transformed);
+            console.log(`✅ Twitter/X: ${transformed.length} tweets`);
+          }
+        } catch (error) {
+          console.error('❌ Erreur Twitter/X:', error);
+        }
+      }
+  
+      return results;
+  
+    } catch (error) {
+      console.error('❌ Erreur Twitter/X enrichi:', error);
+      return [];
     }
+  }
 
-    // Filtrer par engagement minimum
-    if (filters.minEngagement) {
-      filtered = filtered.filter(item => {
-        const totalEngagement = item.engagement.likes + item.engagement.comments + item.engagement.shares;
-        return totalEngagement >= filters.minEngagement!;
-      });
-      console.log(`📈 Filtre engagement min appliqué: ${filters.minEngagement}`);
+  private async searchTikTokEnriched(keywords: string[], filters: SearchFilters): Promise<MentionResult[]> {
+    console.log('🎵 TIKTOK ENRICHI');
+    try {
+      const results: MentionResult[] = [];
+  
+      for (const keyword of keywords) {
+        console.log(`🔍 TikTok pour: "${keyword}"`);
+  
+        try {
+          const response = await fetch(`${this.baseUrl}/api/scrape/tiktok`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              query: keyword,
+              max_videos: 30
+            })
+          });
+  
+          if (response.ok) {
+            const data = await response.json();
+            const transformed = DataTransformer.transformToMentions(data.videos || data.data || [], 'tiktok');
+            results.push(...transformed);
+            console.log(`✅ TikTok: ${transformed.length} vidéos`);
+          }
+        } catch (error) {
+          console.error('❌ Erreur TikTok:', error);
+        }
+      }
+  
+      return results;
+  
+    } catch (error) {
+      console.error('❌ Erreur TikTok enrichi:', error);
+      return [];
     }
+  }
 
-    // Filtrer par score d'influence
+  private applyAdvancedFilters(mentions: MentionResult[], filters: SearchFilters): MentionResult[] {
+    let filteredResults = [...mentions];
+  
+    if (filters.sentiment) {
+      filteredResults = filteredResults.filter(mention => mention.sentiment === filters.sentiment);
+    }
+  
     if (filters.minInfluenceScore) {
-      filtered = filtered.filter(item => 
-        (item.influenceScore || 0) >= filters.minInfluenceScore!
-      );
-      console.log(`🎯 Filtre influence min appliqué: ${filters.minInfluenceScore}`);
+      filteredResults = filteredResults.filter(mention => (mention.influenceScore || 0) >= filters.minInfluenceScore!);
     }
-
-    console.log(`✅ FILTRES AVANCÉS APPLIQUÉS: ${results.length} → ${filtered.length} résultats`);
-    return filtered;
-  }
-
-  private calculatePlatformCounts(results: MentionResult[]): { [key: string]: number } {
-    const counts: { [key: string]: number } = {};
-    results.forEach(result => {
-      counts[result.platform] = (counts[result.platform] || 0) + 1;
-    });
-    return counts;
-  }
-
-  clearCache(): void {
-    this.cacheManager.clearCache();
-  }
-
-  getCacheSize(): number {
-    return this.cacheManager.getCacheSize();
+  
+    if (filters.maxInfluenceScore) {
+      filteredResults = filteredResults.filter(mention => (mention.influenceScore || 0) <= filters.maxInfluenceScore!);
+    }
+  
+    if (filters.language) {
+      filteredResults = filteredResults.filter(mention => mention.content.includes(filters.language!));
+    }
+  
+    // Ajoutez ici d'autres filtres avancés selon les besoins
+  
+    return filteredResults;
   }
 }
-
-export default RealApiService;
-export type { MentionResult, SearchFilters, CachedResult };
