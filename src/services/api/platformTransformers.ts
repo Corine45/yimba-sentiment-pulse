@@ -33,6 +33,7 @@ export class PlatformTransformers {
         content: item.text || '',
         author: item.authorMeta?.name || 'Utilisateur TikTok',
         created_at: item.createTimeISO || new Date().toISOString(),
+        timestamp: item.createTimeISO || new Date().toISOString(),
         engagement,
         sentiment,
         url: `https://www.tiktok.com/@${item.authorMeta?.name}/video/${item.id}`,
@@ -58,12 +59,15 @@ export class PlatformTransformers {
       
       console.log(`Facebook ${index}: Engagement total=${totalEngagement}, Sentiment: ${sentiment}`);
       
+      const createdAt = item.created_time || new Date().toISOString();
+      
       return {
         id: item.id || `facebook-${index}`,
         platform: 'Facebook',
         content: item.message || item.text || item.story || '',
         author: item.from?.name || 'Utilisateur Facebook',
-        created_at: item.created_time || new Date().toISOString(),
+        created_at: createdAt,
+        timestamp: createdAt,
         engagement,
         sentiment,
         url: item.permalink_url || '',
@@ -90,12 +94,15 @@ export class PlatformTransformers {
       
       console.log(`Twitter ${index}: Engagement total=${totalEngagement}, Sentiment: ${sentiment}`);
       
+      const createdAt = item.created_at || new Date().toISOString();
+      
       return {
         id: item.id || `twitter-${index}`,
         platform: 'Twitter',
         content: item.text || '',
         author: item.author?.username || item.user?.screen_name || 'Utilisateur Twitter',
-        created_at: item.created_at || new Date().toISOString(),
+        created_at: createdAt,
+        timestamp: createdAt,
         engagement,
         sentiment,
         url: `https://twitter.com/${item.author?.username}/status/${item.id}`,
@@ -121,12 +128,15 @@ export class PlatformTransformers {
       
       console.log(`Instagram ${index}: Engagement total=${totalEngagement}, Sentiment: ${sentiment}`);
       
+      const createdAt = item.taken_at ? new Date(item.taken_at * 1000).toISOString() : new Date().toISOString();
+      
       return {
         id: item.id || `instagram-${index}`,
         platform: 'Instagram',
         content: item.caption || '',
         author: item.user?.username || 'Utilisateur Instagram',
-        created_at: item.taken_at ? new Date(item.taken_at * 1000).toISOString() : new Date().toISOString(),
+        created_at: createdAt,
+        timestamp: createdAt,
         engagement,
         sentiment,
         url: `https://instagram.com/p/${item.code}`,
@@ -154,12 +164,15 @@ export class PlatformTransformers {
       
       console.log(`YouTube ${index}: Engagement total=${totalEngagement}, Vues: ${views}, Sentiment: ${sentiment}`);
       
+      const createdAt = item.snippet?.publishedAt || new Date().toISOString();
+      
       return {
         id: item.id?.videoId || item.id || `youtube-${index}`,
         platform: 'YouTube',
         content: (item.snippet?.title || '') + ' - ' + (item.snippet?.description || ''),
         author: item.snippet?.channelTitle || 'Chaîne YouTube',
-        created_at: item.snippet?.publishedAt || new Date().toISOString(),
+        created_at: createdAt,
+        timestamp: createdAt,
         engagement,
         sentiment,
         url: `https://youtube.com/watch?v=${item.id?.videoId || item.id}`,
@@ -187,12 +200,15 @@ export class PlatformTransformers {
       
       console.log(`Google ${index}: Engagement total=${totalEngagement}, Sentiment: ${sentiment}`);
       
+      const timestamp = new Date().toISOString();
+      
       return {
         id: `google-${index}`,
         platform: 'Google',
         content: (item.title || '') + ' - ' + (item.snippet || ''),
         author: new URL(item.link || 'https://example.com').hostname,
-        created_at: new Date().toISOString(),
+        created_at: timestamp,
+        timestamp,
         engagement,
         sentiment,
         url: item.link || '',
@@ -218,12 +234,15 @@ export class PlatformTransformers {
       
       console.log(`Web ${index}: Engagement total=${totalEngagement}, Sentiment: ${sentiment}`);
       
+      const createdAt = item.publishedAt || new Date().toISOString();
+      
       return {
         id: `web-${index}`,
         platform: 'Web',
         content: (item.title || '') + ' - ' + (item.content || item.description || ''),
         author: item.domain || new URL(item.url || 'https://example.com').hostname,
-        created_at: item.publishedAt || new Date().toISOString(),
+        created_at: createdAt,
+        timestamp: createdAt,
         engagement,
         sentiment,
         url: item.url || '',
