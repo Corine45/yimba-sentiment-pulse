@@ -38,7 +38,7 @@ export class PlatformTransformers {
         sentiment,
         url: `https://www.tiktok.com/@${item.authorMeta?.name}/video/${item.id}`,
         author_url: item.authorMeta?.profileUrl || '',
-        location: item.locationCreated || '',
+        location: item.locationCreated ? { city: item.locationCreated } : undefined,
         influence_score: this.calculateInfluenceScore(totalEngagement, item.authorMeta?.followerCount || 0),
         tags: this.extractHashtags(item.text || '')
       };
@@ -72,7 +72,7 @@ export class PlatformTransformers {
         sentiment,
         url: item.permalink_url || '',
         author_url: `https://facebook.com/${item.from?.id}`,
-        location: item.place?.name || '',
+        location: item.place?.name ? { city: item.place.name } : undefined,
         influence_score: this.calculateInfluenceScore(totalEngagement, 0),
         tags: this.extractHashtags(item.message || item.text || '')
       };
@@ -107,7 +107,7 @@ export class PlatformTransformers {
         sentiment,
         url: `https://twitter.com/${item.author?.username}/status/${item.id}`,
         author_url: `https://twitter.com/${item.author?.username}`,
-        location: item.geo?.place_id || '',
+        location: item.geo?.place_id ? { city: item.geo.place_id } : undefined,
         influence_score: this.calculateInfluenceScore(totalEngagement, item.author?.public_metrics?.followers_count || 0),
         tags: this.extractHashtags(item.text || '')
       };
@@ -141,7 +141,7 @@ export class PlatformTransformers {
         sentiment,
         url: `https://instagram.com/p/${item.code}`,
         author_url: `https://instagram.com/${item.user?.username}`,
-        location: item.location?.name || '',
+        location: item.location?.name ? { city: item.location.name } : undefined,
         influence_score: this.calculateInfluenceScore(totalEngagement, item.user?.follower_count || 0),
         tags: this.extractHashtags(item.caption || '')
       };
@@ -177,7 +177,7 @@ export class PlatformTransformers {
         sentiment,
         url: `https://youtube.com/watch?v=${item.id?.videoId || item.id}`,
         author_url: `https://youtube.com/channel/${item.snippet?.channelId}`,
-        location: '',
+        location: undefined,
         influence_score: this.calculateInfluenceScore(totalEngagement, 0),
         tags: this.extractHashtags(item.snippet?.title + ' ' + item.snippet?.description || '')
       };
@@ -213,7 +213,7 @@ export class PlatformTransformers {
         sentiment,
         url: item.link || '',
         author_url: item.link || '',
-        location: '',
+        location: undefined,
         influence_score: this.calculateInfluenceScore(totalEngagement, 0),
         tags: this.extractHashtags(item.title + ' ' + item.snippet || '')
       };
@@ -247,7 +247,7 @@ export class PlatformTransformers {
         sentiment,
         url: item.url || '',
         author_url: item.url || '',
-        location: '',
+        location: undefined,
         influence_score: this.calculateInfluenceScore(totalEngagement, 0),
         tags: this.extractHashtags(item.title + ' ' + item.content || '')
       };
