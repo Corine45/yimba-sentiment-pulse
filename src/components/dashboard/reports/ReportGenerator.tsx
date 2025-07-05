@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -25,7 +24,8 @@ export const ReportGenerator = () => {
     isGenerating,
     progress,
     generateReport,
-    downloadReport
+    downloadReport,
+    cancelGeneration
   } = useReportGenerator();
 
   const handleGenerateReport = async () => {
@@ -45,7 +45,9 @@ export const ReportGenerator = () => {
         title: reportTitle,
         description: reportDescription,
         template: selectedTemplate,
+        type: 'custom',
         format: selectedFormat as 'pdf' | 'powerpoint' | 'html',
+        period: dateRange,
         dateRange,
         // 🔧 CONNEXION: Utiliser les données réelles de Supabase + APIs
         includeRealData: true,
@@ -280,7 +282,10 @@ export const ReportGenerator = () => {
 
       {/* Barre de progression */}
       {isGenerating && (
-        <ReportGenerationProgress progress={progress} />
+        <ReportGenerationProgress 
+          progress={progress} 
+          onCancel={cancelGeneration}
+        />
       )}
 
       {/* Liste des rapports générés */}
