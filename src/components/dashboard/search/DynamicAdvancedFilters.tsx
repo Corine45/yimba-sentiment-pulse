@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -431,8 +430,8 @@ export const DynamicAdvancedFilters = ({
             <div className="flex items-center space-x-2">
               <Checkbox
                 id="all-mentions"
-                checked={!filters.importanceFilter || filters.importanceFilter === 'all'}
-                onCheckedChange={(checked) => updateFilter('importanceFilter', checked ? 'all' : '')}
+                checked={!filters.importance || filters.importance === 'all'}
+                onCheckedChange={(checked) => updateFilter('importance', checked ? 'all' : '')}
               />
               <Label htmlFor="all-mentions" className="text-sm">
                 All Mentions
@@ -440,11 +439,11 @@ export const DynamicAdvancedFilters = ({
             </div>
             <div className="flex items-center space-x-2">
               <Checkbox
-                id="important-mentions"
-                checked={filters.importanceFilter === 'important'}
-                onCheckedChange={(checked) => updateFilter('importanceFilter', checked ? 'important' : 'all')}
+                id="high-mentions"
+                checked={filters.importance === 'high'}
+                onCheckedChange={(checked) => updateFilter('importance', checked ? 'high' : 'all')}
               />
-              <Label htmlFor="important-mentions" className="text-sm">
+              <Label htmlFor="high-mentions" className="text-sm">
                 Important Mentions
               </Label>
             </div>
@@ -458,13 +457,13 @@ export const DynamicAdvancedFilters = ({
             {[
               { value: 'all', label: 'All Mentions' },
               { value: 'visited', label: 'Only visited' },
-              { value: 'not-visited', label: 'Only not visited' }
+              { value: 'unvisited', label: 'Only not visited' }
             ].map((option) => (
               <div key={option.value} className="flex items-center space-x-2">
                 <Checkbox
                   id={option.value}
-                  checked={filters.visitedFilter === option.value || (!filters.visitedFilter && option.value === 'all')}
-                  onCheckedChange={(checked) => updateFilter('visitedFilter', checked ? option.value : 'all')}
+                  checked={filters.visited === option.value || (!filters.visited && option.value === 'all')}
+                  onCheckedChange={(checked) => updateFilter('visited', checked ? option.value : 'all')}
                 />
                 <Label htmlFor={option.value} className="text-sm">
                   {option.label}
