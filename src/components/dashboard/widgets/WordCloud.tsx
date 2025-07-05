@@ -1,150 +1,171 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Search, TrendingUp } from "lucide-react";
-import { useMemo } from "react";
+import { MentionResult } from "@/services/api/types";
+import { Cloud, TrendingUp } from "lucide-react";
 
 interface WordCloudProps {
-  mentions?: Array<{
-    content: string;
-    platform: string;
-    engagement: {
-      likes: number;
-      comments: number;
-      shares: number;
-    };
-  }>;
+  mentions: MentionResult[];
 }
 
-export const WordCloud = ({ mentions = [] }: WordCloudProps) => {
-  const wordFrequency = useMemo(() => {
-    if (!mentions.length) {
-      // Données par défaut si aucune mention
-      return [
-        { text: "éducation", size: 48, frequency: 234, color: "#3B82F6" },
-        { text: "politique", size: 36, frequency: 189, color: "#10B981" },
-        { text: "économie", size: 32, frequency: 156, color: "#F59E0B" },
-        { text: "santé", size: 28, frequency: 134, color: "#EF4444" },
-        { text: "jeunesse", size: 24, frequency: 98, color: "#8B5CF6" },
-        { text: "développement", size: 20, frequency: 87, color: "#06B6D4" },
-        { text: "emploi", size: 18, frequency: 76, color: "#84CC16" },
-        { text: "formation", size: 16, frequency: 65, color: "#F97316" },
-        { text: "infrastructure", size: 14, frequency: 54, color: "#EC4899" },
-        { text: "innovation", size: 12, frequency: 43, color: "#6366F1" },
-      ];
-    }
+export const WordCloud = ({ mentions }: WordCloudProps) => {
+  // Fonction améliorée pour extraire et analyser les mots
+  const extractWordFrequency = (mentions: MentionResult[]) => {
+    const wordMap = new Map<string, number>();
+    const stopWords = new Set([
+      'le', 'la', 'les', 'un', 'une', 'des', 'du', 'de', 'et', 'ou', 'mais', 'donc', 'or', 'ni', 'car',
+      'ce', 'ces', 'cette', 'cet', 'se', 'me', 'te', 'nous', 'vous', 'ils', 'elles', 'on', 'je', 'tu', 'il', 'elle',
+      'dans', 'sur', 'avec', 'pour', 'par', 'sans', 'sous', 'vers', 'chez', 'entre', 'jusqu', 'depuis',
+      'the', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'from', 'up', 'about', 'into', 'over', 'after',
+      'a', 'an', 'as', 'are', 'was', 'were', 'been', 'be', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should',
+      'i', 'you', 'he', 'she', 'it', 'we', 'they', 'this', 'that', 'these', 'those', 'is', 'not', 'no', 'yes'
+    ]);
 
-    // Traitement des mentions réelles
-    const wordCount: { [key: string]: number } = {};
-    const colors = ["#3B82F6", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "#06B6D4", "#84CC16", "#F97316", "#EC4899", "#6366F1"];
-    
-    mentions.forEach(mention => {
+    console.log(`🔤 ANALYSE DU NUAGE DE MOTS sur ${mentions.length} mentions`);
+
+    mentions.forEach((mention, index) => {
       const content = mention.content.toLowerCase();
-      const words = content.split(/\s+/)
-        .filter(word => word.length > 3)
-        .filter(word => !['the', 'and', 'for', 'are', 'but', 'not', 'you', 'all', 'can', 'had', 'her', 'was', 'one', 'our', 'out', 'day', 'get', 'has', 'him', 'his', 'how', 'its', 'new', 'now', 'old', 'see', 'two', 'way', 'who', 'boy', 'did', 'may', 'she', 'use', 'your', 'dans', 'avec', 'pour', 'sont', 'mais', 'plus', 'tout', 'bien', 'cette', 'cette', 'leur', 'très', 'aussi'].includes(word))
-        .map(word => word.replace(/[^\w]/g, ''));
-
+      console.log(`📝 Mention ${index + 1}: "${content.substring(0, 100)}..."`);
+      
+      // Extraire les mots (lettres, chiffres, accents)
+      const words = content.match(/[a-zA-ZÀ-ÿ0-9#@]+/g) || [];
+      
       words.forEach(word => {
-        if (word) {
-          wordCount[word] = (wordCount[word] || 0) + 1;
+        if (word.length >= 3 && !stopWords.has(word)) {
+          // Bonus pour les hashtags et mentions
+          const weight = word.startsWith('#') || word.startsWith('@') ? 2 : 1;
+          wordMap.set(word, (wordMap.get(word) || 0) + weight);
+        }
+      });
+
+      // Extraire aussi les expressions importantes (2-3 mots)
+      const phrases = content.match(/[a-zA-ZÀ-ÿ\s]{6,30}/g) || [];
+      phrases.forEach(phrase => {
+        const cleanPhrase = phrase.trim();
+        if (cleanPhrase.length > 6 && cleanPhrase.split(' ').length >= 2 && cleanPhrase.split(' ').length <= 3) {
+          const words = cleanPhrase.split(' ');
+          const hasStopWord = words.some(w => stopWords.has(w));
+          if (!hasStopWord) {
+            wordMap.set(cleanPhrase, (wordMap.get(cleanPhrase) || 0) + 1);
+          }
         }
       });
     });
 
-    return Object.entries(wordCount)
+    // Convertir en array et trier par fréquence
+    const wordArray = Array.from(wordMap.entries())
       .sort(([,a], [,b]) => b - a)
-      .slice(0, 15)
-      .map(([word, count], index) => ({
-        text: word,
-        frequency: count,
-        size: Math.max(12, Math.min(48, count * 4)),
-        color: colors[index % colors.length]
-      }));
-  }, [mentions]);
+      .slice(0, 50); // Top 50 mots
 
-  const totalMentions = mentions.length;
-  const avgEngagement = mentions.length > 0 
-    ? mentions.reduce((sum, m) => sum + m.engagement.likes + m.engagement.comments + m.engagement.shares, 0) / mentions.length 
-    : 0;
+    console.log(`💎 Top 10 mots extraits:`, wordArray.slice(0, 10));
+    return wordArray;
+  };
+
+  const wordFrequency = extractWordFrequency(mentions);
+  const maxFreq = Math.max(...wordFrequency.map(([,freq]) => freq), 1);
+
+  // Calculer des couleurs dynamiques basées sur le sentiment
+  const getWordColor = (word: string, freq: number) => {
+    const intensity = freq / maxFreq;
+    
+    // Mots positifs en vert
+    const positiveWords = ['bon', 'bien', 'excellent', 'super', 'génial', 'parfait', 'love', 'amazing', 'great', 'good'];
+    if (positiveWords.some(pw => word.includes(pw))) {
+      return `rgba(34, 197, 94, ${0.4 + intensity * 0.6})`;
+    }
+    
+    // Mots négatifs en rouge
+    const negativeWords = ['mauvais', 'nul', 'horrible', 'problème', 'erreur', 'bad', 'awful', 'terrible', 'hate'];
+    if (negativeWords.some(nw => word.includes(nw))) {
+      return `rgba(239, 68, 68, ${0.4 + intensity * 0.6})`;
+    }
+    
+    // Hashtags en bleu
+    if (word.startsWith('#')) {
+      return `rgba(59, 130, 246, ${0.4 + intensity * 0.6})`;
+    }
+    
+    // Mentions en violet
+    if (word.startsWith('@')) {
+      return `rgba(147, 51, 234, ${0.4 + intensity * 0.6})`;
+    }
+    
+    // Autres mots en gris avec intensité
+    return `rgba(107, 114, 128, ${0.3 + intensity * 0.7})`;
+  };
+
+  const getFontSize = (freq: number) => {
+    const ratio = freq / maxFreq;
+    return Math.max(12, Math.min(32, 12 + ratio * 20));
+  };
+
+  if (wordFrequency.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <Cloud className="w-5 h-5 text-blue-600" />
+            <span>Nuage de mots</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-8 text-gray-500">
+            <Cloud className="w-12 h-12 mx-auto mb-4 opacity-50" />
+            <p>Aucune donnée pour générer le nuage de mots</p>
+            <p className="text-sm mt-2">Effectuez une recherche pour voir les mots-clés tendance</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <Search className="w-5 h-5 text-blue-600" />
-            <span>Nuage de mots - Analyse sémantique</span>
+            <Cloud className="w-5 h-5 text-blue-600" />
+            <span>Nuage de mots enrichi</span>
           </div>
-          <div className="flex items-center space-x-4 text-sm">
-            <div className="flex items-center space-x-1">
-              <TrendingUp className="w-4 h-4 text-green-600" />
-              <span>{totalMentions} mentions</span>
-            </div>
-            <div className="text-gray-600">
-              Engagement moy: {Math.round(avgEngagement)}
-            </div>
-          </div>
+          <TrendingUp className="w-4 h-4 text-green-600" />
         </CardTitle>
+        <div className="text-sm text-gray-600">
+          Analysé sur {mentions.length} mentions • {wordFrequency.length} termes uniques
+        </div>
       </CardHeader>
       <CardContent>
-        <div className="relative bg-gradient-to-br from-blue-50 to-cyan-50 rounded-lg p-8 min-h-[300px] flex flex-wrap items-center justify-center gap-4">
-          {wordFrequency.map((word, index) => (
+        <div className="relative min-h-64 flex flex-wrap items-center justify-center gap-2 p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg">
+          {wordFrequency.map(([word, freq], index) => (
             <span
-              key={index}
-              className="font-bold cursor-pointer hover:opacity-80 transition-all duration-200 hover:scale-110"
+              key={`${word}-${index}`}
+              className="inline-block px-2 py-1 rounded-md font-medium cursor-pointer hover:scale-110 transition-transform duration-200 shadow-sm"
               style={{
-                fontSize: `${word.size}px`,
-                color: word.color,
-                lineHeight: 1.2,
-                textShadow: '1px 1px 2px rgba(0,0,0,0.1)',
+                fontSize: `${getFontSize(freq)}px`,
+                backgroundColor: getWordColor(word, freq),
+                color: 'white',
+                textShadow: '1px 1px 2px rgba(0,0,0,0.3)'
               }}
-              title={`${word.frequency} mentions`}
+              title={`"${word}" apparaît ${freq} fois`}
             >
-              {word.text}
+              {word}
+              <span className="ml-1 text-xs opacity-75">({freq})</span>
             </span>
           ))}
         </div>
         
-        {/* Frequency Legend */}
-        <div className="mt-6 space-y-2">
-          <h4 className="font-medium text-sm flex items-center space-x-2">
-            <span>Fréquence des mots-clés</span>
-            {mentions.length > 0 && (
-              <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                Basé sur {totalMentions} mentions réelles
-              </span>
-            )}
-          </h4>
-          <div className="grid grid-cols-2 gap-2">
-            {wordFrequency.slice(0, 6).map((word, index) => (
-              <div key={index} className="flex items-center justify-between text-sm p-2 bg-gray-50 rounded hover:bg-gray-100 transition-colors">
-                <span className="font-medium" style={{ color: word.color }}>
-                  {word.text}
-                </span>
-                <span className="text-gray-600">{word.frequency}</span>
-              </div>
-            ))}
+        <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+          <div className="flex items-center space-x-2">
+            <div className="w-4 h-4 bg-green-500 rounded"></div>
+            <span>Mots positifs</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <div className="w-4 h-4 bg-red-500 rounded"></div>
+            <span>Mots négatifs</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <div className="w-4 h-4 bg-blue-500 rounded"></div>
+            <span>Hashtags</span>
           </div>
         </div>
-
-        {/* Plateformes les plus mentionnées */}
-        {mentions.length > 0 && (
-          <div className="mt-4 p-3 bg-blue-50 rounded-lg">
-            <h5 className="text-sm font-medium text-blue-800 mb-2">Répartition par plateforme</h5>
-            <div className="flex flex-wrap gap-2">
-              {Array.from(new Set(mentions.map(m => m.platform))).map(platform => {
-                const count = mentions.filter(m => m.platform === platform).length;
-                const percentage = ((count / mentions.length) * 100).toFixed(1);
-                return (
-                  <div key={platform} className="bg-white px-2 py-1 rounded text-xs">
-                    <span className="font-medium">{platform}</span>
-                    <span className="text-gray-600 ml-1">({count} - {percentage}%)</span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
       </CardContent>
     </Card>
   );

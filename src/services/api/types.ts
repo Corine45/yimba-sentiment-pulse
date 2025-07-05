@@ -1,4 +1,3 @@
-
 export interface MentionResult {
   id: string;
   platform: string;
@@ -24,39 +23,44 @@ export interface MentionResult {
 }
 
 export interface SearchFilters {
-  language?: string;
-  period?: string;
-  sortBy?: 'recent' | 'popular';
-  sentiment?: 'positive' | 'negative' | 'neutral' | string[];
+  sentiment?: string | string[] | 'positive' | 'negative' | 'neutral';
+  influenceScore?: number;
   minEngagement?: number;
   maxEngagement?: number;
+  period?: '1d' | '7d' | '30d' | '3m';
+  
+  sortBy?: 'recent' | 'popular' | 'engagement' | 'influence';
+  
+  language?: string;
+  excludedLanguages?: string[];
+  
   geography?: {
     country?: string;
-    region?: string;
     city?: string;
     latitude?: number;
     longitude?: number;
-    radius?: number;
+    radius?: number; // en km
   };
-  // Nouvelles propriétés pour les filtres avancés
-  platforms?: string[];
-  customStartDate?: string;
-  customEndDate?: string;
+  country?: string;
+  excludedCountries?: string[];
+  
   author?: string;
   domain?: string;
-  minInfluenceScore?: number;
-  languages?: string[];
-  excludedLanguages?: string[];
-  excludedCountries?: string[];
-  importanceFilter?: string;
-  visitedFilter?: string;
+  tags?: string[];
+  excludedTags?: string[];
+  
+  dateFrom?: string;
+  dateTo?: string;
+  
+  importance?: 'all' | 'high' | 'medium' | 'low';
+  visited?: 'all' | 'visited' | 'unvisited';
+  
   includePageLikes?: boolean;
   includePageSearch?: boolean;
-  // Nouvelles propriétés pour les filtres détaillés
-  country?: string;
-  importance?: string;
-  visited?: string;
-  influenceScore?: number;
+  includeComments?: boolean;
+  
+  minInfluenceScore?: number;
+  maxInfluenceScore?: number;
 }
 
 export interface CachedResult {

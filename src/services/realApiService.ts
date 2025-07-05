@@ -164,6 +164,10 @@ class RealApiService {
     return this.postData('/api/scrape/blog-content', { startUrls }, filters);
   }
 
+  async scrapeFacebookPostsIdeal(pageUrl: string, filters?: SearchFilters): Promise<MentionResult[]> {
+    return this.postData('/api/scrape/facebook-posts-ideal', { pageUrl }, filters);
+  }
+
   async searchWithCache(
     keywords: string[], 
     platforms: string[], 
@@ -190,14 +194,14 @@ class RealApiService {
             break;
             
           case 'facebook':
-            console.log('🔍 RECHERCHE FACEBOOK COMPLÈTE AVEC TOUTES LES APIs');
+            console.log('🔍 RECHERCHE FACEBOOK ENRICHIE AVEC TOUTES LES APIs');
             const fbQuery = keywords.join(' ');
             
             // 1. Recherche générale Facebook
             const generalResults = await this.scrapeFacebook(fbQuery, filters);
             platformResults.push(...generalResults);
             
-            // 2. NOUVELLE API: Posts Facebook
+            // 2. API: Posts Facebook
             try {
               const postsResults = await this.scrapeFacebookPosts(fbQuery, filters);
               platformResults.push(...postsResults);
@@ -206,7 +210,20 @@ class RealApiService {
               console.error('❌ Erreur Facebook Posts:', error);
             }
             
-            // 3. NOUVELLE API: Reviews Facebook
+            // 3. NOUVELLE API: Posts Facebook Ideal
+            try {
+              // Essayer avec des URLs Facebook si disponibles dans les mots-clés
+              const facebookUrls = keywords.filter(k => k.includes('facebook.com/'));
+              for (const url of facebookUrls) {
+                const idealResults = await this.scrapeFacebookPostsIdeal(url, filters);
+                platformResults.push(...idealResults);
+                console.log(`✅ Facebook Posts Ideal pour ${url}: ${idealResults.length} résultats`);
+              }
+            } catch (error) {
+              console.error('❌ Erreur Facebook Posts Ideal:', error);
+            }
+            
+            // 4. API: Reviews Facebook
             try {
               const reviewsResults = await this.scrapeFacebookReviews(fbQuery, filters);
               platformResults.push(...reviewsResults);
@@ -215,7 +232,7 @@ class RealApiService {
               console.error('❌ Erreur Facebook Reviews:', error);
             }
             
-            // 4. Recherche de pages spécifiques si mots-clés contiennent @
+            // 5. Recherche de pages spécifiques si mots-clés contiennent @
             if (keywords.some(k => k.startsWith('@') || k.includes('facebook.com/'))) {
               const pageNames = keywords.filter(k => k.startsWith('@')).map(k => k.substring(1));
               for (const page of pageNames) {
@@ -233,7 +250,7 @@ class RealApiService {
               }
             }
             
-            // 5. Recherche additionnelle dans les pages
+            // 6. Recherche additionnelle dans les pages
             if (filters.includePageSearch) {
               try {
                 const pageSearchResults = await this.scrapeFacebookPageSearch(keywords, filters);
@@ -243,11 +260,11 @@ class RealApiService {
               }
             }
             
-            console.log(`🎯 FACEBOOK TOTAL: ${platformResults.length} résultats combinés`);
+            console.log(`🎯 FACEBOOK ENRICHI TOTAL: ${platformResults.length} résultats combinés`);
             break;
             
           case 'instagram':
-            console.log('🔍 RECHERCHE INSTAGRAM COMPLÈTE AVEC TOUTES LES APIs');
+            console.log('🔍 RECHERCHE INSTAGRAM ENRICHIE AVEC TOUTES LES APIs');
             
             // 1. Recherche générale Instagram
             const instagramResults = await this.scrapeInstagram(keywords, filters);
@@ -263,11 +280,10 @@ class RealApiService {
               }
             }
             
-            // 3. NOUVELLE API: Commentaires Instagram
-            // Pour les commentaires, on essaie d'utiliser les URLs des posts trouvés
+            // 3. API: Commentaires Instagram
             const instagramUrls = platformResults
               .filter(r => r.platform === 'Instagram' && r.url)
-              .slice(0, 5); // Limiter à 5 pour éviter trop d'appels
+              .slice(0, 5);
               
             for (const result of instagramUrls) {
               try {
@@ -291,7 +307,7 @@ class RealApiService {
               }
             }
             
-            console.log(`🎯 INSTAGRAM TOTAL: ${platformResults.length} résultats combinés`);
+            console.log(`🎯 INSTAGRAM ENRICHI TOTAL: ${platformResults.length} résultats combinés`);
             break;
             
           case 'twitter':
