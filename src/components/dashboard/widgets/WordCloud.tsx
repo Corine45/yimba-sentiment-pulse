@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MentionResult } from "@/services/api/types";
 import { Cloud, TrendingUp, Palette } from "lucide-react";
@@ -8,7 +7,6 @@ interface WordCloudProps {
 }
 
 export const WordCloud = ({ mentions }: WordCloudProps) => {
-  // Fonction améliorée pour extraire et analyser les mots avec émojis
   const extractWordFrequency = (mentions: MentionResult[]) => {
     const wordMap = new Map<string, { count: number, sentiment: string, emoji: string }>();
     const stopWords = new Set([
@@ -26,12 +24,10 @@ export const WordCloud = ({ mentions }: WordCloudProps) => {
       const content = mention.content.toLowerCase();
       const mentionSentiment = mention.sentiment || 'neutral';
       
-      // Extraire les mots (lettres, chiffres, accents, émojis)
       const words = content.match(/[a-zA-ZÀ-ÿ0-9#@🔥💯⭐️❤️👍😍🎉]+/g) || [];
       
       words.forEach(word => {
         if (word.length >= 2 && !stopWords.has(word.replace(/[🔥💯⭐️❤️👍😍🎉]/g, ''))) {
-          // Bonus pour les hashtags, mentions et émojis
           let weight = 1;
           let emoji = '';
           let sentiment = mentionSentiment;
@@ -39,17 +35,16 @@ export const WordCloud = ({ mentions }: WordCloudProps) => {
           if (word.startsWith('#')) {
             weight = 3;
             emoji = '🔥';
-            sentiment = 'trending';
+            sentiment = 'positive';
           } else if (word.startsWith('@')) {
             weight = 2;
             emoji = '👤';
-            sentiment = 'mention';
+            sentiment = 'positive';
           } else if (/[🔥💯⭐️❤️👍😍🎉]/.test(word)) {
             weight = 4;
             emoji = word.match(/[🔥💯⭐️❤️👍😍🎉]/)?.[0] || '✨';
             sentiment = 'positive';
           } else {
-            // Déterminer l'emoji basé sur le sentiment du mot
             if (mentionSentiment === 'positive') emoji = '😊';
             else if (mentionSentiment === 'negative') emoji = '😔';
             else emoji = '⚪';
@@ -65,32 +60,25 @@ export const WordCloud = ({ mentions }: WordCloudProps) => {
       });
     });
 
-    // Convertir en array et trier par fréquence
     const wordArray = Array.from(wordMap.entries())
       .map(([word, data]) => ({ word, ...data }))
       .sort((a, b) => b.count - a.count)
-      .slice(0, 60); // Top 60 mots
+      .slice(0, 60);
 
-    console.log(`🎨 Top 15 mots colorés extraits:`, wordArray.slice(0, 15));
     return wordArray;
   };
 
   const wordFrequency = extractWordFrequency(mentions);
   const maxFreq = Math.max(...wordFrequency.map(item => item.count), 1);
 
-  // Couleurs vives dynamiques améliorées
   const getVibrантColor = (word: string, sentiment: string, intensity: number) => {
-    const baseIntensity = 0.6 + (intensity * 0.4); // Plus vif
+    const baseIntensity = 0.6 + (intensity * 0.4);
     
     switch (sentiment) {
       case 'positive':
         return `linear-gradient(135deg, rgba(34, 197, 94, ${baseIntensity}), rgba(16, 185, 129, ${baseIntensity + 0.2}))`;
       case 'negative':
         return `linear-gradient(135deg, rgba(239, 68, 68, ${baseIntensity}), rgba(220, 38, 127, ${baseIntensity + 0.2}))`;
-      case 'trending':
-        return `linear-gradient(135deg, rgba(59, 130, 246, ${baseIntensity}), rgba(147, 51, 234, ${baseIntensity + 0.2}))`;
-      case 'mention':
-        return `linear-gradient(135deg, rgba(147, 51, 234, ${baseIntensity}), rgba(168, 85, 247, ${baseIntensity + 0.2}))`;
       default:
         return `linear-gradient(135deg, rgba(107, 114, 128, ${baseIntensity}), rgba(75, 85, 99, ${baseIntensity + 0.2}))`;
     }
@@ -100,11 +88,6 @@ export const WordCloud = ({ mentions }: WordCloudProps) => {
     const ratio = count / maxFreq;
     return Math.max(14, Math.min(40, 14 + ratio * 26));
   };
-
-  const getRandomPosition = () => ({
-    x: Math.random() * 80 + 10,
-    y: Math.random() * 70 + 15,
-  });
 
   if (wordFrequency.length === 0) {
     return (
@@ -170,14 +153,14 @@ export const WordCloud = ({ mentions }: WordCloudProps) => {
               return (
                 <div
                   key={`${item.word}-${index}`}
-                  className="inline-flex items-center px-4 py-2 rounded-2xl font-bold cursor-pointer transform transition-all duration-300 hover:scale-110 hover:rotate-1 hover:shadow-xl border border-white/30 backdrop-blur-sm"
+                  className="inline-flex items-center px-4 py-2 rounded-2xl font-bold cursor-pointer transform transition-all duration-300 hover:scale-110 hover:rotate-1 hover:shadow-xl border border-white/30 backdrop-blur-sm animate-float"
                   style={{
                     fontSize: `${fontSize}px`,
                     background: getVibrантColor(item.word, item.sentiment, intensity),
                     color: 'white',
                     textShadow: '2px 2px 4px rgba(0,0,0,0.4)',
                     boxShadow: `0 4px 15px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.3)`,
-                    animation: `float ${2 + (index % 3)}s ease-in-out infinite alternate`
+                    animationDelay: `${index * 0.1}s`
                   }}
                   title={`"${item.word}" apparaît ${item.count} fois • Sentiment: ${item.sentiment}`}
                 >
@@ -194,7 +177,7 @@ export const WordCloud = ({ mentions }: WordCloudProps) => {
         
         {/* Légende colorée améliorée */}
         <div className="p-6 bg-gradient-to-r from-gray-50 to-blue-50 border-t">
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
             <div className="flex items-center space-x-2">
               <div className="w-6 h-6 rounded-full bg-gradient-to-r from-green-500 to-emerald-500"></div>
               <span className="font-medium">😊 Positifs</span>
@@ -204,14 +187,6 @@ export const WordCloud = ({ mentions }: WordCloudProps) => {
               <span className="font-medium">😔 Négatifs</span>
             </div>
             <div className="flex items-center space-x-2">
-              <div className="w-6 h-6 rounded-full bg-gradient-to-r from-blue-500 to-purple-500"></div>
-              <span className="font-medium">🔥 Tendances</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <div className="w-6 h-6 rounded-full bg-gradient-to-r from-purple-500 to-indigo-500"></div>
-              <span className="font-medium">👤 Mentions</span>
-            </div>
-            <div className="flex items-center space-x-2">
               <div className="w-6 h-6 rounded-full bg-gradient-to-r from-gray-400 to-gray-600"></div>
               <span className="font-medium">⚪ Neutres</span>
             </div>
@@ -219,12 +194,17 @@ export const WordCloud = ({ mentions }: WordCloudProps) => {
         </div>
       </CardContent>
       
-      <style jsx>{`
-        @keyframes float {
-          0% { transform: translateY(0px) rotate(0deg); }
-          100% { transform: translateY(-10px) rotate(2deg); }
-        }
-      `}</style>
+      <style dangerouslySetInnerHTML={{
+        __html: `
+          @keyframes float {
+            0% { transform: translateY(0px) rotate(0deg); }
+            100% { transform: translateY(-10px) rotate(2deg); }
+          }
+          .animate-float {
+            animation: float 3s ease-in-out infinite alternate;
+          }
+        `
+      }} />
     </Card>
   );
 };
