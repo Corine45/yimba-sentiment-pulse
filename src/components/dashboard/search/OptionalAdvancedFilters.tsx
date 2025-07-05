@@ -40,10 +40,10 @@ export const OptionalAdvancedFilters = ({
   const toggleFilters = (enabled: boolean) => {
     setUseFilters(enabled);
     if (enabled) {
-      setIsOpen(true); // Ouvrir automatiquement les filtres quand activés
+      setIsOpen(true);
     } else {
       setIsOpen(false);
-      onClearFilters(); // Effacer les filtres quand désactivés
+      onClearFilters();
     }
   };
 
@@ -95,7 +95,6 @@ export const OptionalAdvancedFilters = ({
           </div>
         </div>
 
-        {/* Status Messages */}
         {!useFilters ? (
           <div className="text-sm text-amber-700 bg-amber-50 p-3 rounded-lg border border-amber-200">
             <div className="flex items-center space-x-2">
@@ -123,12 +122,10 @@ export const OptionalAdvancedFilters = ({
         )}
       </CardHeader>
 
-      {/* Interface des filtres - visible uniquement si activés */}
       {useFilters && (
         <Collapsible open={isOpen} onOpenChange={setIsOpen}>
           <CollapsibleContent className="animate-in slide-in-from-top-2 duration-200">
-            <CardContent className="space-y-6 pt-0">
-              {/* Filtres actifs - Section en haut */}
+            <CardContent className="space-y-6 pt-0 bg-white">
               {activeFiltersCount > 0 && (
                 <div className="space-y-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
                   <div className="flex items-center justify-between">
@@ -148,102 +145,25 @@ export const OptionalAdvancedFilters = ({
                   </div>
                   
                   <div className="flex flex-wrap gap-2">
-                    {filters.sentiment && (
-                      <Badge variant="outline" className="flex items-center space-x-1 bg-white">
-                        <span>Sentiment: {Array.isArray(filters.sentiment) ? filters.sentiment.join(', ') : filters.sentiment}</span>
-                        <button 
-                          onClick={() => removeFilter('sentiment')} 
-                          className="hover:bg-red-100 rounded-full p-0.5 ml-1"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                      </Badge>
-                    )}
-                    {filters.language && (
-                      <Badge variant="outline" className="flex items-center space-x-1 bg-white">
-                        <span>Langue: {filters.language}</span>
-                        <button 
-                          onClick={() => removeFilter('language')} 
-                          className="hover:bg-red-100 rounded-full p-0.5 ml-1"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                      </Badge>
-                    )}
-                    {filters.period && (
-                      <Badge variant="outline" className="flex items-center space-x-1 bg-white">
-                        <span>Période: {filters.period}</span>
-                        <button 
-                          onClick={() => removeFilter('period')} 
-                          className="hover:bg-red-100 rounded-full p-0.5 ml-1"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                      </Badge>
-                    )}
-                    {filters.minInfluenceScore && (
-                      <Badge variant="outline" className="flex items-center space-x-1 bg-white">
-                        <span>Influence min: {filters.minInfluenceScore}</span>
-                        <button 
-                          onClick={() => removeFilter('minInfluenceScore')} 
-                          className="hover:bg-red-100 rounded-full p-0.5 ml-1"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                      </Badge>
-                    )}
-                    {filters.author && (
-                      <Badge variant="outline" className="flex items-center space-x-1 bg-white">
-                        <span>Auteur: {filters.author}</span>
-                        <button 
-                          onClick={() => removeFilter('author')} 
-                          className="hover:bg-red-100 rounded-full p-0.5 ml-1"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                      </Badge>
-                    )}
-                    {filters.country && (
-                      <Badge variant="outline" className="flex items-center space-x-1 bg-white">
-                        <span>Pays: {filters.country}</span>
-                        <button 
-                          onClick={() => removeFilter('country')} 
-                          className="hover:bg-red-100 rounded-full p-0.5 ml-1"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                      </Badge>
-                    )}
-                    {filters.domain && (
-                      <Badge variant="outline" className="flex items-center space-x-1 bg-white">
-                        <span>Domaine: {filters.domain}</span>
-                        <button 
-                          onClick={() => removeFilter('domain')} 
-                          className="hover:bg-red-100 rounded-full p-0.5 ml-1"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                      </Badge>
-                    )}
-                    {filters.importance && (
-                      <Badge variant="outline" className="flex items-center space-x-1 bg-white">
-                        <span>Importance: {filters.importance}</span>
-                        <button 
-                          onClick={() => removeFilter('importance')} 
-                          className="hover:bg-red-100 rounded-full p-0.5 ml-1"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                      </Badge>
-                    )}
+                    {Object.entries(filters).map(([key, value]) => {
+                      if (!value) return null;
+                      return (
+                        <Badge key={key} variant="outline" className="flex items-center space-x-1 bg-white">
+                          <span>{key}: {Array.isArray(value) ? value.join(', ') : String(value)}</span>
+                          <button 
+                            onClick={() => removeFilter(key as keyof SearchFilters)} 
+                            className="hover:bg-red-100 rounded-full p-0.5 ml-1"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </Badge>
+                      );
+                    })}
                   </div>
                 </div>
               )}
 
-              {/* Configuration des filtres - Interface principale */}
-              <div className="space-y-6">
-                
-                {/* Section 1: Filtres de base */}
+              <div className="space-y-6 bg-white p-4 rounded-lg">
                 <div className="space-y-4">
                   <h4 className="text-sm font-semibold text-gray-900 border-b border-gray-200 pb-2">
                     🎯 Filtres de base
@@ -254,13 +174,13 @@ export const OptionalAdvancedFilters = ({
                       <Label className="text-sm font-medium text-gray-700">Langue</Label>
                       <Select 
                         value={filters.language || ''}
-                        onValueChange={(value) => handleFilterChange('language', value)}
+                        onValueChange={(value) => handleFilterChange('language', value || undefined)}
                       >
                         <SelectTrigger className="bg-white">
                           <SelectValue placeholder="Toutes les langues" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">Toutes les langues</SelectItem>
+                          <SelectItem value="all">Toutes les langues</SelectItem>
                           <SelectItem value="fr">🇫🇷 Français</SelectItem>
                           <SelectItem value="en">🇺🇸 Anglais</SelectItem>
                           <SelectItem value="es">🇪🇸 Espagnol</SelectItem>
@@ -274,13 +194,13 @@ export const OptionalAdvancedFilters = ({
                       <Label className="text-sm font-medium text-gray-700">Période</Label>
                       <Select 
                         value={filters.period || ''}
-                        onValueChange={(value) => handleFilterChange('period', value)}
+                        onValueChange={(value) => handleFilterChange('period', value || undefined)}
                       >
                         <SelectTrigger className="bg-white">
                           <SelectValue placeholder="Toute période" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">Toute période</SelectItem>
+                          <SelectItem value="all">Toute période</SelectItem>
                           <SelectItem value="1d">📅 24 heures</SelectItem>
                           <SelectItem value="7d">📅 7 jours</SelectItem>
                           <SelectItem value="30d">📅 30 jours</SelectItem>
@@ -293,7 +213,6 @@ export const OptionalAdvancedFilters = ({
                   </div>
                 </div>
 
-                {/* Section 2: Sentiment et qualité */}
                 <div className="space-y-4">
                   <h4 className="text-sm font-semibold text-gray-900 border-b border-gray-200 pb-2">
                     😊 Sentiment et qualité
@@ -304,13 +223,13 @@ export const OptionalAdvancedFilters = ({
                       <Label className="text-sm font-medium text-gray-700">Sentiment</Label>
                       <Select 
                         value={Array.isArray(filters.sentiment) ? filters.sentiment[0] : filters.sentiment || ''}
-                        onValueChange={(value) => handleFilterChange('sentiment', value)}
+                        onValueChange={(value) => handleFilterChange('sentiment', value || undefined)}
                       >
                         <SelectTrigger className="bg-white">
                           <SelectValue placeholder="Tous les sentiments" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">Tous</SelectItem>
+                          <SelectItem value="all">Tous</SelectItem>
                           <SelectItem value="positive">😊 Positif</SelectItem>
                           <SelectItem value="neutral">😐 Neutre</SelectItem>
                           <SelectItem value="negative">😞 Négatif</SelectItem>
@@ -322,13 +241,13 @@ export const OptionalAdvancedFilters = ({
                       <Label className="text-sm font-medium text-gray-700">Trier par</Label>
                       <Select 
                         value={filters.sortBy || ''}
-                        onValueChange={(value) => handleFilterChange('sortBy', value)}
+                        onValueChange={(value) => handleFilterChange('sortBy', value || undefined)}
                       >
                         <SelectTrigger className="bg-white">
                           <SelectValue placeholder="Ordre par défaut" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">Par défaut</SelectItem>
+                          <SelectItem value="default">Par défaut</SelectItem>
                           <SelectItem value="recent">🕐 Plus récent</SelectItem>
                           <SelectItem value="engagement">❤️ Plus populaire</SelectItem>
                           <SelectItem value="influence">⭐ Plus influent</SelectItem>
@@ -337,7 +256,6 @@ export const OptionalAdvancedFilters = ({
                     </div>
                   </div>
 
-                  {/* Score d'influence */}
                   <div className="space-y-3">
                     <Label className="text-sm font-medium text-gray-700">⭐ Score d'influence minimum</Label>
                     <div className="px-3 py-2 bg-gray-50 rounded-lg">
@@ -358,144 +276,8 @@ export const OptionalAdvancedFilters = ({
                     </div>
                   </div>
                 </div>
-
-                {/* Section 3: Critères avancés */}
-                <div className="space-y-4">
-                  <h4 className="text-sm font-semibold text-gray-900 border-b border-gray-200 pb-2">
-                    🔍 Critères avancés
-                  </h4>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium text-gray-700">Engagement minimum</Label>
-                      <Input
-                        type="number"
-                        placeholder="0"
-                        value={filters.minEngagement || ''}
-                        onChange={(e) => handleFilterChange('minEngagement', parseInt(e.target.value) || undefined)}
-                        className="bg-white"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium text-gray-700">Auteur (contient)</Label>
-                      <Input
-                        placeholder="Nom d'auteur..."
-                        value={filters.author || ''}
-                        onChange={(e) => handleFilterChange('author', e.target.value)}
-                        className="bg-white"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium text-gray-700">Pays</Label>
-                      <Select 
-                        value={filters.country || ''}
-                        onValueChange={(value) => handleFilterChange('country', value)}
-                      >
-                        <SelectTrigger className="bg-white">
-                          <SelectValue placeholder="Tous les pays" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="">Tous les pays</SelectItem>
-                          <SelectItem value="CI">🇨🇮 Côte d'Ivoire</SelectItem>
-                          <SelectItem value="FR">🇫🇷 France</SelectItem>
-                          <SelectItem value="US">🇺🇸 États-Unis</SelectItem>
-                          <SelectItem value="SN">🇸🇳 Sénégal</SelectItem>
-                          <SelectItem value="ML">🇲🇱 Mali</SelectItem>
-                          <SelectItem value="BF">🇧🇫 Burkina Faso</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium text-gray-700">Domaine (contient)</Label>
-                      <Input
-                        placeholder="exemple.com"
-                        value={filters.domain || ''}
-                        onChange={(e) => handleFilterChange('domain', e.target.value)}
-                        className="bg-white"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Section 4: Dates personnalisées */}
-                <div className="space-y-4">
-                  <h4 className="text-sm font-semibold text-gray-900 border-b border-gray-200 pb-2">
-                    📅 Dates personnalisées
-                  </h4>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium text-gray-700">Date de début</Label>
-                      <Input
-                        type="date"
-                        value={filters.dateFrom || ''}
-                        onChange={(e) => handleFilterChange('dateFrom', e.target.value)}
-                        className="bg-white"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium text-gray-700">Date de fin</Label>
-                      <Input
-                        type="date"
-                        value={filters.dateTo || ''}
-                        onChange={(e) => handleFilterChange('dateTo', e.target.value)}
-                        className="bg-white"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Section 5: Classification */}
-                <div className="space-y-4">
-                  <h4 className="text-sm font-semibold text-gray-900 border-b border-gray-200 pb-2">
-                    📊 Classification
-                  </h4>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium text-gray-700">Importance</Label>
-                      <Select 
-                        value={filters.importance || ''}
-                        onValueChange={(value) => handleFilterChange('importance', value)}
-                      >
-                        <SelectTrigger className="bg-white">
-                          <SelectValue placeholder="Toute importance" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="">Toute importance</SelectItem>
-                          <SelectItem value="high">🔴 Haute</SelectItem>
-                          <SelectItem value="medium">🟡 Moyenne</SelectItem>
-                          <SelectItem value="low">🟢 Faible</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium text-gray-700">Status de visite</Label>
-                      <Select 
-                        value={filters.visited || ''}
-                        onValueChange={(value) => handleFilterChange('visited', value)}
-                      >
-                        <SelectTrigger className="bg-white">
-                          <SelectValue placeholder="Tous" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="">Tous</SelectItem>
-                          <SelectItem value="visited">✅ Visités</SelectItem>
-                          <SelectItem value="unvisited">⏳ Non visités</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                </div>
-
               </div>
 
-              {/* Note explicative */}
               <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg text-sm border border-blue-200">
                 <h5 className="font-semibold mb-2 text-blue-900 flex items-center space-x-1">
                   <Filter className="w-4 h-4" />
