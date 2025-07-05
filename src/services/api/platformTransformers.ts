@@ -1,4 +1,3 @@
-
 import { MentionResult } from './types';
 import { SentimentAnalyzer } from '../sentiment/sentimentAnalyzer';
 
@@ -60,9 +59,15 @@ export class PlatformTransformers {
       console.log(`Facebook ${index}: Engagement total=${totalEngagement}, Sentiment: ${sentiment}`);
       
       const createdAt = item.created_time || new Date().toISOString();
+      const postId = item.id || `facebook-${index}`;
+      
+      // 🔧 CORRECTION: URL Facebook correcte
+      const facebookUrl = item.permalink_url || 
+                         `https://www.facebook.com/${postId}` ||
+                         `https://www.facebook.com/posts/${postId}`;
       
       return {
-        id: item.id || `facebook-${index}`,
+        id: postId,
         platform: 'Facebook',
         content: item.message || item.text || item.story || '',
         author: item.from?.name || 'Utilisateur Facebook',
@@ -70,8 +75,8 @@ export class PlatformTransformers {
         timestamp: createdAt,
         engagement,
         sentiment,
-        url: item.permalink_url || '',
-        author_url: `https://facebook.com/${item.from?.id}`,
+        url: facebookUrl, // ✅ URL Facebook directe
+        author_url: `https://facebook.com/${item.from?.id || item.from?.username}`,
         location: item.place?.name ? { city: item.place.name } : undefined,
         influence_score: this.calculateInfluenceScore(totalEngagement, 0),
         tags: this.extractHashtags(item.message || item.text || '')
@@ -83,6 +88,7 @@ export class PlatformTransformers {
     console.log(`🐦 Transformation Twitter: ${items.length} éléments`);
     
     return items.map((item, index) => {
+      // Calcul des métriques et de l'engagement
       const metrics = item.public_metrics || {};
       const likes = metrics.like_count || Math.floor(Math.random() * 150) + 20;
       const comments = metrics.reply_count || Math.floor(Math.random() * 30) + 5;
