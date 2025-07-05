@@ -1,7 +1,6 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { SavedMention } from '@/types/savedMentions';
-import { MentionResult, SearchFilters } from '@/services/realApiService';
+import { MentionResult, SearchFilters } from '@/services/api/types';
 
 export class SavedMentionsService {
   static async fetchSavedMentions(userId: string): Promise<SavedMention[]> {

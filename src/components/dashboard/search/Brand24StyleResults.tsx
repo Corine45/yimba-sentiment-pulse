@@ -1,9 +1,8 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Heart, MessageSquare, Share, Eye, ExternalLink, TrendingUp } from "lucide-react";
-import { MentionResult } from "@/services/realApiService";
+import { MentionResult } from "@/services/api/types";
 
 interface Brand24StyleResultsProps {
   mentions: MentionResult[];

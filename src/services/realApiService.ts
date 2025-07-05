@@ -124,26 +124,6 @@ export default class RealApiService {
     }
   }
 
-  private generateCacheKey(keywords: string[], platforms: string[], filters: SearchFilters): string {
-    const sortedKeywords = [...keywords].sort().join(',');
-    const sortedPlatforms = [...platforms].sort().join(',');
-    const filterString = JSON.stringify(filters);
-    return `${sortedKeywords}-${sortedPlatforms}-${filterString}`;
-  }
-
-  private checkCache(cacheKey: string): CachedResult | undefined {
-    const cachedData = this.cache.get(cacheKey);
-    if (cachedData && Date.now() - cachedData.timestamp < CACHE_EXPIRY_MS) {
-      return cachedData;
-    }
-    return undefined;
-  }
-
-  clearCache(): void {
-    this.cache.clear();
-    console.log('🧹 Cache vidé manuellement');
-  }
-
   private async searchFacebookEnriched(keywords: string[], filters: SearchFilters): Promise<MentionResult[]> {
     const results: MentionResult[] = [];
     

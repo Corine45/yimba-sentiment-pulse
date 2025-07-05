@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -9,7 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
 import { X, Save, Filter, MapPin, Languages, Calendar } from "lucide-react";
-import { SearchFilters } from "@/services/realApiService";
+import { SearchFilters } from "@/services/api/types";
 
 interface AdvancedSearchFiltersProps {
   filters: SearchFilters;

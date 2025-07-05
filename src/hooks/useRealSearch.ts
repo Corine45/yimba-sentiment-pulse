@@ -1,7 +1,8 @@
 
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import RealApiService, { MentionResult, SearchFilters } from '@/services/realApiService';
+import RealApiService from '@/services/realApiService';
+import { MentionResult, SearchFilters } from '@/services/api/types';
 import { useSavedMentions } from './useSavedMentions';
 
 export const useRealSearch = () => {
