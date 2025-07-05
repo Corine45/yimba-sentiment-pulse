@@ -125,14 +125,6 @@ export const OptionalAdvancedFilters = ({
                       </button>
                     </Badge>
                   )}
-                  {filters.minInfluenceScore && (
-                    <Badge variant="outline" className="flex items-center space-x-1">
-                      <span>Influence min: {filters.minInfluenceScore}</span>
-                      <button onClick={() => removeFilter('minInfluenceScore')}>
-                        <X className="w-3 h-3" />
-                      </button>
-                    </Badge>
-                  )}
                   {filters.language && (
                     <Badge variant="outline" className="flex items-center space-x-1">
                       <span>Langue: {filters.language}</span>
@@ -149,6 +141,22 @@ export const OptionalAdvancedFilters = ({
                       </button>
                     </Badge>
                   )}
+                  {filters.minInfluenceScore && (
+                    <Badge variant="outline" className="flex items-center space-x-1">
+                      <span>Influence min: {filters.minInfluenceScore}</span>
+                      <button onClick={() => removeFilter('minInfluenceScore')}>
+                        <X className="w-3 h-3" />
+                      </button>
+                    </Badge>
+                  )}
+                  {filters.author && (
+                    <Badge variant="outline" className="flex items-center space-x-1">
+                      <span>Auteur: {filters.author}</span>
+                      <button onClick={() => removeFilter('author')}>
+                        <X className="w-3 h-3" />
+                      </button>
+                    </Badge>
+                  )}
                 </div>
               </div>
             )}
@@ -156,26 +164,8 @@ export const OptionalAdvancedFilters = ({
             {/* Configuration des filtres */}
             <div className={`space-y-4 ${!useFilters ? 'opacity-50 pointer-events-none' : ''}`}>
               
-              {/* Sentiment */}
+              {/* Langue et Période */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Sentiment</Label>
-                  <Select 
-                    value={Array.isArray(filters.sentiment) ? filters.sentiment[0] : filters.sentiment || ''}
-                    onValueChange={(value) => handleFilterChange('sentiment', value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Tous les sentiments" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="">Tous</SelectItem>
-                      <SelectItem value="positive">Positif</SelectItem>
-                      <SelectItem value="neutral">Neutre</SelectItem>
-                      <SelectItem value="negative">Négatif</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
                 <div className="space-y-2">
                   <Label>Langue</Label>
                   <Select 
@@ -186,16 +176,16 @@ export const OptionalAdvancedFilters = ({
                       <SelectValue placeholder="Toutes les langues" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Toutes</SelectItem>
+                      <SelectItem value="">Toutes les langues</SelectItem>
                       <SelectItem value="fr">Français</SelectItem>
                       <SelectItem value="en">Anglais</SelectItem>
+                      <SelectItem value="es">Espagnol</SelectItem>
+                      <SelectItem value="ar">Arabe</SelectItem>
+                      <SelectItem value="pt">Portugais</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-              </div>
 
-              {/* Période et tri */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Période</Label>
                   <Select 
@@ -211,6 +201,29 @@ export const OptionalAdvancedFilters = ({
                       <SelectItem value="7d">7 jours</SelectItem>
                       <SelectItem value="30d">30 jours</SelectItem>
                       <SelectItem value="3m">3 mois</SelectItem>
+                      <SelectItem value="6m">6 mois</SelectItem>
+                      <SelectItem value="12m">12 mois</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Sentiment et Tri */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Sentiment</Label>
+                  <Select 
+                    value={Array.isArray(filters.sentiment) ? filters.sentiment[0] : filters.sentiment || ''}
+                    onValueChange={(value) => handleFilterChange('sentiment', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Tous les sentiments" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Tous</SelectItem>
+                      <SelectItem value="positive">Positif</SelectItem>
+                      <SelectItem value="neutral">Neutre</SelectItem>
+                      <SelectItem value="negative">Négatif</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -253,7 +266,7 @@ export const OptionalAdvancedFilters = ({
                 </div>
               </div>
 
-              {/* Engagement */}
+              {/* Engagement et Auteur */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Engagement minimum</Label>
@@ -275,13 +288,46 @@ export const OptionalAdvancedFilters = ({
                 </div>
               </div>
 
+              {/* Pays et domaine */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Pays</Label>
+                  <Select 
+                    value={filters.country || ''}
+                    onValueChange={(value) => handleFilterChange('country', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Tous les pays" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Tous les pays</SelectItem>
+                      <SelectItem value="CI">Côte d'Ivoire</SelectItem>
+                      <SelectItem value="FR">France</SelectItem>
+                      <SelectItem value="US">États-Unis</SelectItem>
+                      <SelectItem value="SN">Sénégal</SelectItem>
+                      <SelectItem value="ML">Mali</SelectItem>
+                      <SelectItem value="BF">Burkina Faso</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Domaine (contient)</Label>
+                  <Input
+                    placeholder="exemple.com"
+                    value={filters.domain || ''}
+                    onChange={(e) => handleFilterChange('domain', e.target.value)}
+                  />
+                </div>
+              </div>
+
             </div>
 
             {/* Note explicative */}
             <div className="bg-gray-50 p-4 rounded-lg text-sm text-gray-600">
               <h5 className="font-medium mb-2">📌 Comment fonctionnent les filtres :</h5>
               <ul className="space-y-1 text-xs">
-                <li>• <strong>Désactivés :</strong> Toutes les données de vos APIs sont affichées</li>
+                <li>• <strong>Désactivés :</strong> Toutes les données de vos 30+ APIs sont affichées</li>
                 <li>• <strong>Activés :</strong> Les données sont filtrées après récupération via vos APIs</li>
                 <li>• Les filtres n'affectent pas les requêtes API, seulement l'affichage des résultats</li>
                 <li>• Vous pouvez activer/désactiver les filtres à tout moment</li>
