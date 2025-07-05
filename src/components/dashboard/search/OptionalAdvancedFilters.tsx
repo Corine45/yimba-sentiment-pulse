@@ -157,6 +157,22 @@ export const OptionalAdvancedFilters = ({
                       </button>
                     </Badge>
                   )}
+                  {filters.country && (
+                    <Badge variant="outline" className="flex items-center space-x-1">
+                      <span>Pays: {filters.country}</span>
+                      <button onClick={() => removeFilter('country')}>
+                        <X className="w-3 h-3" />
+                      </button>
+                    </Badge>
+                  )}
+                  {filters.domain && (
+                    <Badge variant="outline" className="flex items-center space-x-1">
+                      <span>Domaine: {filters.domain}</span>
+                      <button onClick={() => removeFilter('domain')}>
+                        <X className="w-3 h-3" />
+                      </button>
+                    </Badge>
+                  )}
                 </div>
               </div>
             )}
@@ -321,13 +337,72 @@ export const OptionalAdvancedFilters = ({
                 </div>
               </div>
 
+              {/* Dates personnalisées */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Date de début</Label>
+                  <Input
+                    type="date"
+                    value={filters.dateFrom || ''}
+                    onChange={(e) => handleFilterChange('dateFrom', e.target.value)}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Date de fin</Label>
+                  <Input
+                    type="date"
+                    value={filters.dateTo || ''}
+                    onChange={(e) => handleFilterChange('dateTo', e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* Filtres avancés supplémentaires */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Importance</Label>
+                  <Select 
+                    value={filters.importance || ''}
+                    onValueChange={(value) => handleFilterChange('importance', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Toute importance" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Toute importance</SelectItem>
+                      <SelectItem value="high">Haute</SelectItem>
+                      <SelectItem value="medium">Moyenne</SelectItem>
+                      <SelectItem value="low">Faible</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Status de visite</Label>
+                  <Select 
+                    value={filters.visited || ''}
+                    onValueChange={(value) => handleFilterChange('visited', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Tous" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Tous</SelectItem>
+                      <SelectItem value="visited">Visités</SelectItem>
+                      <SelectItem value="unvisited">Non visités</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
             </div>
 
             {/* Note explicative */}
             <div className="bg-gray-50 p-4 rounded-lg text-sm text-gray-600">
               <h5 className="font-medium mb-2">📌 Comment fonctionnent les filtres :</h5>
               <ul className="space-y-1 text-xs">
-                <li>• <strong>Désactivés :</strong> Toutes les données de vos 30+ APIs sont affichées</li>
+                <li>• <strong>Désactivés :</strong> Toutes les données de vos {apiEndpoints?.length || 30}+ APIs sont affichées</li>
                 <li>• <strong>Activés :</strong> Les données sont filtrées après récupération via vos APIs</li>
                 <li>• Les filtres n'affectent pas les requêtes API, seulement l'affichage des résultats</li>
                 <li>• Vous pouvez activer/désactiver les filtres à tout moment</li>

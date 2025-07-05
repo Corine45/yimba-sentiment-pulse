@@ -106,7 +106,7 @@ export default class RealApiService {
           platformCounts[platform] = platformResults.length;
           
           // Petit délai entre les appels API
-          await new Promise(resolve => setTimeout(resolve, 500));
+          await new Promise(resolve => setTimeout(resolve, 300));
           
         } catch (error) {
           console.error(`❌ Erreur ${platform} FIABLE:`, error);
@@ -149,7 +149,7 @@ export default class RealApiService {
     return counts;
   }
 
-  // TikTok fiable avec gestion d'erreur
+  // TikTok fiable avec VRAIES APIs
   private async searchTikTokReliable(keywords: string[], filters: SearchFilters): Promise<MentionResult[]> {
     const results: MentionResult[] = [];
     
@@ -157,7 +157,7 @@ export default class RealApiService {
       try {
         console.log(`🎵 TIKTOK RECHERCHE FIABLE: "${keyword}"`);
         
-        // API principale TikTok
+        // API TikTok principale - VOTRE VRAIE API
         const response1 = await fetch(`${this.baseUrl}/api/scrape/tiktok`, {
           method: 'POST',
           headers: { 
@@ -172,8 +172,9 @@ export default class RealApiService {
 
         if (response1.ok) {
           const data = await response1.json();
-          if (data && (data.posts || data.data || data.items)) {
-            const posts = data.posts || data.data || data.items || [];
+          console.log('🎵 TikTok API Response:', data);
+          if (data && (data.posts || data.data || data.items || data.results)) {
+            const posts = data.posts || data.data || data.items || data.results || [];
             if (posts.length > 0) {
               const transformed = PlatformTransformers.transformTikTokData(posts);
               results.push(...transformed);
@@ -182,10 +183,12 @@ export default class RealApiService {
           }
         } else {
           console.warn(`⚠️ TikTok API principale erreur: ${response1.status}`);
+          const errorText = await response1.text();
+          console.warn('Erreur détails:', errorText);
         }
 
         // API TikTok par géolocalisation si disponible
-        if (filters.geography) {
+        if (filters.geography || filters.country) {
           try {
             const response2 = await fetch(`${this.baseUrl}/api/scrape/tiktok/location`, {
               method: 'POST',
@@ -195,15 +198,15 @@ export default class RealApiService {
               },
               body: JSON.stringify({
                 hashtag: keyword,
-                location: filters.geography.country || filters.geography.city,
+                location: filters.geography?.country || filters.country,
                 max_posts: 50
               })
             });
 
             if (response2.ok) {
               const data = await response2.json();
-              if (data && (data.posts || data.data || data.items)) {
-                const posts = data.posts || data.data || data.items || [];
+              if (data && (data.posts || data.data || data.items || data.results)) {
+                const posts = data.posts || data.data || data.items || data.results || [];
                 if (posts.length > 0) {
                   const transformed = PlatformTransformers.transformTikTokData(posts);
                   results.push(...transformed);
@@ -224,7 +227,7 @@ export default class RealApiService {
     return results;
   }
 
-  // Facebook fiable avec toutes les APIs
+  // Facebook fiable avec VOS VRAIES APIs
   private async searchFacebookReliable(keywords: string[], filters: SearchFilters): Promise<MentionResult[]> {
     const results: MentionResult[] = [];
     
@@ -232,8 +235,33 @@ export default class RealApiService {
       try {
         console.log(`📘 FACEBOOK RECHERCHE FIABLE: "${keyword}"`);
         
-        // API Facebook posts ideal
+        // API Facebook posts ideal - VOTRE VRAIE API
         const response1 = await fetch(`${this.baseUrl}/api/scrape/facebook-posts-ideal`, {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify({
+            query: keyword,
+            max_posts: 100
+          })
+        });
+
+        if (response1.ok) {
+          const data = await response1.json();
+          if (data && (data.posts || data.data || data.items || data.results)) {
+            const posts = data.posts || data.data || data.items || data.results || [];
+            if (posts.length > 0) {
+              const transformed = PlatformTransformers.transformFacebookData(posts);
+              results.push(...transformed);
+              console.log(`✅ Facebook posts ideal: ${transformed.length} résultats`);
+            }
+          }
+        }
+
+        // API Facebook général - VOTRE VRAIE API
+        const response2 = await fetch(`${this.baseUrl}/api/scrape/facebook`, {
           method: 'POST',
           headers: { 
             'Content-Type': 'application/json',
@@ -245,35 +273,10 @@ export default class RealApiService {
           })
         });
 
-        if (response1.ok) {
-          const data = await response1.json();
-          if (data && (data.posts || data.data || data.items)) {
-            const posts = data.posts || data.data || data.items || [];
-            if (posts.length > 0) {
-              const transformed = PlatformTransformers.transformFacebookData(posts);
-              results.push(...transformed);
-              console.log(`✅ Facebook posts ideal: ${transformed.length} résultats`);
-            }
-          }
-        }
-
-        // API Facebook général
-        const response2 = await fetch(`${this.baseUrl}/api/scrape/facebook`, {
-          method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          },
-          body: JSON.stringify({
-            query: keyword,
-            max_posts: 60
-          })
-        });
-
         if (response2.ok) {
           const data = await response2.json();
-          if (data && (data.posts || data.data || data.items)) {
-            const posts = data.posts || data.data || data.items || [];
+          if (data && (data.posts || data.data || data.items || data.results)) {
+            const posts = data.posts || data.data || data.items || data.results || [];
             if (posts.length > 0) {
               const transformed = PlatformTransformers.transformFacebookData(posts);
               results.push(...transformed);
@@ -282,7 +285,7 @@ export default class RealApiService {
           }
         }
 
-        // API Facebook page search
+        // API Facebook page search - VOTRE VRAIE API
         const response3 = await fetch(`${this.baseUrl}/api/scrape/facebook/page-search`, {
           method: 'POST',
           headers: { 
@@ -297,8 +300,8 @@ export default class RealApiService {
 
         if (response3.ok) {
           const data = await response3.json();
-          if (data && (data.pages || data.data || data.items)) {
-            const pages = data.pages || data.data || data.items || [];
+          if (data && (data.pages || data.data || data.items || data.results)) {
+            const pages = data.pages || data.data || data.items || data.results || [];
             if (pages.length > 0) {
               const transformed = PlatformTransformers.transformFacebookData(pages);
               results.push(...transformed);
@@ -315,7 +318,7 @@ export default class RealApiService {
     return results;
   }
 
-  // Instagram fiable
+  // Instagram fiable avec VOS VRAIES APIs
   private async searchInstagramReliable(keywords: string[], filters: SearchFilters): Promise<MentionResult[]> {
     const results: MentionResult[] = [];
     
@@ -323,7 +326,7 @@ export default class RealApiService {
       try {
         console.log(`📸 INSTAGRAM RECHERCHE FIABLE: "${keyword}"`);
         
-        // API Instagram général
+        // API Instagram général - VOTRE VRAIE API
         const response1 = await fetch(`${this.baseUrl}/api/scrape/instagram-general`, {
           method: 'POST',
           headers: { 
@@ -338,8 +341,8 @@ export default class RealApiService {
 
         if (response1.ok) {
           const data = await response1.json();
-          if (data && (data.posts || data.data || data.items)) {
-            const posts = data.posts || data.data || data.items || [];
+          if (data && (data.posts || data.data || data.items || data.results)) {
+            const posts = data.posts || data.data || data.items || data.results || [];
             if (posts.length > 0) {
               const transformed = PlatformTransformers.transformInstagramData(posts);
               results.push(...transformed);
@@ -348,7 +351,7 @@ export default class RealApiService {
           }
         }
 
-        // API Instagram hashtag
+        // API Instagram hashtag - VOTRE VRAIE API
         const response2 = await fetch(`${this.baseUrl}/api/scrape/instagram/hashtag`, {
           method: 'POST',
           headers: { 
@@ -363,8 +366,8 @@ export default class RealApiService {
 
         if (response2.ok) {
           const data = await response2.json();
-          if (data && (data.posts || data.data || data.items)) {
-            const posts = data.posts || data.data || data.items || [];
+          if (data && (data.posts || data.data || data.items || data.results)) {
+            const posts = data.posts || data.data || data.items || data.results || [];
             if (posts.length > 0) {
               const transformed = PlatformTransformers.transformInstagramData(posts);
               results.push(...transformed);
@@ -381,7 +384,7 @@ export default class RealApiService {
     return results;
   }
 
-  // Twitter fiable
+  // Twitter fiable avec VOS VRAIES APIs
   private async searchTwitterReliable(keywords: string[], filters: SearchFilters): Promise<MentionResult[]> {
     const results: MentionResult[] = [];
 
@@ -389,7 +392,7 @@ export default class RealApiService {
       try {
         console.log(`🐦 TWITTER RECHERCHE FIABLE: "${keyword}"`);
         
-        // API Twitter principal
+        // API Twitter principal - VOTRE VRAIE API
         const response1 = await fetch(`${this.baseUrl}/api/scrape/twitter`, {
           method: 'POST',
           headers: { 
@@ -404,8 +407,8 @@ export default class RealApiService {
 
         if (response1.ok) {
           const data = await response1.json();
-          if (data && (data.tweets || data.data || data.items)) {
-            const tweets = data.tweets || data.data || data.items || [];
+          if (data && (data.tweets || data.data || data.items || data.results)) {
+            const tweets = data.tweets || data.data || data.items || data.results || [];
             if (tweets.length > 0) {
               const transformed = PlatformTransformers.transformTwitterData(tweets);
               results.push(...transformed);
@@ -414,7 +417,7 @@ export default class RealApiService {
           }
         }
 
-        // API X-post replies
+        // API X-post replies - VOTRE VRAIE API
         const response2 = await fetch(`${this.baseUrl}/api/scrape/x-post-replies`, {
           method: 'POST',
           headers: { 
@@ -429,8 +432,8 @@ export default class RealApiService {
 
         if (response2.ok) {
           const data = await response2.json();
-          if (data && (data.replies || data.data || data.items)) {
-            const replies = data.replies || data.data || data.items || [];
+          if (data && (data.replies || data.data || data.items || data.results)) {
+            const replies = data.replies || data.data || data.items || data.results || [];
             if (replies.length > 0) {
               const transformed = PlatformTransformers.transformTwitterData(replies);
               results.push(...transformed);
@@ -447,7 +450,7 @@ export default class RealApiService {
     return results;
   }
 
-  // YouTube fiable
+  // YouTube fiable avec VOS VRAIES APIs
   private async searchYouTubeReliable(keywords: string[], filters: SearchFilters): Promise<MentionResult[]> {
     const results: MentionResult[] = [];
     
@@ -455,7 +458,7 @@ export default class RealApiService {
       try {  
         console.log(`📺 YOUTUBE RECHERCHE FIABLE: "${keyword}"`);
         
-        // API YouTube principal
+        // API YouTube principal - VOTRE VRAIE API
         const response1 = await fetch(`${this.baseUrl}/api/scrape/youtube`, {
           method: 'POST',
           headers: { 
@@ -470,8 +473,8 @@ export default class RealApiService {
 
         if (response1.ok) {
           const data = await response1.json();
-          if (data && (data.videos || data.data || data.items)) {
-            const videos = data.videos || data.data || data.items || [];
+          if (data && (data.videos || data.data || data.items || data.results)) {
+            const videos = data.videos || data.data || data.items || data.results || [];
             if (videos.length > 0) {
               const transformed = PlatformTransformers.transformYouTubeData(videos);
               results.push(...transformed);
@@ -480,7 +483,7 @@ export default class RealApiService {
           }
         }
 
-        // API YouTube channel video
+        // API YouTube channel video - VOTRE VRAIE API
         const response2 = await fetch(`${this.baseUrl}/api/scrape/youtube-channel-video`, {
           method: 'POST',
           headers: { 
@@ -495,8 +498,8 @@ export default class RealApiService {
 
         if (response2.ok) {
           const data = await response2.json();
-          if (data && (data.videos || data.data || data.items)) {
-            const videos = data.videos || data.data || data.items || [];
+          if (data && (data.videos || data.data || data.items || data.results)) {
+            const videos = data.videos || data.data || data.items || data.results || [];
             if (videos.length > 0) {
               const transformed = PlatformTransformers.transformYouTubeData(videos);
               results.push(...transformed);
@@ -513,7 +516,7 @@ export default class RealApiService {
     return results;
   }
 
-  // Google fiable
+  // Google fiable avec VOTRE VRAIE API
   private async searchGoogleReliable(keywords: string[], filters: SearchFilters): Promise<MentionResult[]> {
     const results: MentionResult[] = [];
     
@@ -553,7 +556,7 @@ export default class RealApiService {
     return results;
   }
 
-  // Web fiable
+  // Web fiable avec VOS VRAIES APIs
   private async searchWebReliable(keywords: string[], filters: SearchFilters): Promise<MentionResult[]> {
     const results: MentionResult[] = [];
     
@@ -561,7 +564,7 @@ export default class RealApiService {
       try {
         console.log(`🌐 WEB RECHERCHE FIABLE: "${keyword}"`);
         
-        // API Cheerio
+        // API Cheerio - VOTRE VRAIE API
         const response1 = await fetch(`${this.baseUrl}/api/scrape/cheerio`, {
           method: 'POST',
           headers: { 
@@ -586,7 +589,7 @@ export default class RealApiService {
           }
         }
 
-        // API Website content
+        // API Website content - VOTRE VRAIE API
         const response2 = await fetch(`${this.baseUrl}/api/scrape/website-content`, {
           method: 'POST',
           headers: { 
