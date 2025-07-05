@@ -96,6 +96,27 @@ class RealApiService {
     return this.postData('/api/scrape/facebook-reviews', { query }, filters);
   }
 
+  async scrapeFacebookPostsIdeal(pageUrl: string, filters?: SearchFilters): Promise<MentionResult[]> {
+    return this.postData('/api/scrape/facebook-posts-ideal', { pageUrl }, filters);
+  }
+
+  // NOUVELLES APIs AJOUTÉES
+  async scrapeGoogleSearch(query: string, filters?: SearchFilters): Promise<MentionResult[]> {
+    return this.postData('/api/scrape/google-search', { query }, filters);
+  }
+
+  async scrapeInstagramProfile(username: string, filters?: SearchFilters): Promise<MentionResult[]> {
+    return this.postData('/api/scrape/instagram-profile', { username }, filters);
+  }
+
+  async scrapeCheerio(startUrls: string[], filters?: SearchFilters): Promise<MentionResult[]> {
+    return this.postData('/api/scrape/cheerio', { startUrls }, filters);
+  }
+
+  async scrapeYouTubeChannelVideo(query: string, filters?: SearchFilters): Promise<MentionResult[]> {
+    return this.postData('/api/scrape/youtube-channel-video', { query }, filters);
+  }
+
   async scrapeTwitter(query: string, filters?: SearchFilters): Promise<MentionResult[]> {
     return this.postData('/api/scrape/twitter', { query }, filters);
   }
@@ -164,10 +185,6 @@ class RealApiService {
     return this.postData('/api/scrape/blog-content', { startUrls }, filters);
   }
 
-  async scrapeFacebookPostsIdeal(pageUrl: string, filters?: SearchFilters): Promise<MentionResult[]> {
-    return this.postData('/api/scrape/facebook-posts-ideal', { pageUrl }, filters);
-  }
-
   async searchWithCache(
     keywords: string[], 
     platforms: string[], 
@@ -194,7 +211,7 @@ class RealApiService {
             break;
             
           case 'facebook':
-            console.log('🔍 RECHERCHE FACEBOOK ENRICHIE AVEC TOUTES LES APIs');
+            console.log('🔍 RECHERCHE FACEBOOK ENRICHIE AVEC TOUTES LES APIs DISPONIBLES');
             const fbQuery = keywords.join(' ');
             
             // 1. Recherche générale Facebook
@@ -210,11 +227,11 @@ class RealApiService {
               console.error('❌ Erreur Facebook Posts:', error);
             }
             
-            // 3. NOUVELLE API: Posts Facebook Ideal
+            // 3. API: Facebook Posts Ideal (URL Facebook détectées dans les mots-clés)
             try {
-              // Essayer avec des URLs Facebook si disponibles dans les mots-clés
-              const facebookUrls = keywords.filter(k => k.includes('facebook.com/'));
+              const facebookUrls = keywords.filter(k => k.includes('facebook.com/') || k.includes('web.facebook.com/'));
               for (const url of facebookUrls) {
+                console.log(`🎯 RECHERCHE Facebook Posts Ideal pour: ${url}`);
                 const idealResults = await this.scrapeFacebookPostsIdeal(url, filters);
                 platformResults.push(...idealResults);
                 console.log(`✅ Facebook Posts Ideal pour ${url}: ${idealResults.length} résultats`);
@@ -264,13 +281,27 @@ class RealApiService {
             break;
             
           case 'instagram':
-            console.log('🔍 RECHERCHE INSTAGRAM ENRICHIE AVEC TOUTES LES APIs');
+            console.log('🔍 RECHERCHE INSTAGRAM ENRICHIE AVEC TOUTES LES APIs DISPONIBLES');
             
             // 1. Recherche générale Instagram
             const instagramResults = await this.scrapeInstagram(keywords, filters);
             platformResults.push(...instagramResults);
             
-            // 2. Recherche par posts
+            // 2. NOUVELLE API: Instagram Profile pour les profils spécifiques
+            for (const keyword of keywords) {
+              if (keyword.startsWith('@') || keyword.includes('instagram.com/')) {
+                const username = keyword.replace('@', '').replace(/.*instagram\.com\//, '').split('/')[0];
+                try {
+                  const profileResults = await this.scrapeInstagramProfile(username, filters);
+                  platformResults.push(...profileResults);
+                  console.log(`✅ Instagram Profile pour ${username}: ${profileResults.length} résultats`);
+                } catch (error) {
+                  console.error(`❌ Erreur Instagram Profile ${username}:`, error);
+                }
+              }
+            }
+            
+            // 3. Recherche par posts
             for (const keyword of keywords) {
               try {
                 const postsResults = await this.scrapeInstagramPosts(keyword, filters);
@@ -280,7 +311,7 @@ class RealApiService {
               }
             }
             
-            // 3. API: Commentaires Instagram
+            // 4. API: Commentaires Instagram
             const instagramUrls = platformResults
               .filter(r => r.platform === 'Instagram' && r.url)
               .slice(0, 5);
@@ -295,7 +326,7 @@ class RealApiService {
               }
             }
             
-            // 4. Recherche par hashtags
+            // 5. Recherche par hashtags
             for (const keyword of keywords) {
               if (keyword.startsWith('#')) {
                 try {
@@ -316,8 +347,52 @@ class RealApiService {
             break;
             
           case 'youtube':
+            console.log('🔍 RECHERCHE YOUTUBE ENRICHIE');
             const youtubeQuery = keywords.join(' ');
-            platformResults = await this.scrapeYouTube(youtubeQuery, filters);
+            
+            // 1. Recherche générale YouTube
+            const youtubeResults = await this.scrapeYouTube(youtubeQuery, filters);
+            platformResults.push(...youtubeResults);
+            
+            // 2. NOUVELLE API: YouTube Channel Video pour les chaînes spécifiques
+            for (const keyword of keywords) {
+              if (keyword.includes('youtube.com/@') || keyword.includes('@')) {
+                try {
+                  const channelResults = await this.scrapeYouTubeChannelVideo(keyword, filters);
+                  platformResults.push(...channelResults);
+                  console.log(`✅ YouTube Channel pour ${keyword}: ${channelResults.length} résultats`);
+                } catch (error) {
+                  console.error(`❌ Erreur YouTube Channel ${keyword}:`, error);
+                }
+              }
+            }
+            
+            console.log(`🎯 YOUTUBE ENRICHI TOTAL: ${platformResults.length} résultats combinés`);
+            break;
+
+          case 'google':
+            console.log('🔍 RECHERCHE GOOGLE SEARCH');
+            const googleQuery = keywords.join(' ');
+            try {
+              platformResults = await this.scrapeGoogleSearch(googleQuery, filters);
+              console.log(`✅ Google Search: ${platformResults.length} résultats`);
+            } catch (error) {
+              console.error('❌ Erreur Google Search:', error);
+            }
+            break;
+
+          case 'web':
+            console.log('🔍 RECHERCHE WEB AVEC CHEERIO');
+            try {
+              // Extraire les URLs des mots-clés ou utiliser des sites par défaut
+              const webUrls = keywords.filter(k => k.includes('http'));
+              if (webUrls.length > 0) {
+                platformResults = await this.scrapeCheerio(webUrls, filters);
+                console.log(`✅ Web Scraping: ${platformResults.length} résultats`);
+              }
+            } catch (error) {
+              console.error('❌ Erreur Web Scraping:', error);
+            }
             break;
         }
 
@@ -341,12 +416,37 @@ class RealApiService {
   private applyAdvancedFilters(results: MentionResult[], filters: SearchFilters): MentionResult[] {
     let filtered = [...results];
 
+    console.log('🔧 APPLICATION DES FILTRES AVANCÉS CÔTÉ SERVICE:', filters);
+
+    // Tri par popularité/engagement
+    if (filters.sortBy === 'popular' || filters.sortBy === 'engagement') {
+      filtered.sort((a, b) => {
+        const aEngagement = a.engagement.likes + a.engagement.comments + a.engagement.shares;
+        const bEngagement = b.engagement.likes + b.engagement.comments + b.engagement.shares;
+        return bEngagement - aEngagement;
+      });
+      console.log('🔥 Tri par popularité appliqué');
+    }
+
+    // Tri par récence
+    if (filters.sortBy === 'recent') {
+      filtered.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+      console.log('📅 Tri par récence appliqué');
+    }
+
+    // Tri par influence
+    if (filters.sortBy === 'influence') {
+      filtered.sort((a, b) => (b.influenceScore || 0) - (a.influenceScore || 0));
+      console.log('⭐ Tri par influence appliqué');
+    }
+
     // Filtrer par auteur si spécifié
     if (filters.author) {
       const authorFilter = filters.author.toLowerCase().replace('@', '');
       filtered = filtered.filter(item => 
         item.author.toLowerCase().includes(authorFilter)
       );
+      console.log(`👤 Filtre auteur appliqué: ${filters.author}`);
     }
 
     // Filtrer par domaine si spécifié
@@ -354,6 +454,7 @@ class RealApiService {
       filtered = filtered.filter(item => 
         item.url.toLowerCase().includes(filters.domain!.toLowerCase())
       );
+      console.log(`🌐 Filtre domaine appliqué: ${filters.domain}`);
     }
 
     // Filtrer par engagement minimum
@@ -362,6 +463,7 @@ class RealApiService {
         const totalEngagement = item.engagement.likes + item.engagement.comments + item.engagement.shares;
         return totalEngagement >= filters.minEngagement!;
       });
+      console.log(`📈 Filtre engagement min appliqué: ${filters.minEngagement}`);
     }
 
     // Filtrer par score d'influence
@@ -369,8 +471,10 @@ class RealApiService {
       filtered = filtered.filter(item => 
         (item.influenceScore || 0) >= filters.minInfluenceScore!
       );
+      console.log(`🎯 Filtre influence min appliqué: ${filters.minInfluenceScore}`);
     }
 
+    console.log(`✅ FILTRES AVANCÉS APPLIQUÉS: ${results.length} → ${filtered.length} résultats`);
     return filtered;
   }
 

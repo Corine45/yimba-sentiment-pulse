@@ -1,4 +1,3 @@
-
 import { MentionResult } from './types';
 
 export class DataTransformer {
@@ -13,7 +12,7 @@ export class DataTransformer {
       url: DataTransformer.extractUrl(item, platform),
       timestamp: DataTransformer.extractTimestamp(item),
       engagement: DataTransformer.extractEngagement(item, platform),
-      sentiment: DataTransformer.calculateSentiment(item),
+      sentiment: DataTransformer.calculateAdvancedSentiment(item),
       influenceScore: DataTransformer.calculateInfluenceScore(item),
       sourceUrl: item.sourceUrl || item.url || '',
       location: DataTransformer.extractLocation(item)
@@ -38,6 +37,8 @@ export class DataTransformer {
     if (endpoint.includes('twitter') || endpoint.includes('x-post')) return 'Twitter';
     if (endpoint.includes('youtube')) return 'YouTube';
     if (endpoint.includes('instagram')) return 'Instagram';
+    if (endpoint.includes('google-search')) return 'Google';
+    if (endpoint.includes('cheerio')) return 'Web';
     return 'Unknown';
   }
 
@@ -118,98 +119,147 @@ export class DataTransformer {
     return 0;
   }
 
-  private static calculateSentiment(item: any): 'positive' | 'negative' | 'neutral' {
-    console.log('🎭 CALCUL SENTIMENT pour item:', item.id || 'unknown');
+  private static calculateAdvancedSentiment(item: any): 'positive' | 'negative' | 'neutral' {
+    console.log('🎭 ANALYSE SENTIMENT AVANCÉE pour item:', item.id || 'unknown');
     
-    // 1. Si le sentiment est déjà fourni par l'API
+    // 1. Si le sentiment est déjà fourni par l'API (priorité absolue)
     if (item.sentiment) {
       const sentiment = item.sentiment.toLowerCase();
       console.log('📊 Sentiment API fourni:', sentiment);
       
       if (sentiment.includes('positive') || sentiment.includes('pos') || sentiment === 'positive') {
-        console.log('✅ Sentiment détecté: POSITIVE');
+        console.log('✅ Sentiment API: POSITIVE');
         return 'positive';
       }
       if (sentiment.includes('negative') || sentiment.includes('neg') || sentiment === 'negative') {
-        console.log('❌ Sentiment détecté: NEGATIVE');
+        console.log('❌ Sentiment API: NEGATIVE');
         return 'negative';
       }
       if (sentiment.includes('neutral') || sentiment === 'neutral') {
-        console.log('⚪ Sentiment détecté: NEUTRAL');
+        console.log('⚪ Sentiment API: NEUTRAL');
         return 'neutral';
       }
     }
     
-    // 2. Analyse du contenu textuel
+    // 2. Analyse textuelle avancée du contenu
     const content = DataTransformer.extractContent(item, '').toLowerCase();
     console.log('📝 Analyse contenu:', content.substring(0, 100) + '...');
     
-    // Mots-clés positifs
+    // Mots-clés positifs enrichis (multilingues)
     const positiveKeywords = [
-      'excellent', 'super', 'génial', 'parfait', 'merveilleux', 'fantastique',
-      'bravo', 'félicitations', 'love', 'amazing', 'awesome', 'great', 'wonderful',
-      '😍', '😊', '😃', '👍', '❤️', '🔥', '💪', '🎉', '✨', '👏',
-      'merci', 'thanks', 'grateful', 'happy', 'joy', 'best', 'good', 'nice'
+      // Français
+      'excellent', 'super', 'génial', 'parfait', 'merveilleux', 'fantastique', 'formidable',
+      'bravo', 'félicitations', 'merci', 'magnifique', 'extraordinaire', 'remarquable',
+      'incroyable', 'splendide', 'fabuleux', 'sensationnel', 'admirable', 'exceptionnel',
+      'réussi', 'brillant', 'impressionnant', 'satisfait', 'heureux', 'joie', 'bonheur',
+      'content', 'ravi', 'enchanté', 'top', 'cool', 'bien', 'bon', 'beau', 'belle',
+      
+      // Anglais
+      'love', 'amazing', 'awesome', 'great', 'wonderful', 'fantastic', 'excellent',
+      'perfect', 'outstanding', 'brilliant', 'superb', 'magnificent', 'marvelous',
+      'incredible', 'spectacular', 'remarkable', 'exceptional', 'impressive',
+      'thanks', 'grateful', 'happy', 'joy', 'blessed', 'satisfied', 'pleased',
+      'delighted', 'thrilled', 'excited', 'best', 'good', 'nice', 'beautiful',
+      
+      // Emojis positifs
+      '😍', '😊', '😃', '😄', '😁', '🤩', '🥰', '😘', '👍', '👏', '🙌', '💪',
+      '❤️', '💕', '💖', '💯', '🔥', '⭐', '🌟', '✨', '🎉', '🎊', '🥳', '👌'
     ];
     
-    // Mots-clés négatifs
+    // Mots-clés négatifs enrichis (multilingues)
     const negativeKeywords = [
-      'horrible', 'nul', 'décevant', 'catastrophe', 'problème', 'erreur',
-      'hate', 'awful', 'terrible', 'worst', 'bad', 'disappointed', 'angry',
-      '😢', '😠', '😡', '👎', '💔', '😞', '😤', '🤬', '😭',
-      'sorry', 'problem', 'issue', 'wrong', 'fail', 'broken', 'bug'
+      // Français
+      'horrible', 'nul', 'mauvais', 'décevant', 'terrible', 'affreux', 'catastrophe',
+      'problème', 'erreur', 'bug', 'panne', 'échec', 'raté', 'moche', 'laid',
+      'dégoûtant', 'insupportable', 'inacceptable', 'scandaleux', 'honteux',
+      'irritant', 'agaçant', 'ennuyeux', 'triste', 'déçu', 'mécontent', 'fâché',
+      'colère', 'furieux', 'énervé', 'frustré', 'inquiet', 'stressé', 'peur',
+      
+      // Anglais
+      'hate', 'awful', 'terrible', 'horrible', 'disgusting', 'worst', 'bad', 'poor',
+      'disappointing', 'disappointing', 'frustrating', 'annoying', 'irritating',
+      'unacceptable', 'pathetic', 'useless', 'broken', 'failed', 'disaster',
+      'sorry', 'problem', 'issue', 'error', 'bug', 'wrong', 'fail', 'sad',
+      'angry', 'mad', 'upset', 'disappointed', 'worried', 'scared', 'afraid',
+      
+      // Emojis négatifs
+      '😢', '😭', '😠', '😡', '🤬', '😤', '😞', '😔', '😟', '😕', '🙁', '☹️',
+      '👎', '💔', '😰', '😨', '😱', '🤮', '🤢', '😵', '💀', '👿', '😈'
     ];
     
     let positiveCount = 0;
     let negativeCount = 0;
+    let positiveScore = 0;
+    let negativeScore = 0;
     
+    // Comptage avec pondération
     positiveKeywords.forEach(keyword => {
-      if (content.includes(keyword)) {
-        positiveCount++;
-        console.log(`✅ Mot positif trouvé: ${keyword}`);
+      const matches = (content.match(new RegExp(keyword, 'gi')) || []).length;
+      if (matches > 0) {
+        positiveCount += matches;
+        positiveScore += matches * (keyword.length > 5 ? 2 : 1); // Mots longs = plus de poids
+        console.log(`✅ Mot positif trouvé "${keyword}": ${matches} fois`);
       }
     });
     
     negativeKeywords.forEach(keyword => {
-      if (content.includes(keyword)) {
-        negativeCount++;
-        console.log(`❌ Mot négatif trouvé: ${keyword}`);
+      const matches = (content.match(new RegExp(keyword, 'gi')) || []).length;
+      if (matches > 0) {
+        negativeCount += matches;
+        negativeScore += matches * (keyword.length > 5 ? 2 : 1);
+        console.log(`❌ Mot négatif trouvé "${keyword}": ${matches} fois`);
       }
     });
     
-    // 3. Analyse basée sur l'engagement
+    // 3. Analyse de l'engagement et des métriques
     const engagement = DataTransformer.extractEngagement(item, '');
     const totalEngagement = engagement.likes + engagement.comments + engagement.shares;
     const views = engagement.views || 0;
+    const engagementRate = views > 0 ? (totalEngagement / views) * 100 : 0;
     
     console.log('📊 Métriques engagement:', {
       likes: engagement.likes,
       comments: engagement.comments,
       shares: engagement.shares,
       views: views,
-      total: totalEngagement
+      total: totalEngagement,
+      rate: engagementRate.toFixed(2) + '%'
     });
     
-    // 4. Logique de décision du sentiment
-    if (positiveCount > negativeCount) {
-      console.log(`✅ SENTIMENT FINAL: POSITIVE (pos:${positiveCount} vs neg:${negativeCount})`);
+    // 4. Logique de décision du sentiment avec score pondéré
+    const sentimentDifference = positiveScore - negativeScore;
+    const confidenceThreshold = 2;
+    
+    console.log(`🎯 Scores: Positif=${positiveScore}, Négatif=${negativeScore}, Différence=${sentimentDifference}`);
+    
+    if (sentimentDifference > confidenceThreshold) {
+      console.log(`✅ SENTIMENT FINAL: POSITIVE (score: ${positiveScore} vs ${negativeScore})`);
       return 'positive';
     }
     
-    if (negativeCount > positiveCount) {
-      console.log(`❌ SENTIMENT FINAL: NEGATIVE (pos:${positiveCount} vs neg:${negativeCount})`);
+    if (sentimentDifference < -confidenceThreshold) {
+      console.log(`❌ SENTIMENT FINAL: NEGATIVE (score: ${positiveScore} vs ${negativeScore})`);
       return 'negative';
     }
     
-    // Si égalité, on regarde l'engagement
-    if (totalEngagement > 50 || views > 1000) {
-      console.log(`✅ SENTIMENT FINAL: POSITIVE (engagement élevé: ${totalEngagement})`);
-      return 'positive';
-    }
-    
-    if (totalEngagement < 5 && views < 100) {
-      console.log(`❌ SENTIMENT FINAL: NEGATIVE (engagement faible: ${totalEngagement})`);
-      return 'negative';  
+    // 5. Analyse contextuelle pour les cas ambigus
+    if (Math.abs(sentimentDifference) <= confidenceThreshold) {
+      // Utiliser l'engagement comme indicateur
+      if (engagementRate > 5 || totalEngagement > 100) {
+        console.log(`✅ SENTIMENT FINAL: POSITIVE (engagement élevé: ${engagementRate.toFixed(2)}%)`);
+        return 'positive';
+      }
+      
+      if (engagementRate < 1 && totalEngagement < 10) {
+        console.log(`❌ SENTIMENT FINAL: NEGATIVE (engagement faible: ${engagementRate.toFixed(2)}%)`);
+        return 'negative';
+      }
+      
+      // Analyser la longueur du contenu
+      if (content.length > 200) {
+        console.log(`⚪ SENTIMENT FINAL: NEUTRAL (contenu long et équilibré)`);
+        return 'neutral';
+      }
     }
     
     console.log('⚪ SENTIMENT FINAL: NEUTRAL (par défaut)');
@@ -221,12 +271,21 @@ export class DataTransformer {
     const total = engagement.likes + engagement.comments * 2 + engagement.shares * 3;
     const views = engagement.views || 0;
     
-    // Score basé sur l'engagement et les vues
+    // Score basé sur l'engagement, les vues et la récence
     let score = Math.min(Math.round((total + views / 100) / 50), 10);
-    score = Math.max(1, score);
     
-    console.log(`🎯 Score d'influence calculé: ${score} (engagement: ${total}, vues: ${views})`);
+    // Bonus pour les contenus récents
+    const timestamp = new Date(DataTransformer.extractTimestamp(item));
+    const now = new Date();
+    const daysDifference = (now.getTime() - timestamp.getTime()) / (1000 * 3600 * 24);
     
-    return score;
+    if (daysDifference < 1) score += 1; // Bonus pour contenu très récent
+    if (daysDifference < 7) score += 0.5; // Bonus pour contenu récent
+    
+    score = Math.max(1, Math.min(10, score));
+    
+    console.log(`🎯 Score d'influence calculé: ${score} (engagement: ${total}, vues: ${views}, âge: ${daysDifference.toFixed(1)} jours)`);
+    
+    return Math.round(score);
   }
 }

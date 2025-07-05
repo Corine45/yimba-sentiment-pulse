@@ -14,7 +14,7 @@ import { PlatformSelector } from "./PlatformSelector";
 import { SentimentFilter } from "./SentimentFilter";
 import { InfluenceScoreFilter } from "./InfluenceScoreFilter";
 import { SearchStats } from "./SearchStats";
-import { AdvancedFiltersPanel } from "./AdvancedFiltersPanel";
+import { DynamicAdvancedFilters } from "./DynamicAdvancedFilters";
 import { useRealSearch } from "@/hooks/useRealSearch";
 import { SearchFilters } from "@/services/api/types";
 
@@ -27,18 +27,6 @@ export const RealSearchPanel = () => {
   const [itemsPerPage, setItemsPerPage] = useState(25);
   const [activeTab, setActiveTab] = useState('search');
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
-  
-  // États pour les filtres détaillés
-  const [selectedLanguage, setSelectedLanguage] = useState<string>('');
-  const [excludedLanguages, setExcludedLanguages] = useState<string[]>([]);
-  const [selectedCountry, setSelectedCountry] = useState<string>('');
-  const [excludedCountries, setExcludedCountries] = useState<string[]>([]);
-  const [authorFilter, setAuthorFilter] = useState<string>('');
-  const [domainFilter, setDomainFilter] = useState<string>('');
-  const [importanceLevel, setImportanceLevel] = useState<'all' | 'high' | 'medium' | 'low'>('all');
-  const [visitedFilter, setVisitedFilter] = useState<'all' | 'visited' | 'unvisited'>('all');
-  const [influenceScore, setInfluenceScore] = useState<number[]>([0]);
-  const [sentimentFilter, setSentimentFilter] = useState<string[]>([]);
   
   const { 
     mentions, 
@@ -55,20 +43,8 @@ export const RealSearchPanel = () => {
 
   const handleSearch = () => {
     setCurrentPage(1);
-    const advancedFilters: SearchFilters = {
-      ...filters,
-      language: selectedLanguage,
-      excludedLanguages,
-      country: selectedCountry,
-      excludedCountries,
-      author: authorFilter,
-      domain: domainFilter,
-      importance: importanceLevel,
-      visited: visitedFilter,
-      influenceScore: influenceScore[0],
-      sentiment: sentimentFilter.length > 0 ? sentimentFilter : undefined
-    };
-    executeSearch(keywords, selectedPlatforms, advancedFilters);
+    console.log('🔍 LANCEMENT RECHERCHE AVEC FILTRES AVANCÉS:', filters);
+    executeSearch(keywords, selectedPlatforms, filters);
   };
 
   const handleSaveMentions = async (format: 'json' | 'pdf' | 'csv' = 'json') => {
@@ -76,50 +52,46 @@ export const RealSearchPanel = () => {
     const endIndex = startIndex + itemsPerPage;
     const mentionsToSave = mentions.slice(startIndex, endIndex);
     
-    const filtersToSave: SearchFilters = {
-      ...filters,
-      language: selectedLanguage,
-      excludedLanguages,
-      country: selectedCountry,
-      excludedCountries,
-      author: authorFilter,
-      domain: domainFilter,
-      importance: importanceLevel,
-      visited: visitedFilter,
-      influenceScore: influenceScore[0],
-      sentiment: sentimentFilter
-    };
-    
-    await saveMentions(mentionsToSave, keywords, selectedPlatforms, filtersToSave, format);
+    await saveMentions(mentionsToSave, keywords, selectedPlatforms, filters, format);
   };
 
   const clearAllFilters = () => {
-    setSelectedLanguage('');
-    setExcludedLanguages([]);
-    setSelectedCountry('');
-    setExcludedCountries([]);
-    setAuthorFilter('');
-    setDomainFilter('');
-    setImportanceLevel('all');
-    setVisitedFilter('all');
-    setInfluenceScore([0]);
-    setSentimentFilter([]);
     setFilters({});
+    console.log('🗑️ Tous les filtres effacés');
   };
 
   const getActiveFiltersCount = () => {
     let count = 0;
-    if (selectedLanguage) count++;
-    if (excludedLanguages.length > 0) count++;
-    if (selectedCountry) count++;
-    if (excludedCountries.length > 0) count++;
-    if (authorFilter) count++;
-    if (domainFilter) count++;
-    if (importanceLevel !== 'all') count++;
-    if (visitedFilter !== 'all') count++;
-    if (influenceScore[0] > 0) count++;
-    if (sentimentFilter.length > 0) count++;
+    if (filters.language) count++;
+    if (filters.excludedLanguages?.length) count++;
+    if (filters.geography?.country) count++;
+    if (filters.excludedCountries?.length) count++;
+    if (filters.author) count++;
+    if (filters.domain) count++;
+    if (filters.importance && filters.importance !== 'all') count++;
+    if (filters.visited && filters.visited !== 'all') count++;
+    if (filters.minInfluenceScore && filters.minInfluenceScore > 0) count++;
+    if (filters.sentiment) count++;
+    if (filters.sortBy) count++;
+    if (filters.period) count++;
+    if (filters.tags?.length) count++;
+    if (filters.dateFrom || filters.dateTo) count++;
     return count;
+  };
+
+  const handleFiltersChange = (newFilters: SearchFilters) => {
+    console.log('🔧 MISE À JOUR FILTRES:', newFilters);
+    setFilters(newFilters);
+  };
+
+  const handleSaveFilters = () => {
+    setSavedFilters([...savedFilters, filters]);
+    console.log('💾 Filtres sauvegardés:', filters);
+  };
+
+  const handleApplyFilters = () => {
+    console.log('✅ APPLICATION DES FILTRES AVANCÉS:', filters);
+    handleSearch();
   };
 
   const totalPages = Math.ceil(mentions.length / itemsPerPage);
@@ -140,7 +112,7 @@ export const RealSearchPanel = () => {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
-                <span>Recherche en temps réel - API Backend</span>
+                <span>Recherche en temps réel - API Backend Enrichie</span>
                 <div className="flex items-center space-x-2">
                   {fromCache && (
                     <Badge variant="secondary" className="flex items-center space-x-1">
@@ -156,6 +128,10 @@ export const RealSearchPanel = () => {
               </CardTitle>
               <div className="text-sm text-gray-600">
                 Données scrapées depuis: <code>https://yimbapulseapi.a-car.ci</code>
+                <br />
+                <span className="text-green-600 font-medium">
+                  APIs enrichies: Facebook Posts Ideal, Instagram Profile, Google Search, YouTube Channel, Web Cheerio
+                </span>
               </div>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -164,14 +140,6 @@ export const RealSearchPanel = () => {
                 selectedPlatforms={selectedPlatforms} 
                 onPlatformsChange={setSelectedPlatforms}
                 platformCounts={platformCounts}
-              />
-              <SentimentFilter 
-                sentimentFilter={sentimentFilter} 
-                onSentimentChange={setSentimentFilter} 
-              />
-              <InfluenceScoreFilter 
-                influenceScore={influenceScore} 
-                onInfluenceScoreChange={setInfluenceScore} 
               />
 
               {/* Bouton pour afficher/masquer les filtres avancés */}
@@ -182,7 +150,7 @@ export const RealSearchPanel = () => {
                   className="flex items-center space-x-2"
                 >
                   <Filter className="w-4 h-4" />
-                  <span>Filtres avancés</span>
+                  <span>Filtres avancés complets</span>
                   {getActiveFiltersCount() > 0 && (
                     <Badge variant="secondary">{getActiveFiltersCount()}</Badge>
                   )}
@@ -199,36 +167,20 @@ export const RealSearchPanel = () => {
                     className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700"
                   >
                     <Search className="w-4 h-4 mr-2" />
-                    {isLoading ? "Recherche en cours..." : "Lancer la recherche"}
+                    {isLoading ? "Recherche enrichie en cours..." : "Lancer la recherche enrichie"}
                   </Button>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* Filtres avancés détaillés */}
+          {/* Filtres avancés avec toutes les options */}
           {showAdvancedFilters && (
-            <AdvancedFiltersPanel
-              selectedLanguage={selectedLanguage}
-              setSelectedLanguage={setSelectedLanguage}
-              excludedLanguages={excludedLanguages}
-              setExcludedLanguages={setExcludedLanguages}
-              selectedCountry={selectedCountry}
-              setSelectedCountry={setSelectedCountry}
-              excludedCountries={excludedCountries}
-              setExcludedCountries={setExcludedCountries}
-              authorFilter={authorFilter}
-              setAuthorFilter={setAuthorFilter}
-              domainFilter={domainFilter}
-              setDomainFilter={setDomainFilter}
-              importanceLevel={importanceLevel}
-              setImportanceLevel={setImportanceLevel}
-              visitedFilter={visitedFilter}
-              setVisitedFilter={setVisitedFilter}
-              savedFilters={savedFilters}
-              setSavedFilters={setSavedFilters}
-              getActiveFiltersCount={getActiveFiltersCount}
-              clearAllFilters={clearAllFilters}
+            <DynamicAdvancedFilters
+              filters={filters}
+              onFiltersChange={handleFiltersChange}
+              onSaveFilters={handleSaveFilters}
+              onApplyFilters={handleApplyFilters}
             />
           )}
 
