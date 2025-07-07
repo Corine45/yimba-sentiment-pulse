@@ -17,7 +17,8 @@ const Index = () => {
       loading, 
       profileLoading, 
       user: user?.email, 
-      profile: profile?.role 
+      profile: profile?.role,
+      currentPath: window.location.pathname
     });
     
     if (!loading && !profileLoading) {
@@ -25,12 +26,9 @@ const Index = () => {
         console.log('🔄 Redirection vers /auth - utilisateur non connecté');
         navigate('/auth', { replace: true });
       } else {
-        console.log('✅ Utilisateur connecté, affichage dashboard');
-        // Si l'utilisateur est connecté et qu'on est sur /login, rediriger vers /dashboard
-        if (window.location.pathname === '/login') {
-          console.log('🔄 Redirection de /login vers /dashboard');
-          navigate('/dashboard', { replace: true });
-        }
+        console.log('✅ Utilisateur connecté, redirection vers dashboard');
+        // Rediriger vers le dashboard pour tous les utilisateurs connectés
+        navigate('/dashboard', { replace: true });
       }
     }
   }, [user, profile, loading, profileLoading, navigate]);
