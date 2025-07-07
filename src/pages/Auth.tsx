@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,7 +27,11 @@ const Auth = () => {
     setLoading(true);
     
     try {
-      const { error } = await signIn(loginEmail, loginPassword);
+      // Connexion directe avec Supabase sans passer par le hook
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: loginEmail,
+        password: loginPassword,
+      });
       
       if (error) {
         setLoading(false);
@@ -36,19 +41,18 @@ const Auth = () => {
           variant: "destructive",
         });
       } else {
-        console.log('✅ Connexion réussie - redirection immédiate');
-        // Ne pas reset loading, on redirige immédiatement
+        console.log('✅ Connexion réussie - redirection immédiate vers /dashboard');
+        // Redirection immédiate sans attendre les hooks
         window.location.href = '/dashboard';
-        return; // Sortir de la fonction pour éviter le finally
+        return;
       }
     } catch (error) {
+      setLoading(false);
       toast({
         title: "Erreur",
         description: "Une erreur inattendue s'est produite",
         variant: "destructive",
       });
-    } finally {
-      setLoading(false);
     }
   };
 
