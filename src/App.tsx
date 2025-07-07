@@ -27,13 +27,12 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
-            <Route path="/" element={<Home />} />
             <Route path="/about" element={<About />} />
             <Route path="/auth" element={<Auth />} />
             
-            {/* Routes protégées */}
+            {/* Route principale - redirige les utilisateurs connectés */}
             <Route 
-              path="/login" 
+              path="/" 
               element={
                 <ProtectedRoute>
                   <Index />
