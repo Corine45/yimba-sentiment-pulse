@@ -45,130 +45,111 @@ export const Brand24Dashboard = () => {
   });
 
   useEffect(() => {
-    let isMounted = true;
-    
     const loadData = async () => {
-      if (!user?.id || !isMounted) {
-        if (isMounted) setLoading(false);
+      if (!user?.id) {
+        setLoading(false);
         return;
       }
 
-      console.log('🔄 Chargement initial dashboard pour:', user.email);
-      await loadDashboardData();
+      try {
+        setLoading(true);
+        console.log('🔄 Chargement des données dashboard pour:', user.email);
+
+        // Charger les mentions sauvegardées avec gestion d'erreur
+        const { data: mentionSaves, error: mentionError } = await supabase
+          .from('mention_saves')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(10);
+
+        if (mentionError) {
+          console.error('❌ Erreur mention_saves:', mentionError);
+        }
+
+        // Charger les données d'influenceurs avec gestion d'erreur
+        const { data: influencerData, error: influencerError } = await supabase
+          .from('influencer_data')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('influence_score', { ascending: false })
+          .limit(10);
+
+        if (influencerError) {
+          console.error('❌ Erreur influencer_data:', influencerError);
+        }
+
+        // Transformer les données pour le dashboard
+        const allMentions: MentionData[] = [];
+        let totalPositive = 0, totalNegative = 0, totalNeutral = 0;
+        let totalEngagement = 0, totalReach = 0;
+
+        mentionSaves?.forEach(save => {
+          if (Array.isArray(save.mentions_data)) {
+            const mentions = save.mentions_data.map((mention: any) => ({
+              id: `${save.id}-${mention.id || Math.random()}`,
+              content: mention.content || mention.text || '',
+              author: mention.author || mention.username || 'Utilisateur anonyme',
+              platform: mention.platform || 'unknown',
+              sentiment: mention.sentiment || 'neutral',
+              engagement: mention.engagement_count || mention.likes || 0,
+              reach: mention.reach || mention.views || mention.engagement_count * 10,
+              created_at: mention.created_at || save.created_at,
+              url: mention.url || mention.link
+            }));
+            allMentions.push(...mentions);
+          }
+          
+          totalPositive += save.positive_mentions || 0;
+          totalNegative += save.negative_mentions || 0;
+          totalNeutral += save.neutral_mentions || 0;
+          totalEngagement += save.total_engagement || 0;
+        });
+
+        // Calculer la portée totale estimée
+        totalReach = allMentions.reduce((sum, mention) => sum + mention.reach, 0);
+
+        // Transformer les données influenceurs avec mentions calculées
+        const transformedInfluencers = influencerData?.map(inf => ({
+          name: inf.name,
+          platform: inf.platform,
+          followers: inf.followers,
+          mentions: allMentions.filter(m => m.author === inf.name).length,
+          engagement_rate: inf.engagement_rate,
+          influence_score: inf.influence_score
+        })) || [];
+
+        console.log('📊 Données chargées:', {
+          mentionSaves: mentionSaves?.length || 0,
+          influencers: influencerData?.length || 0,
+          totalMentions: allMentions.length
+        });
+
+        setMentionsData(allMentions.slice(0, 100));
+        setInfluencers(transformedInfluencers);
+        setMetrics({
+          totalMentions: allMentions.length,
+          positiveCount: totalPositive,
+          negativeCount: totalNegative,
+          neutralCount: totalNeutral,
+          totalEngagement,
+          totalReach,
+          growth: {
+            mentions: Math.random() * 20 - 10,
+            engagement: Math.random() * 30 - 15,
+            reach: Math.random() * 25 - 12
+          }
+        });
+
+      } catch (error) {
+        console.error('❌ Erreur chargement dashboard:', error);
+      } finally {
+        setLoading(false);
+      }
     };
 
     loadData();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [user?.id]); // Stabilisé avec cleanup
-
-  const loadDashboardData = async () => {
-    if (!user?.id) {
-      console.log('❌ Pas d\'utilisateur connecté');
-      setLoading(false);
-      return;
-    }
-
-    try {
-      setLoading(true);
-      console.log('🔄 Chargement des données dashboard pour:', user.email);
-
-      // Charger les mentions sauvegardées avec gestion d'erreur
-      const { data: mentionSaves, error: mentionError } = await supabase
-        .from('mention_saves')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(10);
-
-      if (mentionError) {
-        console.error('❌ Erreur mention_saves:', mentionError);
-        // Continuer même en cas d'erreur
-      }
-
-      // Charger les données d'influenceurs avec gestion d'erreur
-      const { data: influencerData, error: influencerError } = await supabase
-        .from('influencer_data')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('influence_score', { ascending: false })
-        .limit(10);
-
-      if (influencerError) {
-        console.error('❌ Erreur influencer_data:', influencerError);
-        // Continuer même en cas d'erreur
-      }
-
-      // Transformer les données pour le dashboard
-      const allMentions: MentionData[] = [];
-      let totalPositive = 0, totalNegative = 0, totalNeutral = 0;
-      let totalEngagement = 0, totalReach = 0;
-
-      mentionSaves?.forEach(save => {
-        if (Array.isArray(save.mentions_data)) {
-          const mentions = save.mentions_data.map((mention: any) => ({
-            id: `${save.id}-${mention.id || Math.random()}`,
-            content: mention.content || mention.text || '',
-            author: mention.author || mention.username || 'Utilisateur anonyme',
-            platform: mention.platform || 'unknown',
-            sentiment: mention.sentiment || 'neutral',
-            engagement: mention.engagement_count || mention.likes || 0,
-            reach: mention.reach || mention.views || mention.engagement_count * 10,
-            created_at: mention.created_at || save.created_at,
-            url: mention.url || mention.link
-          }));
-          allMentions.push(...mentions);
-        }
-        
-        totalPositive += save.positive_mentions || 0;
-        totalNegative += save.negative_mentions || 0;
-        totalNeutral += save.neutral_mentions || 0;
-        totalEngagement += save.total_engagement || 0;
-      });
-
-      // Calculer la portée totale estimée
-      totalReach = allMentions.reduce((sum, mention) => sum + mention.reach, 0);
-
-      // Transformer les données influenceurs avec mentions calculées
-      const transformedInfluencers = influencerData?.map(inf => ({
-        name: inf.name,
-        platform: inf.platform,
-        followers: inf.followers,
-        mentions: allMentions.filter(m => m.author === inf.name).length,
-        engagement_rate: inf.engagement_rate,
-        influence_score: inf.influence_score
-      })) || [];
-
-      console.log('📊 Données chargées:', {
-        mentionSaves: mentionSaves?.length || 0,
-        influencers: influencerData?.length || 0,
-        totalMentions: allMentions.length
-      });
-
-      setMentionsData(allMentions.slice(0, 100)); // Limiter à 100 mentions pour les performances
-      setInfluencers(transformedInfluencers);
-      setMetrics({
-        totalMentions: allMentions.length,
-        positiveCount: totalPositive,
-        negativeCount: totalNegative,
-        neutralCount: totalNeutral,
-        totalEngagement,
-        totalReach,
-        growth: {
-          mentions: Math.random() * 20 - 10, // Simulé pour l'exemple
-          engagement: Math.random() * 30 - 15,
-          reach: Math.random() * 25 - 12
-        }
-      });
-
-    } catch (error) {
-      console.error('❌ Erreur chargement dashboard:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [user?.id]);
 
   // Données pour les graphiques
   const sentimentData = [
@@ -401,7 +382,7 @@ export const Brand24Dashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-4 max-h-96 overflow-y-auto">
-                {mentionsData.slice(0, 50).map((mention) => (
+                {mentionsData.slice(0, 100).map((mention) => (
                   <div key={mention.id} className="border-b border-gray-100 pb-4 last:border-b-0">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
