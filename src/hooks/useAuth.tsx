@@ -37,73 +37,85 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    console.log('🔐 Initialisation du contexte d\'authentification');
+    let mounted = true;
     
-    // Configuration du listener AVANT de vérifier la session existante
+    console.log('🔐 Initialisation unique du contexte d\'authentification');
+    
+    // Configuration du listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        if (!mounted) return;
+        
         console.log(`🔄 Auth state change: ${event}`, session?.user?.email);
         
         if (session?.user) {
           // Récupérer le rôle utilisateur
-          const role = await fetchUserProfile(session.user.id);
-          const userWithRole = { ...session.user, role };
-          
-          setSession(session);
-          setUser(userWithRole);
-          
-          console.log('✅ Utilisateur connecté avec rôle:', session.user.email, role);
+          try {
+            const role = await fetchUserProfile(session.user.id);
+            const userWithRole = { ...session.user, role };
+            
+            setSession(session);
+            setUser(userWithRole);
+            
+            console.log('✅ Utilisateur connecté avec rôle:', session.user.email, role);
+          } catch (error) {
+            console.error('❌ Erreur récupération rôle:', error);
+            setSession(session);
+            setUser({ ...session.user, role: 'observateur' });
+          }
         } else {
           setSession(null);
           setUser(null);
           console.log('🚪 Utilisateur déconnecté');
         }
         
-        // Gérer les événements spécifiques
-        if (event === 'SIGNED_IN') {
-          console.log('✅ Connexion complète');
-        } else if (event === 'TOKEN_REFRESHED') {
-          console.log('🔄 Token rafraîchi');
-        }
-        
         setLoading(false);
       }
     );
 
-    // Vérification de la session existante APRÈS avoir configuré le listener
+    // Vérification de la session existante
     const checkSession = async () => {
+      if (!mounted) return;
+      
       try {
         const { data: { session }, error } = await supabase.auth.getSession();
         if (error) {
-          console.error('❌ Erreur lors de la récupération de la session:', error);
-        } else {
-          console.log('📋 Session existante vérifiée:', session?.user?.email || 'aucune');
-          
-          if (session?.user) {
+          console.error('❌ Erreur session:', error);
+          setLoading(false);
+          return;
+        }
+        
+        if (session?.user && mounted) {
+          try {
             const role = await fetchUserProfile(session.user.id);
             const userWithRole = { ...session.user, role };
             setSession(session);
             setUser(userWithRole);
-            console.log('✅ Session avec rôle:', role);
-          } else {
-            setSession(null);
-            setUser(null);
+            console.log('✅ Session existante avec rôle:', role);
+          } catch (error) {
+            console.error('❌ Erreur profil:', error);
+            setSession(session);
+            setUser({ ...session.user, role: 'observateur' });
           }
+        } else {
+          setSession(null);
+          setUser(null);
         }
       } catch (error) {
-        console.error('❌ Erreur de vérification de session:', error);
+        console.error('❌ Erreur vérification session:', error);
       } finally {
-        setLoading(false);
+        if (mounted) setLoading(false);
       }
     };
 
     checkSession();
 
     return () => {
+      mounted = false;
       console.log('🧹 Nettoyage du listener d\'authentification');
       subscription.unsubscribe();
     };
-  }, []);
+  }, []); // Pas de dépendances pour éviter les re-renders
 
   const signIn = async (email: string, password: string) => {
     console.log('🔑 Tentative de connexion pour:', email);
