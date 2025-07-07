@@ -1,6 +1,7 @@
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Eye } from "lucide-react";
+import { Brand24Dashboard } from "./widgets/Brand24Dashboard";
 import { AIContextGenerator } from "./widgets/AIContextGenerator";
 import { DynamicInfluencerAnalysis } from "./widgets/DynamicInfluencerAnalysis";
 import { MediaDistribution } from "./widgets/MediaDistribution";
@@ -34,8 +35,9 @@ export const SentimentAnalysis = ({ userRole, permissions }: SentimentAnalysisPr
 
       <AIContextGenerator />
 
-      <Tabs defaultValue="overview" className="w-full">
-        <TabsList className="grid w-full grid-cols-6">
+      <Tabs defaultValue="brand24" className="w-full">
+        <TabsList className="grid w-full grid-cols-7">
+          <TabsTrigger value="brand24">🎯 Dashboard</TabsTrigger>
           <TabsTrigger value="overview">Vue d'ensemble</TabsTrigger>
           <TabsTrigger value="influencers">Influenceurs</TabsTrigger>
           <TabsTrigger value="media">Médias</TabsTrigger>
@@ -43,6 +45,10 @@ export const SentimentAnalysis = ({ userRole, permissions }: SentimentAnalysisPr
           <TabsTrigger value="reach">Impact</TabsTrigger>
           <TabsTrigger value="realtime">Temps réel</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="brand24" className="space-y-6">
+          <Brand24Dashboard />
+        </TabsContent>
 
         <TabsContent value="overview" className="space-y-6">
           <SentimentOverview />
