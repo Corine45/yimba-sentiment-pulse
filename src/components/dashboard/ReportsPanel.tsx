@@ -74,11 +74,9 @@ export const ReportsPanel = () => {
     }
   };
 
-  // Vérifier les permissions avec debug
-  console.log('🔐 Utilisateur actuel:', user?.email, 'Rôle:', user?.role);
+  // Vérifier les permissions
   const canGenerateReports = user?.role === 'admin' || user?.role === 'analyste';
   const canExportData = user?.role === 'admin' || user?.role === 'analyste';
-  console.log('✅ Permissions:', { canGenerateReports, canExportData });
 
   return (
     <div className="space-y-6">

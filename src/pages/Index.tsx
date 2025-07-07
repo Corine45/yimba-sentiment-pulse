@@ -13,22 +13,14 @@ const Index = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    console.log('📍 Page Index - Vérification auth:', { 
-      loading, 
-      profileLoading, 
-      user: user?.email, 
-      profile: profile?.role 
-    });
-    
     if (!loading && !profileLoading) {
       if (!user || !profile) {
-        console.log('🔄 Redirection vers /auth - utilisateur non connecté');
+        console.log('Utilisateur non connecté, redirection vers /auth');
         navigate('/auth', { replace: true });
       } else {
-        console.log('✅ Utilisateur connecté, affichage dashboard');
         // Si l'utilisateur est connecté et qu'on est sur /login, rediriger vers /dashboard
         if (window.location.pathname === '/login') {
-          console.log('🔄 Redirection de /login vers /dashboard');
+          console.log('Redirection de /login vers /dashboard');
           navigate('/dashboard', { replace: true });
         }
       }

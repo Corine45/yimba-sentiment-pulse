@@ -222,7 +222,7 @@ export const ReportsList = ({ canGenerateReports, canExportData }: ReportsListPr
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {topMentions.slice(0, 100).map((mention: any, index) => (
+                {topMentions.map((mention: any, index) => (
                   <div key={index} className="border-b pb-3 last:border-b-0">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">

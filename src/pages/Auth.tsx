@@ -2,7 +2,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,40 +26,29 @@ const Auth = () => {
     setLoading(true);
     
     try {
-      // Connexion directe avec Supabase sans passer par le hook
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: loginEmail,
-        password: loginPassword,
-      });
+      const { error } = await signIn(loginEmail, loginPassword);
       
       if (error) {
-        setLoading(false);
         toast({
           title: "Erreur de connexion",
           description: error.message,
           variant: "destructive",
         });
       } else {
-        console.log('✅ Connexion réussie - redirection immédiate vers /dashboard');
-        console.log('🔄 Début redirection...');
-        
-        // Multiples méthodes de redirection pour forcer le changement
-        setTimeout(() => {
-          console.log('🚀 Redirection forcée');
-          window.location.replace('/dashboard');
-        }, 100);
-        
-        // Redirection immédiate aussi
-        window.location.href = '/dashboard';
-        return;
+        toast({
+          title: "Connexion réussie",
+          description: "Bienvenue dans YIMBA !",
+        });
+        navigate('/');
       }
     } catch (error) {
-      setLoading(false);
       toast({
         title: "Erreur",
         description: "Une erreur inattendue s'est produite",
         variant: "destructive",
       });
+    } finally {
+      setLoading(false);
     }
   };
 
