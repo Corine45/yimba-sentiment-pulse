@@ -30,55 +30,13 @@ const App = () => (
             <Route path="/about" element={<About />} />
             <Route path="/auth" element={<Auth />} />
             
-            {/* Route principale - redirige les utilisateurs connectés */}
-            <Route 
-              path="/" 
-              element={
-                <ProtectedRoute>
-                  <Index />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/dashboard" 
-              element={
-                <ProtectedRoute>
-                  <Dashboard />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/profile" 
-              element={
-                <ProtectedRoute>
-                  <Profile />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/status" 
-              element={
-                <ProtectedRoute>
-                  <StatusOverview />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/admin" 
-              element={
-                <ProtectedRoute requiredRole="admin">
-                  <AdminPanel />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/analyst" 
-              element={
-                <ProtectedRoute requiredRole="analyste">
-                  <AnalystWorkspace />
-                </ProtectedRoute>
-              } 
-            />
+            {/* Routes principales - gestion d'auth dans Index */}
+            <Route path="/" element={<Index />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/status" element={<StatusOverview />} />
+            <Route path="/admin" element={<AdminPanel />} />
+            <Route path="/analyst" element={<AnalystWorkspace />} />
             
             <Route path="*" element={<NotFound />} />
           </Routes>
