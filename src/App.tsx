@@ -4,7 +4,8 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { SimpleAuthProvider } from "@/hooks/useSimpleAuth";
+import { AuthProvider } from "@/hooks/useAuth";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import Home from "./pages/Home";
 import About from "./pages/About";
 import Index from "./pages/Index";
@@ -21,26 +22,69 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <SimpleAuthProvider>
+      <AuthProvider>
         <Toaster />
         <Sonner />
         <BrowserRouter>
           <Routes>
+            <Route path="/" element={<Home />} />
             <Route path="/about" element={<About />} />
             <Route path="/auth" element={<Auth />} />
             
-            {/* Routes principales - gestion d'auth dans Index */}
-            <Route path="/" element={<Index />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/status" element={<StatusOverview />} />
-            <Route path="/admin" element={<AdminPanel />} />
-            <Route path="/analyst" element={<AnalystWorkspace />} />
+            {/* Routes protégées */}
+            <Route 
+              path="/login" 
+              element={
+                <ProtectedRoute>
+                  <Index />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/dashboard" 
+              element={
+                <ProtectedRoute>
+                  <Dashboard />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/profile" 
+              element={
+                <ProtectedRoute>
+                  <Profile />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/status" 
+              element={
+                <ProtectedRoute>
+                  <StatusOverview />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin" 
+              element={
+                <ProtectedRoute requiredRole="admin">
+                  <AdminPanel />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/analyst" 
+              element={
+                <ProtectedRoute requiredRole="analyste">
+                  <AnalystWorkspace />
+                </ProtectedRoute>
+              } 
+            />
             
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
-      </SimpleAuthProvider>
+      </AuthProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );

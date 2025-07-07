@@ -1,10 +1,10 @@
 
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useSimpleAuth } from './useSimpleAuth';
+import { useAuth } from './useAuth';
 
 export const useNavigationProtection = () => {
-  const { user } = useSimpleAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {

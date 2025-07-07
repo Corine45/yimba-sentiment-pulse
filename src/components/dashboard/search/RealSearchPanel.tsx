@@ -11,9 +11,8 @@ import { WordCloud } from "../widgets/WordCloud";
 import { KeywordInput } from "./KeywordInput";
 import { PlatformSelector } from "./PlatformSelector";
 import { SearchStats } from "./SearchStats";
+import { AdvancedFiltersSection } from "./AdvancedFiltersSection";
 import { SearchHeader } from "./SearchHeader";
-import { ApiEndpointsList } from "./ApiEndpointsList";
-import { OptionalAdvancedFilters } from "./OptionalAdvancedFilters";
 import { useRealSearch } from "@/hooks/useRealSearch";
 import { SearchFilters } from "@/services/api/types";
 
@@ -21,6 +20,7 @@ export const RealSearchPanel = () => {
   const [keywords, setKeywords] = useState<string[]>([]);
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
   const [filters, setFilters] = useState<SearchFilters>({});
+  const [savedFilters, setSavedFilters] = useState<SearchFilters[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(25);
   const [activeTab, setActiveTab] = useState('search');
@@ -40,13 +40,7 @@ export const RealSearchPanel = () => {
 
   const handleSearch = () => {
     setCurrentPage(1);
-    console.log('🚀 RECHERCHE FIABLE AVEC TOUTES LES APIs:', {
-      keywords,
-      platforms: selectedPlatforms,
-      filters,
-      api: 'https://yimbapulseapi.a-car.ci',
-      totalApis: 'Plus de 30 endpoints disponibles'
-    });
+    console.log('🔍 LANCEMENT RECHERCHE AVEC FILTRES AVANCÉS:', filters);
     executeSearch(keywords, selectedPlatforms, filters);
   };
 
@@ -71,7 +65,6 @@ export const RealSearchPanel = () => {
     if (filters.excludedCountries?.length) count++;
     if (filters.author) count++;
     if (filters.domain) count++;
-    if (filters.country) count++;
     if (filters.importance && filters.importance !== 'all') count++;
     if (filters.visited && filters.visited !== 'all') count++;
     if (filters.minInfluenceScore && filters.minInfluenceScore > 0) count++;
@@ -80,13 +73,22 @@ export const RealSearchPanel = () => {
     if (filters.period) count++;
     if (filters.tags?.length) count++;
     if (filters.dateFrom || filters.dateTo) count++;
-    if (filters.minEngagement) count++;
     return count;
   };
 
   const handleFiltersChange = (newFilters: SearchFilters) => {
-    console.log('🔧 MISE À JOUR FILTRES OPTIONNELS:', newFilters);
+    console.log('🔧 MISE À JOUR FILTRES:', newFilters);
     setFilters(newFilters);
+  };
+
+  const handleSaveFilters = () => {
+    setSavedFilters([...savedFilters, filters]);
+    console.log('💾 Filtres sauvegardés:', filters);
+  };
+
+  const handleApplyFilters = () => {
+    console.log('✅ APPLICATION DES FILTRES AVANCÉS:', filters);
+    handleSearch();
   };
 
   const totalPages = Math.ceil(mentions.length / itemsPerPage);
@@ -97,10 +99,9 @@ export const RealSearchPanel = () => {
   return (
     <div className="space-y-6">
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="search">🔍 Recherche</TabsTrigger>
-          <TabsTrigger value="apis">🔗 Mes APIs</TabsTrigger>
-          <TabsTrigger value="history">📚 Historique</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="search">Recherche & Résultats</TabsTrigger>
+          <TabsTrigger value="history">Historique des sauvegardes</TabsTrigger>
         </TabsList>
 
         <TabsContent value="search" className="space-y-6">
@@ -110,14 +111,12 @@ export const RealSearchPanel = () => {
               <CardTitle>
                 <SearchHeader fromCache={fromCache} onClearCache={clearCache} />
               </CardTitle>
-              <div className="text-sm text-gray-600 bg-blue-50 p-3 rounded-lg">
-                <div className="flex items-center space-x-2">
-                  <span className="text-blue-600 font-semibold">🚀 API Backend Fiable:</span>
-                  <code className="bg-white px-2 py-1 rounded">https://yimbapulseapi.a-car.ci</code>
-                </div>
-                <div className="mt-2 text-xs text-green-600">
-                  ✨ <strong>30+ APIs harmonisées actives</strong> - TikTok • Facebook • Instagram • Twitter/X • YouTube • Google • Web + toutes les variantes spécialisées
-                </div>
+              <div className="text-sm text-gray-600">
+                Données scrapées depuis: <code>https://yimbapulseapi.a-car.ci</code>
+                <br />
+                <span className="text-green-600 font-medium">
+                  ✨ APIs harmonisées: Facebook Posts Ideal, Instagram Profile, Google Search, YouTube Channel, Web Cheerio
+                </span>
               </div>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -128,10 +127,12 @@ export const RealSearchPanel = () => {
                 platformCounts={platformCounts}
               />
 
-              <OptionalAdvancedFilters
+              <AdvancedFiltersSection
                 filters={filters}
                 onFiltersChange={handleFiltersChange}
+                onSaveFilters={handleSaveFilters}
                 onClearFilters={clearAllFilters}
+                onApplyFilters={handleApplyFilters}
                 getActiveFiltersCount={getActiveFiltersCount}
               />
 
@@ -144,24 +145,9 @@ export const RealSearchPanel = () => {
                   size="lg"
                 >
                   <Search className="w-5 h-5 mr-2" />
-                  {isLoading ? "🔄 Recherche fiable via 30+ APIs..." : "🚀 Rechercher via toutes mes APIs"}
+                  {isLoading ? "Recherche enrichie..." : "🚀 Lancer la recherche"}
                 </Button>
               </div>
-              
-              {/* Debug des API */}
-              {isLoading && (
-                <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                  <p className="text-sm text-yellow-800">
-                    🔍 Recherche fiable en cours sur vos 30+ APIs harmonisées...
-                  </p>
-                  <div className="text-xs text-yellow-600 mt-1">
-                    Plateformes: {selectedPlatforms.join(', ')} | Mots-clés: {keywords.join(', ')}
-                  </div>
-                  <div className="text-xs text-yellow-600 mt-1">
-                    Filtres: {getActiveFiltersCount() > 0 ? `${getActiveFiltersCount()} filtres actifs` : 'Aucun filtre (données brutes)'}
-                  </div>
-                </div>
-              )}
             </CardContent>
           </Card>
 
@@ -190,10 +176,6 @@ export const RealSearchPanel = () => {
               onItemsPerPageChange={setItemsPerPage}
             />
           )}
-        </TabsContent>
-
-        <TabsContent value="apis">
-          <ApiEndpointsList />
         </TabsContent>
 
         <TabsContent value="history">

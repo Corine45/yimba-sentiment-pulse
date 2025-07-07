@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useSimpleAuth } from "@/hooks/useSimpleAuth";
-import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,36 +17,16 @@ const Auth = () => {
   const [signupName, setSignupName] = useState("");
   const [loading, setLoading] = useState(false);
   
-  const { user, signOut } = useSimpleAuth();
+  const { signIn, signUp } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
-
-  // Bouton de déconnexion si connecté
-  const handleLogout = async () => {
-    await signOut();
-    toast({
-      title: "Déconnexion",
-      description: "Vous avez été déconnecté avec succès",
-    });
-  };
-
-  // Rediriger si déjà connecté
-  useEffect(() => {
-    if (user) {
-      console.log('👤 Utilisateur déjà connecté, redirection vers dashboard');
-      navigate('/dashboard', { replace: true });
-    }
-  }, [user, navigate]);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: loginEmail,
-        password: loginPassword,
-      });
+      const { error } = await signIn(loginEmail, loginPassword);
       
       if (error) {
         toast({
@@ -59,8 +39,7 @@ const Auth = () => {
           title: "Connexion réussie",
           description: "Bienvenue dans YIMBA !",
         });
-        console.log('✅ Connexion réussie, redirection vers dashboard');
-        // La redirection se fera automatiquement via useEffect
+        navigate('/');
       }
     } catch (error) {
       toast({
@@ -78,15 +57,7 @@ const Auth = () => {
     setLoading(true);
     
     try {
-      const { error } = await supabase.auth.signUp({
-        email: signupEmail,
-        password: signupPassword,
-        options: {
-          data: {
-            name: signupName,
-          },
-        },
-      });
+      const { error } = await signUp(signupEmail, signupPassword);
       
       if (error) {
         toast({
@@ -113,19 +84,6 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-cyan-50 flex items-center justify-center p-6">
-      {/* Bouton de déconnexion si connecté */}
-      {user && (
-        <div className="absolute top-4 right-4">
-          <Button 
-            onClick={handleLogout}
-            variant="outline"
-            className="bg-red-100 hover:bg-red-200 text-red-700 border-red-300"
-          >
-            Se déconnecter ({user.email})
-          </Button>
-        </div>
-      )}
-      
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
