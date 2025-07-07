@@ -45,30 +45,44 @@ export const Brand24Dashboard = () => {
   });
 
   useEffect(() => {
-    loadDashboardData();
-  }, [user]);
+    if (user) {
+      loadDashboardData();
+    }
+  }, [user?.id]);
 
   const loadDashboardData = async () => {
-    if (!user) return;
+    if (!user?.id) {
+      setLoading(false);
+      return;
+    }
 
     try {
       setLoading(true);
+      console.log('🔄 Chargement des données dashboard pour:', user.email);
 
       // Charger les mentions sauvegardées
-      const { data: mentionSaves } = await supabase
+      const { data: mentionSaves, error: mentionError } = await supabase
         .from('mention_saves')
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
-        .limit(5);
+        .limit(10);
+
+      if (mentionError) {
+        console.error('Erreur mention_saves:', mentionError);
+      }
 
       // Charger les données d'influenceurs
-      const { data: influencerData } = await supabase
+      const { data: influencerData, error: influencerError } = await supabase
         .from('influencer_data')
         .select('*')
         .eq('user_id', user.id)
         .order('influence_score', { ascending: false })
         .limit(10);
+
+      if (influencerError) {
+        console.error('Erreur influencer_data:', influencerError);
+      }
 
       // Transformer les données pour le dashboard
       const allMentions: MentionData[] = [];
@@ -110,6 +124,12 @@ export const Brand24Dashboard = () => {
         influence_score: inf.influence_score
       })) || [];
 
+      console.log('📊 Données chargées:', {
+        mentionSaves: mentionSaves?.length || 0,
+        influencers: influencerData?.length || 0,
+        totalMentions: allMentions.length
+      });
+
       setMentionsData(allMentions.slice(0, 100)); // Limiter à 100 mentions pour les performances
       setInfluencers(transformedInfluencers);
       setMetrics({
@@ -127,7 +147,7 @@ export const Brand24Dashboard = () => {
       });
 
     } catch (error) {
-      console.error('Erreur chargement dashboard:', error);
+      console.error('❌ Erreur chargement dashboard:', error);
     } finally {
       setLoading(false);
     }
