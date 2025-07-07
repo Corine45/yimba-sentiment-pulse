@@ -45,13 +45,24 @@ export const Brand24Dashboard = () => {
   });
 
   useEffect(() => {
-    if (user?.id) {
+    let isMounted = true;
+    
+    const loadData = async () => {
+      if (!user?.id || !isMounted) {
+        if (isMounted) setLoading(false);
+        return;
+      }
+
       console.log('🔄 Chargement initial dashboard pour:', user.email);
-      loadDashboardData();
-    } else {
-      setLoading(false);
-    }
-  }, [user?.id]); // Uniquement l'ID comme dépendance
+      await loadDashboardData();
+    };
+
+    loadData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user?.id]); // Stabilisé avec cleanup
 
   const loadDashboardData = async () => {
     if (!user?.id) {
