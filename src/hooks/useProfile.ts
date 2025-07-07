@@ -27,20 +27,55 @@ export const useProfile = () => {
   }, [user]);
 
   const fetchProfile = async () => {
+    if (!user?.id || !user?.email) {
+      console.log('❌ Pas d\'utilisateur pour fetchProfile');
+      setLoading(false);
+      return;
+    }
+
     try {
-      const { data, error } = await supabase
+      console.log('🔍 Recherche profil pour:', { id: user.id, email: user.email });
+      
+      // D'abord essayer par ID
+      let { data, error } = await supabase
         .from('profiles')
         .select('*')
-        .eq('id', user?.id)
-        .single();
+        .eq('id', user.id)
+        .maybeSingle();
 
       if (error) {
-        console.error('Error fetching profile:', error);
-      } else {
+        console.error('❌ Erreur recherche par ID:', error);
+      }
+
+      // Si pas trouvé par ID, essayer par email
+      if (!data && user.email) {
+        console.log('🔍 Recherche par email...');
+        const { data: dataByEmail, error: errorByEmail } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('email', user.email)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (errorByEmail) {
+          console.error('❌ Erreur recherche par email:', errorByEmail);
+        } else if (dataByEmail) {
+          console.log('✅ Profil trouvé par email:', dataByEmail);
+          data = dataByEmail;
+        }
+      }
+
+      if (data) {
+        console.log('✅ Profil chargé:', data);
         setProfile(data);
+      } else {
+        console.log('❌ Aucun profil trouvé');
+        setProfile(null);
       }
     } catch (error) {
-      console.error('Error:', error);
+      console.error('❌ Erreur fetchProfile:', error);
+      setProfile(null);
     } finally {
       setLoading(false);
     }
