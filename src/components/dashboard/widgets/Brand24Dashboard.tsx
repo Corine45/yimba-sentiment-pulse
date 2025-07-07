@@ -45,13 +45,17 @@ export const Brand24Dashboard = () => {
   });
 
   useEffect(() => {
-    if (user) {
+    if (user?.id) {
+      console.log('🔄 Chargement initial dashboard pour:', user.email);
       loadDashboardData();
+    } else {
+      setLoading(false);
     }
-  }, [user?.id]);
+  }, [user?.id]); // Uniquement l'ID comme dépendance
 
   const loadDashboardData = async () => {
     if (!user?.id) {
+      console.log('❌ Pas d\'utilisateur connecté');
       setLoading(false);
       return;
     }
@@ -60,7 +64,7 @@ export const Brand24Dashboard = () => {
       setLoading(true);
       console.log('🔄 Chargement des données dashboard pour:', user.email);
 
-      // Charger les mentions sauvegardées
+      // Charger les mentions sauvegardées avec gestion d'erreur
       const { data: mentionSaves, error: mentionError } = await supabase
         .from('mention_saves')
         .select('*')
@@ -69,10 +73,11 @@ export const Brand24Dashboard = () => {
         .limit(10);
 
       if (mentionError) {
-        console.error('Erreur mention_saves:', mentionError);
+        console.error('❌ Erreur mention_saves:', mentionError);
+        // Continuer même en cas d'erreur
       }
 
-      // Charger les données d'influenceurs
+      // Charger les données d'influenceurs avec gestion d'erreur
       const { data: influencerData, error: influencerError } = await supabase
         .from('influencer_data')
         .select('*')
@@ -81,7 +86,8 @@ export const Brand24Dashboard = () => {
         .limit(10);
 
       if (influencerError) {
-        console.error('Erreur influencer_data:', influencerError);
+        console.error('❌ Erreur influencer_data:', influencerError);
+        // Continuer même en cas d'erreur
       }
 
       // Transformer les données pour le dashboard
@@ -194,6 +200,10 @@ export const Brand24Dashboard = () => {
   if (loading) {
     return (
       <div className="space-y-6">
+        <div className="flex items-center justify-center p-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          <span className="ml-3 text-muted-foreground">Chargement du dashboard...</span>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {[1, 2, 3, 4].map(i => (
             <Card key={i} className="animate-pulse">
