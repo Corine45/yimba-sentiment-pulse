@@ -42,7 +42,15 @@ const Auth = () => {
         });
       } else {
         console.log('✅ Connexion réussie - redirection immédiate vers /dashboard');
-        // Redirection immédiate sans attendre les hooks
+        console.log('🔄 Début redirection...');
+        
+        // Multiples méthodes de redirection pour forcer le changement
+        setTimeout(() => {
+          console.log('🚀 Redirection forcée');
+          window.location.replace('/dashboard');
+        }, 100);
+        
+        // Redirection immédiate aussi
         window.location.href = '/dashboard';
         return;
       }
