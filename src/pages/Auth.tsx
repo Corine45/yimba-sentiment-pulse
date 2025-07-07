@@ -39,7 +39,7 @@ const Auth = () => {
           title: "Connexion réussie",
           description: "Bienvenue dans YIMBA !",
         });
-        navigate('/');
+        navigate('/dashboard');
       }
     } catch (error) {
       toast({
