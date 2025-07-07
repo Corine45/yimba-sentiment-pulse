@@ -1,7 +1,7 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/hooks/useAuth";
+import { useSimpleAuth } from "@/hooks/useSimpleAuth";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,7 +17,7 @@ const Auth = () => {
   const [signupName, setSignupName] = useState("");
   const [loading, setLoading] = useState(false);
   
-  const { signIn, signUp, user } = useAuth();
+  const { user } = useSimpleAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -34,7 +34,10 @@ const Auth = () => {
     setLoading(true);
     
     try {
-      const { error } = await signIn(loginEmail, loginPassword);
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: loginEmail,
+        password: loginPassword,
+      });
       
       if (error) {
         toast({
@@ -48,7 +51,7 @@ const Auth = () => {
           description: "Bienvenue dans YIMBA !",
         });
         console.log('✅ Connexion réussie, redirection vers dashboard');
-        navigate('/dashboard', { replace: true });
+        // La redirection se fera automatiquement via useEffect
       }
     } catch (error) {
       toast({
@@ -66,7 +69,15 @@ const Auth = () => {
     setLoading(true);
     
     try {
-      const { error } = await signUp(signupEmail, signupPassword);
+      const { error } = await supabase.auth.signUp({
+        email: signupEmail,
+        password: signupPassword,
+        options: {
+          data: {
+            name: signupName,
+          },
+        },
+      });
       
       if (error) {
         toast({
