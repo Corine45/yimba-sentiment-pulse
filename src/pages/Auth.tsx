@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,9 +17,17 @@ const Auth = () => {
   const [signupName, setSignupName] = useState("");
   const [loading, setLoading] = useState(false);
   
-  const { signIn, signUp } = useAuth();
+  const { signIn, signUp, user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  // Rediriger si déjà connecté
+  useEffect(() => {
+    if (user) {
+      console.log('👤 Utilisateur déjà connecté, redirection vers dashboard');
+      navigate('/dashboard', { replace: true });
+    }
+  }, [user, navigate]);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,7 +47,8 @@ const Auth = () => {
           title: "Connexion réussie",
           description: "Bienvenue dans YIMBA !",
         });
-        navigate('/');
+        console.log('✅ Connexion réussie, redirection vers dashboard');
+        navigate('/dashboard', { replace: true });
       }
     } catch (error) {
       toast({
