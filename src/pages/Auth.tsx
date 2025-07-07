@@ -17,9 +17,18 @@ const Auth = () => {
   const [signupName, setSignupName] = useState("");
   const [loading, setLoading] = useState(false);
   
-  const { user } = useSimpleAuth();
+  const { user, signOut } = useSimpleAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  // Bouton de déconnexion si connecté
+  const handleLogout = async () => {
+    await signOut();
+    toast({
+      title: "Déconnexion",
+      description: "Vous avez été déconnecté avec succès",
+    });
+  };
 
   // Rediriger si déjà connecté
   useEffect(() => {
@@ -104,6 +113,19 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-cyan-50 flex items-center justify-center p-6">
+      {/* Bouton de déconnexion si connecté */}
+      {user && (
+        <div className="absolute top-4 right-4">
+          <Button 
+            onClick={handleLogout}
+            variant="outline"
+            className="bg-red-100 hover:bg-red-200 text-red-700 border-red-300"
+          >
+            Se déconnecter ({user.email})
+          </Button>
+        </div>
+      )}
+      
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">

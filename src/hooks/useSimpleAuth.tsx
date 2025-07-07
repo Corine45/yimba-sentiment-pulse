@@ -7,6 +7,7 @@ interface AuthContextType {
   session: Session | null;
   loading: boolean;
   profile: any | null;
+  signOut: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -93,8 +94,20 @@ export function SimpleAuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  const signOut = async () => {
+    console.log('🚪 Déconnexion en cours...');
+    try {
+      await supabase.auth.signOut();
+      // Les états seront mis à jour automatiquement par onAuthStateChange
+      console.log('✅ Déconnexion réussie');
+      window.location.href = '/auth';
+    } catch (error) {
+      console.error('❌ Erreur de déconnexion:', error);
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, session, loading, profile }}>
+    <AuthContext.Provider value={{ user, session, loading, profile, signOut }}>
       {children}
     </AuthContext.Provider>
   );
