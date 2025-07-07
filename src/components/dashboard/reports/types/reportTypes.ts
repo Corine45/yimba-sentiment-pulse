@@ -1,21 +1,14 @@
 
 export interface ReportConfig {
-  title?: string;
-  description?: string;
-  template?: string;
   type: string;
   period: string;
   format: string;
-  dateRange?: string;
   customDateRange?: {
     startDate: string;
     endDate: string;
   };
-  includeRealData?: boolean;
-  includeAIContext?: boolean;
-  includeDemographics?: boolean;
-  includeInfluencers?: boolean;
-  includeGeography?: boolean;
+  title?: string;
+  description?: string;
 }
 
 export interface ReportGenerationProgress {

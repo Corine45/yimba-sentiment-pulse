@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronDown, Filter, X, Settings } from "lucide-react";
+import { ChevronDown, Filter, X } from "lucide-react";
 import { SearchFilters } from "@/services/api/types";
 
 interface OptionalAdvancedFiltersProps {
@@ -39,10 +39,7 @@ export const OptionalAdvancedFilters = ({
 
   const toggleFilters = (enabled: boolean) => {
     setUseFilters(enabled);
-    if (enabled) {
-      setIsOpen(true);
-    } else {
-      setIsOpen(false);
+    if (!enabled) {
       onClearFilters();
     }
   };
@@ -54,16 +51,14 @@ export const OptionalAdvancedFilters = ({
   };
 
   return (
-    <Card className="border-2 border-dashed border-gray-300 hover:border-blue-400 transition-colors">
-      <CardHeader className="pb-3">
+    <Card>
+      <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center space-x-2">
-            <Filter className="w-5 h-5 text-blue-600" />
-            <span>Filtres Avancés</span>
+            <Filter className="w-5 h-5" />
+            <span>Filtres Avancés (Optionnels)</span>
             {activeFiltersCount > 0 && (
-              <Badge variant="secondary" className="bg-blue-100 text-blue-700">
-                {activeFiltersCount} actifs
-              </Badge>
+              <Badge variant="secondary">{activeFiltersCount} actifs</Badge>
             )}
           </CardTitle>
           
@@ -73,231 +68,274 @@ export const OptionalAdvancedFilters = ({
                 id="use-filters"
                 checked={useFilters}
                 onCheckedChange={toggleFilters}
-                className="data-[state=checked]:bg-blue-600"
               />
-              <Label htmlFor="use-filters" className="text-sm font-medium cursor-pointer">
-                {useFilters ? "✅ Activés" : "Activer"}
+              <Label htmlFor="use-filters" className="text-sm">
+                Activer les filtres
               </Label>
             </div>
             
-            {useFilters && (
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={() => setIsOpen(!isOpen)}
-                className="hover:bg-blue-50"
-              >
-                <Settings className="w-4 h-4 mr-1" />
-                {isOpen ? 'Masquer' : 'Configurer'}
-                <ChevronDown className={`w-4 h-4 ml-1 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-              </Button>
-            )}
+            <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+              <CollapsibleTrigger asChild>
+                <Button variant="ghost" size="sm">
+                  <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                </Button>
+              </CollapsibleTrigger>
+            </Collapsible>
           </div>
         </div>
 
-        {!useFilters ? (
-          <div className="text-sm text-amber-700 bg-amber-50 p-3 rounded-lg border border-amber-200">
-            <div className="flex items-center space-x-2">
-              <span className="text-lg">💡</span>
-              <div>
-                <strong>Filtres désactivés</strong>
-                <p className="text-xs text-amber-600 mt-1">
-                  Toutes les données de vos 30+ APIs Yimba Pulse seront affichées sans filtrage
-                </p>
-              </div>
-            </div>
+        {!useFilters && (
+          <div className="text-sm text-amber-600 bg-amber-50 p-3 rounded-lg">
+            ℹ️ Les filtres sont désactivés. Vos recherches utiliseront toutes les données disponibles de vos APIs.
           </div>
-        ) : (
-          <div className="text-sm text-green-700 bg-green-50 p-3 rounded-lg border border-green-200">
-            <div className="flex items-center space-x-2">
-              <span className="text-lg">✅</span>
-              <div>
-                <strong>Filtres activés</strong>
-                <p className="text-xs text-green-600 mt-1">
-                  Les données seront filtrées selon vos critères après récupération via vos APIs
-                </p>
-              </div>
-            </div>
+        )}
+
+        {useFilters && (
+          <div className="text-sm text-blue-600 bg-blue-50 p-3 rounded-lg">
+            ✅ Les filtres sont activés. Ils seront appliqués après récupération des données via vos APIs.
           </div>
         )}
       </CardHeader>
 
-      {useFilters && (
-        <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-          <CollapsibleContent className="animate-in slide-in-from-top-2 duration-200">
-            <CardContent className="space-y-6 pt-0 bg-white">
-              {activeFiltersCount > 0 && (
-                <div className="space-y-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                  <div className="flex items-center justify-between">
-                    <h4 className="text-sm font-semibold text-blue-900 flex items-center space-x-1">
-                      <Filter className="w-4 h-4" />
-                      <span>Filtres actifs ({activeFiltersCount})</span>
-                    </h4>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={onClearFilters}
-                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                    >
-                      <X className="w-3 h-3 mr-1" />
-                      Tout effacer
-                    </Button>
-                  </div>
-                  
-                  <div className="flex flex-wrap gap-2">
-                    {Object.entries(filters).map(([key, value]) => {
-                      if (!value) return null;
-                      return (
-                        <Badge key={key} variant="outline" className="flex items-center space-x-1 bg-white">
-                          <span>{key}: {Array.isArray(value) ? value.join(', ') : String(value)}</span>
-                          <button 
-                            onClick={() => removeFilter(key as keyof SearchFilters)} 
-                            className="hover:bg-red-100 rounded-full p-0.5 ml-1"
-                          >
-                            <X className="w-3 h-3" />
-                          </button>
-                        </Badge>
-                      );
-                    })}
-                  </div>
+      <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+        <CollapsibleContent>
+          <CardContent className="space-y-6">
+            {/* Filtres actifs */}
+            {activeFiltersCount > 0 && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm font-medium">Filtres actifs</Label>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={onClearFilters}
+                    disabled={!useFilters}
+                  >
+                    <X className="w-3 h-3 mr-1" />
+                    Tout effacer
+                  </Button>
                 </div>
-              )}
+                
+                <div className="flex flex-wrap gap-2">
+                  {filters.sentiment && (
+                    <Badge variant="outline" className="flex items-center space-x-1">
+                      <span>Sentiment: {Array.isArray(filters.sentiment) ? filters.sentiment.join(', ') : filters.sentiment}</span>
+                      <button onClick={() => removeFilter('sentiment')}>
+                        <X className="w-3 h-3" />
+                      </button>
+                    </Badge>
+                  )}
+                  {filters.language && (
+                    <Badge variant="outline" className="flex items-center space-x-1">
+                      <span>Langue: {filters.language}</span>
+                      <button onClick={() => removeFilter('language')}>
+                        <X className="w-3 h-3" />
+                      </button>
+                    </Badge>
+                  )}
+                  {filters.period && (
+                    <Badge variant="outline" className="flex items-center space-x-1">
+                      <span>Période: {filters.period}</span>
+                      <button onClick={() => removeFilter('period')}>
+                        <X className="w-3 h-3" />
+                      </button>
+                    </Badge>
+                  )}
+                  {filters.minInfluenceScore && (
+                    <Badge variant="outline" className="flex items-center space-x-1">
+                      <span>Influence min: {filters.minInfluenceScore}</span>
+                      <button onClick={() => removeFilter('minInfluenceScore')}>
+                        <X className="w-3 h-3" />
+                      </button>
+                    </Badge>
+                  )}
+                  {filters.author && (
+                    <Badge variant="outline" className="flex items-center space-x-1">
+                      <span>Auteur: {filters.author}</span>
+                      <button onClick={() => removeFilter('author')}>
+                        <X className="w-3 h-3" />
+                      </button>
+                    </Badge>
+                  )}
+                </div>
+              </div>
+            )}
 
-              <div className="space-y-6 bg-white p-4 rounded-lg">
-                <div className="space-y-4">
-                  <h4 className="text-sm font-semibold text-gray-900 border-b border-gray-200 pb-2">
-                    🎯 Filtres de base
-                  </h4>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium text-gray-700">Langue</Label>
-                      <Select 
-                        value={filters.language || ''}
-                        onValueChange={(value) => handleFilterChange('language', value || undefined)}
-                      >
-                        <SelectTrigger className="bg-white">
-                          <SelectValue placeholder="Toutes les langues" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">Toutes les langues</SelectItem>
-                          <SelectItem value="fr">🇫🇷 Français</SelectItem>
-                          <SelectItem value="en">🇺🇸 Anglais</SelectItem>
-                          <SelectItem value="es">🇪🇸 Espagnol</SelectItem>
-                          <SelectItem value="ar">🇸🇦 Arabe</SelectItem>
-                          <SelectItem value="pt">🇵🇹 Portugais</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium text-gray-700">Période</Label>
-                      <Select 
-                        value={filters.period || ''}
-                        onValueChange={(value) => handleFilterChange('period', value || undefined)}
-                      >
-                        <SelectTrigger className="bg-white">
-                          <SelectValue placeholder="Toute période" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">Toute période</SelectItem>
-                          <SelectItem value="1d">📅 24 heures</SelectItem>
-                          <SelectItem value="7d">📅 7 jours</SelectItem>
-                          <SelectItem value="30d">📅 30 jours</SelectItem>
-                          <SelectItem value="3m">📅 3 mois</SelectItem>
-                          <SelectItem value="6m">📅 6 mois</SelectItem>
-                          <SelectItem value="12m">📅 12 mois</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
+            {/* Configuration des filtres */}
+            <div className={`space-y-4 ${!useFilters ? 'opacity-50 pointer-events-none' : ''}`}>
+              
+              {/* Langue et Période */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Langue</Label>
+                  <Select 
+                    value={filters.language || ''}
+                    onValueChange={(value) => handleFilterChange('language', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Toutes les langues" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Toutes les langues</SelectItem>
+                      <SelectItem value="fr">Français</SelectItem>
+                      <SelectItem value="en">Anglais</SelectItem>
+                      <SelectItem value="es">Espagnol</SelectItem>
+                      <SelectItem value="ar">Arabe</SelectItem>
+                      <SelectItem value="pt">Portugais</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
 
-                <div className="space-y-4">
-                  <h4 className="text-sm font-semibold text-gray-900 border-b border-gray-200 pb-2">
-                    😊 Sentiment et qualité
-                  </h4>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium text-gray-700">Sentiment</Label>
-                      <Select 
-                        value={Array.isArray(filters.sentiment) ? filters.sentiment[0] : filters.sentiment || ''}
-                        onValueChange={(value) => handleFilterChange('sentiment', value || undefined)}
-                      >
-                        <SelectTrigger className="bg-white">
-                          <SelectValue placeholder="Tous les sentiments" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">Tous</SelectItem>
-                          <SelectItem value="positive">😊 Positif</SelectItem>
-                          <SelectItem value="neutral">😐 Neutre</SelectItem>
-                          <SelectItem value="negative">😞 Négatif</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
+                <div className="space-y-2">
+                  <Label>Période</Label>
+                  <Select 
+                    value={filters.period || ''}
+                    onValueChange={(value) => handleFilterChange('period', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Toute période" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Toute période</SelectItem>
+                      <SelectItem value="1d">24 heures</SelectItem>
+                      <SelectItem value="7d">7 jours</SelectItem>
+                      <SelectItem value="30d">30 jours</SelectItem>
+                      <SelectItem value="3m">3 mois</SelectItem>
+                      <SelectItem value="6m">6 mois</SelectItem>
+                      <SelectItem value="12m">12 mois</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
 
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium text-gray-700">Trier par</Label>
-                      <Select 
-                        value={filters.sortBy || ''}
-                        onValueChange={(value) => handleFilterChange('sortBy', value || undefined)}
-                      >
-                        <SelectTrigger className="bg-white">
-                          <SelectValue placeholder="Ordre par défaut" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="default">Par défaut</SelectItem>
-                          <SelectItem value="recent">🕐 Plus récent</SelectItem>
-                          <SelectItem value="engagement">❤️ Plus populaire</SelectItem>
-                          <SelectItem value="influence">⭐ Plus influent</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
+              {/* Sentiment et Tri */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Sentiment</Label>
+                  <Select 
+                    value={Array.isArray(filters.sentiment) ? filters.sentiment[0] : filters.sentiment || ''}
+                    onValueChange={(value) => handleFilterChange('sentiment', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Tous les sentiments" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Tous</SelectItem>
+                      <SelectItem value="positive">Positif</SelectItem>
+                      <SelectItem value="neutral">Neutre</SelectItem>
+                      <SelectItem value="negative">Négatif</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
 
-                  <div className="space-y-3">
-                    <Label className="text-sm font-medium text-gray-700">⭐ Score d'influence minimum</Label>
-                    <div className="px-3 py-2 bg-gray-50 rounded-lg">
-                      <Slider
-                        value={[filters.minInfluenceScore || 0]}
-                        onValueChange={(value) => handleFilterChange('minInfluenceScore', value[0])}
-                        max={10}
-                        step={1}
-                        className="w-full"
-                      />
-                      <div className="flex justify-between text-xs text-gray-500 mt-2">
-                        <span>0</span>
-                        <span className="font-medium bg-blue-100 text-blue-700 px-2 py-1 rounded">
-                          Score: {filters.minInfluenceScore || 0}
-                        </span>
-                        <span>10</span>
-                      </div>
-                    </div>
+                <div className="space-y-2">
+                  <Label>Trier par</Label>
+                  <Select 
+                    value={filters.sortBy || ''}
+                    onValueChange={(value) => handleFilterChange('sortBy', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Ordre par défaut" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Par défaut</SelectItem>
+                      <SelectItem value="recent">Plus récent</SelectItem>
+                      <SelectItem value="engagement">Plus populaire</SelectItem>
+                      <SelectItem value="influence">Plus influent</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Score d'influence */}
+              <div className="space-y-2">
+                <Label>Score d'influence minimum</Label>
+                <div className="px-3">
+                  <Slider
+                    value={[filters.minInfluenceScore || 0]}
+                    onValueChange={(value) => handleFilterChange('minInfluenceScore', value[0])}
+                    max={10}
+                    step={1}
+                    className="w-full"
+                  />
+                  <div className="flex justify-between text-xs text-gray-500 mt-1">
+                    <span>0</span>
+                    <span>Score: {filters.minInfluenceScore || 0}</span>
+                    <span>10</span>
                   </div>
                 </div>
               </div>
 
-              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg text-sm border border-blue-200">
-                <h5 className="font-semibold mb-2 text-blue-900 flex items-center space-x-1">
-                  <Filter className="w-4 h-4" />
-                  <span>Comment fonctionnent vos filtres Yimba Pulse :</span>
-                </h5>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs text-blue-700">
-                  <div className="space-y-1">
-                    <p>• <strong>Désactivés :</strong> Toutes les données brutes de vos 30+ APIs</p>
-                    <p>• <strong>Activés :</strong> Filtrage post-récupération selon vos critères</p>
-                  </div>
-                  <div className="space-y-1">
-                    <p>• Les filtres n'affectent pas les requêtes API</p>
-                    <p>• Activation/désactivation en temps réel possible</p>
-                  </div>
+              {/* Engagement et Auteur */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Engagement minimum</Label>
+                  <Input
+                    type="number"
+                    placeholder="0"
+                    value={filters.minEngagement || ''}
+                    onChange={(e) => handleFilterChange('minEngagement', parseInt(e.target.value) || undefined)}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Auteur (contient)</Label>
+                  <Input
+                    placeholder="Nom d'auteur..."
+                    value={filters.author || ''}
+                    onChange={(e) => handleFilterChange('author', e.target.value)}
+                  />
                 </div>
               </div>
-            </CardContent>
-          </CollapsibleContent>
-        </Collapsible>
-      )}
+
+              {/* Pays et domaine */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Pays</Label>
+                  <Select 
+                    value={filters.country || ''}
+                    onValueChange={(value) => handleFilterChange('country', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Tous les pays" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Tous les pays</SelectItem>
+                      <SelectItem value="CI">Côte d'Ivoire</SelectItem>
+                      <SelectItem value="FR">France</SelectItem>
+                      <SelectItem value="US">États-Unis</SelectItem>
+                      <SelectItem value="SN">Sénégal</SelectItem>
+                      <SelectItem value="ML">Mali</SelectItem>
+                      <SelectItem value="BF">Burkina Faso</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Domaine (contient)</Label>
+                  <Input
+                    placeholder="exemple.com"
+                    value={filters.domain || ''}
+                    onChange={(e) => handleFilterChange('domain', e.target.value)}
+                  />
+                </div>
+              </div>
+
+            </div>
+
+            {/* Note explicative */}
+            <div className="bg-gray-50 p-4 rounded-lg text-sm text-gray-600">
+              <h5 className="font-medium mb-2">📌 Comment fonctionnent les filtres :</h5>
+              <ul className="space-y-1 text-xs">
+                <li>• <strong>Désactivés :</strong> Toutes les données de vos 30+ APIs sont affichées</li>
+                <li>• <strong>Activés :</strong> Les données sont filtrées après récupération via vos APIs</li>
+                <li>• Les filtres n'affectent pas les requêtes API, seulement l'affichage des résultats</li>
+                <li>• Vous pouvez activer/désactiver les filtres à tout moment</li>
+              </ul>
+            </div>
+          </CardContent>
+        </CollapsibleContent>
+      </Collapsible>
     </Card>
   );
 };

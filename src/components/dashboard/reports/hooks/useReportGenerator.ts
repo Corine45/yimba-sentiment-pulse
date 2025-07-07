@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { ReportConfig, ReportGenerationProgress, GeneratedReport } from '../types/reportTypes';
 import { generateExecutiveReportData } from '../templates/utils/dataGenerator';
@@ -68,7 +67,7 @@ export const useReportGenerator = () => {
     let fileUrl = '#';
     let mimeType = 'text/html';
     
-    if (config.template === 'executive') {
+    if (config.type === 'custom' && config.title === 'Rapport Exécutif') {
       // Générer le rapport exécutif avec des données réelles
       const reportData = generateExecutiveReportData(config);
       
@@ -158,7 +157,6 @@ export const useReportGenerator = () => {
   return {
     progress,
     generatedReports,
-    isGenerating: progress.isGenerating,
     generateReport,
     cancelGeneration,
     downloadReport

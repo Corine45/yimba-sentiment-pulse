@@ -1,248 +1,301 @@
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Slider } from "@/components/ui/slider";
+import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Settings, User, Bell, Database, Key, Globe, Shield } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { Settings, Database, Bell, Shield, Zap, Save } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
-interface UserSettings {
-  notifications: {
-    email: boolean;
-    push: boolean;
-    sms: boolean;
-    frequency: string;
-  };
-  api: {
-    cache_duration: number;
-    rate_limit: number;
-    max_results: number;
-  };
-  privacy: {
-    data_retention: number;
-    analytics: boolean;
-    location_tracking: boolean;
-  };
-  preferences: {
-    language: string;
-    timezone: string;
-    theme: string;
-  };
+interface SettingsConfig {
+  // API Configuration
+  apiBaseUrl: string;
+  apiTimeout: number;
+  maxRetries: number;
+  cacheEnabled: boolean;
+  cacheDuration: number;
+  
+  // Search Settings
+  defaultResultsPerPage: number;
+  maxResultsPerPlatform: number;
+  enableParallelSearch: boolean;
+  autoRefreshResults: boolean;
+  
+  // Notifications
+  enableNotifications: boolean;
+  notifyOnSearchComplete: boolean;
+  notifyOnErrors: boolean;
+  emailNotifications: boolean;
+  
+  // Performance
+  enableOptimizations: boolean;
+  preloadData: boolean;
+  compressResults: boolean;
+  
+  // Security
+  enableDataEncryption: boolean;
+  sessionTimeout: number;
+  auditLogs: boolean;
 }
 
 export const SettingsPanel = () => {
-  const [settings, setSettings] = useState<UserSettings>({
-    notifications: {
-      email: true,
-      push: true,
-      sms: false,
-      frequency: '15min'
-    },
-    api: {
-      cache_duration: 10,
-      rate_limit: 100,
-      max_results: 1000
-    },
-    privacy: {
-      data_retention: 30,
-      analytics: true,
-      location_tracking: false
-    },
-    preferences: {
-      language: 'fr',
-      timezone: 'Africa/Abidjan',
-      theme: 'light'
-    }
-  });
-
-  const [apiStatus, setApiStatus] = useState({
-    yimba_pulse: 'active',
-    supabase: 'active',
-    total_requests: 1247,
-    last_check: new Date().toISOString()
-  });
-
   const { toast } = useToast();
+  const [settings, setSettings] = useState<SettingsConfig>({
+    // API Configuration
+    apiBaseUrl: 'https://yimbapulseapi.a-car.ci',
+    apiTimeout: 30000,
+    maxRetries: 3,
+    cacheEnabled: true,
+    cacheDuration: 10,
+    
+    // Search Settings
+    defaultResultsPerPage: 25,
+    maxResultsPerPlatform: 150,
+    enableParallelSearch: true,
+    autoRefreshResults: false,
+    
+    // Notifications
+    enableNotifications: true,
+    notifyOnSearchComplete: true,
+    notifyOnErrors: true,
+    emailNotifications: false,
+    
+    // Performance
+    enableOptimizations: true,
+    preloadData: false,
+    compressResults: true,
+    
+    // Security
+    enableDataEncryption: true,
+    sessionTimeout: 30,
+    auditLogs: true
+  });
 
-  useEffect(() => {
-    loadSettings();
-    checkApiStatus();
-  }, []);
+  const [activeTab, setActiveTab] = useState('api');
 
-  const loadSettings = async () => {
-    try {
-      // Charger les paramètres depuis Supabase
-      console.log('Chargement des paramètres utilisateur...');
-      // En production, récupérer depuis la base de données
-    } catch (error) {
-      console.error('Erreur lors du chargement des paramètres:', error);
-    }
+  const handleSettingChange = (key: keyof SettingsConfig, value: any) => {
+    setSettings(prev => ({ ...prev, [key]: value }));
   };
 
-  const checkApiStatus = async () => {
-    try {
-      // Vérifier le statut des APIs
-      const response = await fetch('https://yimbapulseapi.a-car.ci/api/health');
-      if (response.ok) {
-        setApiStatus(prev => ({ ...prev, yimba_pulse: 'active' }));
-      }
-    } catch (error) {
-      setApiStatus(prev => ({ ...prev, yimba_pulse: 'error' }));
-      console.error('Erreur de vérification API:', error);
-    }
+  const saveSettings = () => {
+    localStorage.setItem('app_settings', JSON.stringify(settings));
+    toast({
+      title: "Paramètres sauvegardés",
+      description: "Vos paramètres ont été mis à jour avec succès"
+    });
   };
 
-  const saveSettings = async () => {
-    try {
-      // Sauvegarder dans Supabase
-      console.log('Sauvegarde des paramètres:', settings);
-      
-      toast({
-        title: "Paramètres sauvegardés",
-        description: "Vos paramètres ont été mis à jour avec succès",
-      });
-    } catch (error) {
-      console.error('Erreur lors de la sauvegarde:', error);
-      toast({
-        title: "Erreur",
-        description: "Impossible de sauvegarder les paramètres",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const updateSetting = (category: keyof UserSettings, key: string, value: any) => {
-    setSettings(prev => ({
-      ...prev,
-      [category]: {
-        ...prev[category],
-        [key]: value
-      }
-    }));
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'active': return 'bg-green-100 text-green-800';
-      case 'warning': return 'bg-yellow-100 text-yellow-800';
-      case 'error': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'active': return '🟢';
-      case 'warning': return '🟡';
-      case 'error': return '🔴';
-      default: return '⚪';
-    }
+  const resetSettings = () => {
+    const defaultSettings: SettingsConfig = {
+      apiBaseUrl: 'https://yimbapulseapi.a-car.ci',
+      apiTimeout: 30000,
+      maxRetries: 3,
+      cacheEnabled: true,
+      cacheDuration: 10,
+      defaultResultsPerPage: 25,
+      maxResultsPerPlatform: 150,
+      enableParallelSearch: true,
+      autoRefreshResults: false,
+      enableNotifications: true,
+      notifyOnSearchComplete: true,
+      notifyOnErrors: true,
+      emailNotifications: false,
+      enableOptimizations: true,
+      preloadData: false,
+      compressResults: true,
+      enableDataEncryption: true,
+      sessionTimeout: 30,
+      auditLogs: true
+    };
+    
+    setSettings(defaultSettings);
+    toast({
+      title: "Paramètres réinitialisés",
+      description: "Les paramètres par défaut ont été restaurés"
+    });
   };
 
   return (
     <div className="space-y-6">
-      {/* En-tête avec statut du système */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Settings className="w-5 h-5" />
-            <span>Paramètres du système</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="flex items-center space-x-2">
-              <Badge className={getStatusColor(apiStatus.yimba_pulse)}>
-                {getStatusIcon(apiStatus.yimba_pulse)} Yimba Pulse API
-              </Badge>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Badge className={getStatusColor(apiStatus.supabase)}>
-                {getStatusIcon(apiStatus.supabase)} Supabase
-              </Badge>
-            </div>
-            <div className="text-sm text-gray-600">
-              <strong>{apiStatus.total_requests}</strong> requêtes ce mois
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold flex items-center space-x-2">
+            <Settings className="w-6 h-6" />
+            <span>Paramètres Avancés</span>
+          </h2>
+          <p className="text-gray-600">
+            Configuration de votre système de veille et monitoring
+          </p>
+        </div>
+        
+        <div className="flex space-x-2">
+          <Button variant="outline" onClick={resetSettings}>
+            Réinitialiser
+          </Button>
+          <Button onClick={saveSettings}>
+            <Save className="w-4 h-4 mr-2" />
+            Sauvegarder
+          </Button>
+        </div>
+      </div>
 
-      <Tabs defaultValue="profile" className="space-y-4">
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="profile">👤 Profil</TabsTrigger>
+          <TabsTrigger value="api">🔗 API</TabsTrigger>
+          <TabsTrigger value="search">🔍 Recherche</TabsTrigger>
           <TabsTrigger value="notifications">🔔 Notifications</TabsTrigger>
-          <TabsTrigger value="api">🔧 APIs</TabsTrigger>
-          <TabsTrigger value="privacy">🔒 Confidentialité</TabsTrigger>
-          <TabsTrigger value="system">⚙️ Système</TabsTrigger>
+          <TabsTrigger value="performance">⚡ Performance</TabsTrigger>
+          <TabsTrigger value="security">🔒 Sécurité</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="profile" className="space-y-4">
+        <TabsContent value="api" className="space-y-4">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
-                <User className="w-5 h-5" />
-                <span>Informations du profil</span>
+                <Database className="w-5 h-5" />
+                <span>Configuration API</span>
               </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label>URL de base de l'API</Label>
+                <Input
+                  value={settings.apiBaseUrl}
+                  onChange={(e) => handleSettingChange('apiBaseUrl', e.target.value)}
+                  placeholder="https://yimbapulseapi.a-car.ci"
+                />
+                <p className="text-xs text-gray-500">
+                  URL de votre backend API pour les recherches
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Timeout des requêtes (ms)</Label>
+                  <Input
+                    type="number"
+                    value={settings.apiTimeout}
+                    onChange={(e) => handleSettingChange('apiTimeout', parseInt(e.target.value))}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Nombre de tentatives</Label>
+                  <Select
+                    value={settings.maxRetries.toString()}
+                    onValueChange={(value) => handleSettingChange('maxRetries', parseInt(value))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1">1 tentative</SelectItem>
+                      <SelectItem value="2">2 tentatives</SelectItem>
+                      <SelectItem value="3">3 tentatives</SelectItem>
+                      <SelectItem value="5">5 tentatives</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label>Cache activé</Label>
+                  <p className="text-xs text-gray-500">Mise en cache des résultats pour améliorer les performances</p>
+                </div>
+                <Switch
+                  checked={settings.cacheEnabled}
+                  onCheckedChange={(checked) => handleSettingChange('cacheEnabled', checked)}
+                />
+              </div>
+
+              {settings.cacheEnabled && (
+                <div className="space-y-2">
+                  <Label>Durée du cache (minutes)</Label>
+                  <div className="px-3">
+                    <Slider
+                      value={[settings.cacheDuration]}
+                      onValueChange={(value) => handleSettingChange('cacheDuration', value[0])}
+                      min={1}
+                      max={60}
+                      step={1}
+                      className="w-full"
+                    />
+                    <div className="flex justify-between text-xs text-gray-500 mt-1">
+                      <span>1 min</span>
+                      <span>{settings.cacheDuration} minutes</span>
+                      <span>60 min</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="search" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Paramètres de Recherche</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Langue de l'interface</Label>
+                  <Label>Résultats par page</Label>
                   <Select
-                    value={settings.preferences.language}
-                    onValueChange={(value) => updateSetting('preferences', 'language', value)}
+                    value={settings.defaultResultsPerPage.toString()}
+                    onValueChange={(value) => handleSettingChange('defaultResultsPerPage', parseInt(value))}
                   >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="fr">🇫🇷 Français</SelectItem>
-                      <SelectItem value="en">🇬🇧 English</SelectItem>
-                      <SelectItem value="es">🇪🇸 Español</SelectItem>
+                      <SelectItem value="10">10 résultats</SelectItem>
+                      <SelectItem value="25">25 résultats</SelectItem>
+                      <SelectItem value="50">50 résultats</SelectItem>
+                      <SelectItem value="100">100 résultats</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Fuseau horaire</Label>
-                  <Select
-                    value={settings.preferences.timezone}
-                    onValueChange={(value) => updateSetting('preferences', 'timezone', value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Africa/Abidjan">🇨🇮 Abidjan (GMT)</SelectItem>
-                      <SelectItem value="Europe/Paris">🇫🇷 Paris (GMT+1)</SelectItem>
-                      <SelectItem value="America/New_York">🇺🇸 New York (GMT-5)</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Label>Max résultats par plateforme</Label>
+                  <Input
+                    type="number"
+                    value={settings.maxResultsPerPlatform}
+                    onChange={(e) => handleSettingChange('maxResultsPerPlatform', parseInt(e.target.value))}
+                    min={50}
+                    max={500}
+                  />
                 </div>
+              </div>
 
-                <div className="space-y-2">
-                  <Label>Thème</Label>
-                  <Select
-                    value={settings.preferences.theme}
-                    onValueChange={(value) => updateSetting('preferences', 'theme', value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="light">☀️ Clair</SelectItem>
-                      <SelectItem value="dark">🌙 Sombre</SelectItem>
-                      <SelectItem value="auto">🔄 Automatique</SelectItem>
-                    </SelectContent>
-                  </Select>
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label>Recherche parallèle</Label>
+                  <p className="text-xs text-gray-500">Rechercher sur toutes les plateformes simultanément</p>
                 </div>
+                <Switch
+                  checked={settings.enableParallelSearch}
+                  onCheckedChange={(checked) => handleSettingChange('enableParallelSearch', checked)}
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label>Actualisation automatique</Label>
+                  <p className="text-xs text-gray-500">Actualiser les résultats automatiquement</p>
+                </div>
+                <Switch
+                  checked={settings.autoRefreshResults}
+                  onCheckedChange={(checked) => handleSettingChange('autoRefreshResults', checked)}
+                />
               </div>
             </CardContent>
           </Card>
@@ -253,269 +306,189 @@ export const SettingsPanel = () => {
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <Bell className="w-5 h-5" />
-                <span>Préférences de notification</span>
+                <span>Notifications</span>
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label>Notifications par email</Label>
-                    <p className="text-sm text-gray-600">Recevoir les alertes par email</p>
-                  </div>
-                  <Switch
-                    checked={settings.notifications.email}
-                    onCheckedChange={(checked) => updateSetting('notifications', 'email', checked)}
-                  />
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label>Notifications activées</Label>
+                  <p className="text-xs text-gray-500">Activer toutes les notifications</p>
                 </div>
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label>Notifications push</Label>
-                    <p className="text-sm text-gray-600">Notifications dans l'application</p>
-                  </div>
-                  <Switch
-                    checked={settings.notifications.push}
-                    onCheckedChange={(checked) => updateSetting('notifications', 'push', checked)}
-                  />
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label>Notifications SMS</Label>
-                    <p className="text-sm text-gray-600">Alertes critiques par SMS (Premium)</p>
-                  </div>
-                  <Switch
-                    checked={settings.notifications.sms}
-                    onCheckedChange={(checked) => updateSetting('notifications', 'sms', checked)}
-                  />
-                </div>
+                <Switch
+                  checked={settings.enableNotifications}
+                  onCheckedChange={(checked) => handleSettingChange('enableNotifications', checked)}
+                />
               </div>
 
-              <div className="space-y-2">
-                <Label>Fréquence des notifications</Label>
-                <Select
-                  value={settings.notifications.frequency}
-                  onValueChange={(value) => updateSetting('notifications', 'frequency', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="realtime">Temps réel</SelectItem>
-                    <SelectItem value="5min">Toutes les 5 minutes</SelectItem>
-                    <SelectItem value="15min">Toutes les 15 minutes</SelectItem>
-                    <SelectItem value="1h">Toutes les heures</SelectItem>
-                    <SelectItem value="daily">Quotidienne</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              {settings.enableNotifications && (
+                <div className="space-y-4 pl-4 border-l-2 border-gray-200">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label>Fin de recherche</Label>
+                      <p className="text-xs text-gray-500">Notifier quand une recherche est terminée</p>
+                    </div>
+                    <Switch
+                      checked={settings.notifyOnSearchComplete}
+                      onCheckedChange={(checked) => handleSettingChange('notifyOnSearchComplete', checked)}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label>Erreurs</Label>
+                      <p className="text-xs text-gray-500">Notifier en cas d'erreur</p>
+                    </div>
+                    <Switch
+                      checked={settings.notifyOnErrors}
+                      onCheckedChange={(checked) => handleSettingChange('notifyOnErrors', checked)}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label>Notifications par email</Label>
+                      <p className="text-xs text-gray-500">Recevoir les notifications par email</p>
+                    </div>
+                    <Switch
+                      checked={settings.emailNotifications}
+                      onCheckedChange={(checked) => handleSettingChange('emailNotifications', checked)}
+                    />
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="api" className="space-y-4">
+        <TabsContent value="performance" className="space-y-4">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
-                <Key className="w-5 h-5" />
-                <span>Configuration des APIs</span>
+                <Zap className="w-5 h-5" />
+                <span>Optimisations Performance</span>
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="bg-blue-50 p-4 rounded-lg">
-                <h4 className="font-medium mb-2">🔗 API Yimba Pulse</h4>
-                <p className="text-sm text-blue-700 mb-2">
-                  <strong>Base URL:</strong> https://yimbapulseapi.a-car.ci
-                </p>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                  <div>
-                    <strong>30+ endpoints</strong><br />
-                    <span className="text-blue-600">Actifs</span>
-                  </div>
-                  <div>
-                    <strong>Cache:</strong><br />
-                    <span className="text-blue-600">{settings.api.cache_duration} minutes</span>
-                  </div>
-                  <div>
-                    <strong>Rate limit:</strong><br />
-                    <span className="text-blue-600">{settings.api.rate_limit}/minute</span>
-                  </div>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label>Optimisations activées</Label>
+                  <p className="text-xs text-gray-500">Activer les optimisations de performance</p>
                 </div>
+                <Switch
+                  checked={settings.enableOptimizations}
+                  onCheckedChange={(checked) => handleSettingChange('enableOptimizations', checked)}
+                />
               </div>
 
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Durée de cache (minutes)</Label>
-                  <Input
-                    type="number"
-                    value={settings.api.cache_duration}
-                    onChange={(e) => updateSetting('api', 'cache_duration', parseInt(e.target.value))}
-                  />
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label>Préchargement des données</Label>
+                  <p className="text-xs text-gray-500">Précharger les données fréquemment utilisées</p>
                 </div>
-
-                <div className="space-y-2">
-                  <Label>Limite de requêtes par minute</Label>
-                  <Input
-                    type="number"
-                    value={settings.api.rate_limit}
-                    onChange={(e) => updateSetting('api', 'rate_limit', parseInt(e.target.value))}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Résultats maximum par recherche</Label>
-                  <Input
-                    type="number"
-                    value={settings.api.max_results}
-                    onChange={(e) => updateSetting('api', 'max_results', parseInt(e.target.value))}
-                  />
-                </div>
+                <Switch
+                  checked={settings.preloadData}
+                  onCheckedChange={(checked) => handleSettingChange('preloadData', checked)}
+                />
               </div>
 
-              <Button onClick={checkApiStatus} variant="outline" className="w-full">
-                <Database className="w-4 h-4 mr-2" />
-                Tester la connexion aux APIs
-              </Button>
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label>Compression des résultats</Label>
+                  <p className="text-xs text-gray-500">Compresser les gros volumes de données</p>
+                </div>
+                <Switch
+                  checked={settings.compressResults}
+                  onCheckedChange={(checked) => handleSettingChange('compressResults', checked)}
+                />
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="privacy" className="space-y-4">
+        <TabsContent value="security" className="space-y-4">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <Shield className="w-5 h-5" />
-                <span>Confidentialité et sécurité</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label>Collecte de données analytiques</Label>
-                    <p className="text-sm text-gray-600">Améliorer l'expérience utilisateur</p>
-                  </div>
-                  <Switch
-                    checked={settings.privacy.analytics}
-                    onCheckedChange={(checked) => updateSetting('privacy', 'analytics', checked)}
-                  />
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label>Suivi de géolocalisation</Label>
-                    <p className="text-sm text-gray-600">Pour les recherches géolocalisées</p>
-                  </div>
-                  <Switch
-                    checked={settings.privacy.location_tracking}
-                    onCheckedChange={(checked) => updateSetting('privacy', 'location_tracking', checked)}
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Durée de conservation des données (jours)</Label>
-                <Select
-                  value={settings.privacy.data_retention.toString()}
-                  onValueChange={(value) => updateSetting('privacy', 'data_retention', parseInt(value))}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="7">7 jours</SelectItem>
-                    <SelectItem value="30">30 jours</SelectItem>
-                    <SelectItem value="90">90 jours</SelectItem>
-                    <SelectItem value="365">1 an</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="bg-yellow-50 p-4 rounded-lg">
-                <h4 className="font-medium mb-2">⚠️ Règles de confidentialité</h4>
-                <ul className="text-sm text-yellow-700 space-y-1">
-                  <li>• Vos données sont stockées de manière sécurisée dans Supabase</li>
-                  <li>• Les requêtes API sont anonymisées</li>
-                  <li>• Aucune donnée personnelle n'est partagée avec des tiers</li>
-                  <li>• Vous pouvez supprimer vos données à tout moment</li>
-                </ul>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="system" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Globe className="w-5 h-5" />
-                <span>Informations système</span>
+                <span>Sécurité</span>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="flex items-center justify-between">
                 <div>
-                  <h4 className="font-medium mb-3">🔧 Composants</h4>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span>Frontend:</span>
-                      <Badge variant="outline">React + TypeScript</Badge>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Base de données:</span>
-                      <Badge variant="outline">Supabase PostgreSQL</Badge>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>API Backend:</span>
-                      <Badge variant="outline">Yimba Pulse API</Badge>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Cache:</span>
-                      <Badge variant="outline">Redis (10 min)</Badge>
-                    </div>
-                  </div>
+                  <Label>Chiffrement des données</Label>
+                  <p className="text-xs text-gray-500">Chiffrer les données sensibles</p>
                 </div>
+                <Switch
+                  checked={settings.enableDataEncryption}
+                  onCheckedChange={(checked) => handleSettingChange('enableDataEncryption', checked)}
+                />
+              </div>
 
-                <div>
-                  <h4 className="font-medium mb-3">📊 Statistiques d'utilisation</h4>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span>Recherches ce mois:</span>
-                      <span className="font-medium">1,247</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>APIs utilisées:</span>
-                      <span className="font-medium">30+</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Données stockées:</span>
-                      <span className="font-medium">2.3 GB</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Uptime:</span>
-                      <span className="font-medium text-green-600">99.9%</span>
-                    </div>
+              <div className="space-y-2">
+                <Label>Timeout de session (minutes)</Label>
+                <div className="px-3">
+                  <Slider
+                    value={[settings.sessionTimeout]}
+                    onValueChange={(value) => handleSettingChange('sessionTimeout', value[0])}
+                    min={5}
+                    max={120}
+                    step={5}
+                    className="w-full"
+                  />
+                  <div className="flex justify-between text-xs text-gray-500 mt-1">
+                    <span>5 min</span>
+                    <span>{settings.sessionTimeout} minutes</span>
+                    <span>120 min</span>
                   </div>
                 </div>
               </div>
 
-              <div className="pt-4 border-t">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <p className="text-sm text-gray-600">
-                      Dernière mise à jour: {new Date().toLocaleString('fr-FR')}
-                    </p>
-                  </div>
-                  <Button onClick={saveSettings}>
-                    Sauvegarder les paramètres
-                  </Button>
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label>Journaux d'audit</Label>
+                  <p className="text-xs text-gray-500">Enregistrer les actions utilisateur</p>
                 </div>
+                <Switch
+                  checked={settings.auditLogs}
+                  onCheckedChange={(checked) => handleSettingChange('auditLogs', checked)}
+                />
               </div>
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Résumé des paramètres actifs */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Résumé de la Configuration</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="text-center p-3 bg-blue-50 rounded-lg">
+              <div className="text-2xl font-bold text-blue-600">{settings.maxResultsPerPlatform}</div>
+              <div className="text-xs text-gray-600">Max résultats/plateforme</div>
+            </div>
+            
+            <div className="text-center p-3 bg-green-50 rounded-lg">
+              <div className="text-2xl font-bold text-green-600">{settings.cacheDuration}min</div>
+              <div className="text-xs text-gray-600">Durée du cache</div>
+            </div>
+            
+            <div className="text-center p-3 bg-purple-50 rounded-lg">
+              <div className="text-2xl font-bold text-purple-600">{settings.defaultResultsPerPage}</div>
+              <div className="text-xs text-gray-600">Résultats par page</div>
+            </div>
+            
+            <div className="text-center p-3 bg-orange-50 rounded-lg">
+              <div className="text-2xl font-bold text-orange-600">{settings.sessionTimeout}min</div>
+              <div className="text-xs text-gray-600">Timeout session</div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };
