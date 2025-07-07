@@ -140,6 +140,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           title: "Connexion réussie",
           description: `Bienvenue ${data.user?.email}`,
         });
+        
+        // Forcer redirection après un court délai
+        setTimeout(() => {
+          console.log('🔄 Redirection forcée vers dashboard');
+          window.location.href = '/dashboard';
+        }, 500);
       }
 
       return { error };
