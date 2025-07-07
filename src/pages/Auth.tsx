@@ -29,6 +29,7 @@ const Auth = () => {
       const { error } = await signIn(loginEmail, loginPassword);
       
       if (error) {
+        setLoading(false);
         toast({
           title: "Erreur de connexion",
           description: error.message,
@@ -36,7 +37,9 @@ const Auth = () => {
         });
       } else {
         console.log('✅ Connexion réussie - redirection immédiate');
-        window.location.href = '/dashboard'; // Redirection forcée pour éviter le chargement infini
+        // Ne pas reset loading, on redirige immédiatement
+        window.location.href = '/dashboard';
+        return; // Sortir de la fonction pour éviter le finally
       }
     } catch (error) {
       toast({
