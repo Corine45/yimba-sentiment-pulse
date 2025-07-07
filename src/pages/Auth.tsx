@@ -35,11 +35,8 @@ const Auth = () => {
           variant: "destructive",
         });
       } else {
-        toast({
-          title: "Connexion réussie",
-          description: "Bienvenue dans YIMBA !",
-        });
-        navigate('/dashboard');
+        console.log('✅ Connexion réussie - redirection immédiate');
+        window.location.href = '/dashboard'; // Redirection forcée pour éviter le chargement infini
       }
     } catch (error) {
       toast({
