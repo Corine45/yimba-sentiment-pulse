@@ -1,138 +1,50 @@
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AlertTriangle, Bell, Settings, Plus, Search, Filter } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
-
-interface Alert {
-  id: string;
-  keyword: string;
-  platform: string;
-  threshold: number;
-  type: 'mention' | 'sentiment' | 'engagement';
-  status: 'active' | 'inactive';
-  created_at: string;
-  triggered_count: number;
-}
+import { AlertTriangle, Bell, Settings, Plus, Search, Filter, Trash2, ToggleLeft, ToggleRight } from "lucide-react";
+import { useAlertsManagement } from "@/hooks/useAlertsManagement";
 
 export const AlertsPanel = () => {
-  const [alerts, setAlerts] = useState<Alert[]>([]);
+  const {
+    alerts,
+    loading,
+    createAlert,
+    updateAlert,
+    deleteAlert,
+    toggleAlertStatus,
+    stats
+  } = useAlertsManagement();
+
   const [newAlert, setNewAlert] = useState({
     keyword: '',
     platform: '',
     threshold: 10,
-    type: 'mention' as 'mention' | 'sentiment' | 'engagement'
+    alert_type: 'mention' as 'mention' | 'sentiment' | 'engagement',
+    status: 'active' as 'active' | 'inactive'
   });
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
-  const { toast } = useToast();
 
-  useEffect(() => {
-    loadAlerts();
-  }, []);
-
-  const loadAlerts = async () => {
-    try {
-      // Simuler des données d'alertes connectées à Supabase
-      const mockAlerts: Alert[] = [
-        {
-          id: '1',
-          keyword: 'abidjan',
-          platform: 'TikTok',
-          threshold: 50,
-          type: 'mention',
-          status: 'active',
-          created_at: new Date().toISOString(),
-          triggered_count: 12
-        },
-        {
-          id: '2',
-          keyword: 'côte d\'ivoire',
-          platform: 'Facebook',
-          threshold: 100,
-          type: 'engagement',
-          status: 'active',
-          created_at: new Date().toISOString(),
-          triggered_count: 8
-        },
-        {
-          id: '3',
-          keyword: 'civbuzz',
-          platform: 'Instagram',
-          threshold: 75,
-          type: 'sentiment',
-          status: 'inactive',
-          created_at: new Date().toISOString(),
-          triggered_count: 3
-        }
-      ];
-      setAlerts(mockAlerts);
-    } catch (error) {
-      console.error('Erreur lors du chargement des alertes:', error);
-      toast({
-        title: "Erreur",
-        description: "Impossible de charger les alertes",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const createAlert = async () => {
+  const handleCreateAlert = async () => {
     if (!newAlert.keyword || !newAlert.platform) {
-      toast({
-        title: "Erreur",
-        description: "Veuillez remplir tous les champs obligatoires",
-        variant: "destructive",
-      });
       return;
     }
 
-    try {
-      const alert: Alert = {
-        id: Date.now().toString(),
-        ...newAlert,
-        status: 'active',
-        created_at: new Date().toISOString(),
-        triggered_count: 0
-      };
-
-      setAlerts([...alerts, alert]);
-      setNewAlert({ keyword: '', platform: '', threshold: 10, type: 'mention' });
-      
-      toast({
-        title: "Alerte créée",
-        description: `Alerte créée pour "${newAlert.keyword}" sur ${newAlert.platform}`,
-      });
-    } catch (error) {
-      console.error('Erreur lors de la création de l\'alerte:', error);
-      toast({
-        title: "Erreur",
-        description: "Impossible de créer l'alerte",
-        variant: "destructive",
+    const result = await createAlert(newAlert);
+    if (result) {
+      setNewAlert({ 
+        keyword: '', 
+        platform: '', 
+        threshold: 10, 
+        alert_type: 'mention',
+        status: 'active'
       });
     }
-  };
-
-  const toggleAlertStatus = (id: string) => {
-    setAlerts(alerts.map(alert => 
-      alert.id === id 
-        ? { ...alert, status: alert.status === 'active' ? 'inactive' : 'active' }
-        : alert
-    ));
-  };
-
-  const deleteAlert = (id: string) => {
-    setAlerts(alerts.filter(alert => alert.id !== id));
-    toast({
-      title: "Alerte supprimée",
-      description: "L'alerte a été supprimée avec succès",
-    });
   };
 
   const filteredAlerts = alerts.filter(alert => {
@@ -141,9 +53,6 @@ export const AlertsPanel = () => {
     const matchesStatus = filterStatus === 'all' || alert.status === filterStatus;
     return matchesSearch && matchesStatus;
   });
-
-  const activeAlertsCount = alerts.filter(alert => alert.status === 'active').length;
-  const totalTriggered = alerts.reduce((sum, alert) => sum + alert.triggered_count, 0);
 
   return (
     <div className="space-y-6">
@@ -155,7 +64,7 @@ export const AlertsPanel = () => {
               <Bell className="w-5 h-5 text-blue-600" />
               <div>
                 <p className="text-sm font-medium">Alertes actives</p>
-                <p className="text-2xl font-bold text-blue-600">{activeAlertsCount}</p>
+                <p className="text-2xl font-bold text-blue-600">{stats.activeAlerts}</p>
               </div>
             </div>
           </CardContent>
@@ -167,7 +76,7 @@ export const AlertsPanel = () => {
               <AlertTriangle className="w-5 h-5 text-orange-600" />
               <div>
                 <p className="text-sm font-medium">Total déclenchées</p>
-                <p className="text-2xl font-bold text-orange-600">{totalTriggered}</p>
+                <p className="text-2xl font-bold text-orange-600">{stats.totalTriggered}</p>
               </div>
             </div>
           </CardContent>
@@ -179,7 +88,7 @@ export const AlertsPanel = () => {
               <Settings className="w-5 h-5 text-green-600" />
               <div>
                 <p className="text-sm font-medium">Total alertes</p>
-                <p className="text-2xl font-bold text-green-600">{alerts.length}</p>
+                <p className="text-2xl font-bold text-green-600">{stats.totalAlerts}</p>
               </div>
             </div>
           </CardContent>
@@ -241,7 +150,7 @@ export const AlertsPanel = () => {
                       <div>
                         <h3 className="font-medium">"{alert.keyword}"</h3>
                         <p className="text-sm text-gray-600">
-                          Type: {alert.type} • Seuil: {alert.threshold} • 
+                          Type: {alert.alert_type} • Seuil: {alert.threshold} • 
                           Déclenchée: {alert.triggered_count} fois
                         </p>
                       </div>
@@ -251,16 +160,28 @@ export const AlertsPanel = () => {
                         variant="outline"
                         size="sm"
                         onClick={() => toggleAlertStatus(alert.id)}
+                        className="flex items-center space-x-1"
                       >
-                        {alert.status === 'active' ? 'Désactiver' : 'Activer'}
+                        {alert.status === 'active' ? (
+                          <>
+                            <ToggleRight className="w-4 h-4" />
+                            <span>Désactiver</span>
+                          </>
+                        ) : (
+                          <>
+                            <ToggleLeft className="w-4 h-4" />
+                            <span>Activer</span>
+                          </>
+                        )}
                       </Button>
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => deleteAlert(alert.id)}
-                        className="text-red-600 hover:text-red-700"
+                        className="text-red-600 hover:text-red-700 flex items-center space-x-1"
                       >
-                        Supprimer
+                        <Trash2 className="w-4 h-4" />
+                        <span>Supprimer</span>
                       </Button>
                     </div>
                   </div>
@@ -331,9 +252,9 @@ export const AlertsPanel = () => {
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Type d'alerte</label>
                   <Select
-                    value={newAlert.type}
+                    value={newAlert.alert_type}
                     onValueChange={(value: 'mention' | 'sentiment' | 'engagement') => 
-                      setNewAlert({...newAlert, type: value})
+                      setNewAlert({...newAlert, alert_type: value})
                     }
                   >
                     <SelectTrigger>
@@ -362,12 +283,12 @@ export const AlertsPanel = () => {
                 <p className="text-sm text-blue-700">
                   Une alerte sera déclenchée quand le mot-clé "<strong>{newAlert.keyword || '[mot-clé]'}</strong>" 
                   sur <strong>{newAlert.platform || '[plateforme]'}</strong> dépasse 
-                  <strong> {newAlert.threshold}</strong> {newAlert.type === 'mention' ? 'mentions' : 
-                  newAlert.type === 'sentiment' ? 'score de sentiment' : 'interactions'}.
+                  <strong> {newAlert.threshold}</strong> {newAlert.alert_type === 'mention' ? 'mentions' : 
+                  newAlert.alert_type === 'sentiment' ? 'score de sentiment' : 'interactions'}.
                 </p>
               </div>
 
-              <Button onClick={createAlert} className="w-full">
+              <Button onClick={handleCreateAlert} className="w-full" disabled={loading}>
                 <Plus className="w-4 h-4 mr-2" />
                 Créer l'alerte
               </Button>

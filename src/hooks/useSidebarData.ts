@@ -101,10 +101,19 @@ export const useSidebarData = () => {
         }
       ];
 
-      // Statut utilisateur basé sur l'activité récente
+      // Statut utilisateur basé sur l'activité récente et l'heure de la dernière activité
       let userStatus: 'online' | 'busy' | 'away' | 'offline' = 'online';
-      if (activeSearches > 5) userStatus = 'busy';
-      else if (activeSearches === 0) userStatus = 'away';
+      
+      const lastActivity = searchResults?.[0] ? new Date(searchResults[0].created_at) : new Date(0);
+      const timeSinceActivity = Date.now() - lastActivity.getTime();
+      
+      if (timeSinceActivity > 30 * 60 * 1000) { // Plus de 30 minutes d'inactivité
+        userStatus = 'away';
+      } else if (activeSearches > 5) {
+        userStatus = 'busy';
+      } else {
+        userStatus = 'online';
+      }
 
       setSidebarData({
         unreadAlerts,

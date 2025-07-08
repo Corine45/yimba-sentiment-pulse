@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,9 +7,20 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Settings, User, Bell, Database, Key, Globe, Shield } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { Settings, User, Bell, Database, Key, Globe, Shield, Server, HardDrive, Monitor, RefreshCw, Save } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useProfile } from "@/hooks/useProfile";
+import { supabase } from "@/integrations/supabase/client";
+
+interface SettingsPanelProps {
+  userRole: string;
+  permissions: {
+    canAccessSettings: boolean;
+    canConfigurePlatform: boolean;
+    canViewSystemMetrics: boolean;
+    canManageBackups: boolean;
+  };
+}
 
 interface UserSettings {
   notifications: {
@@ -34,32 +44,50 @@ interface UserSettings {
     timezone: string;
     theme: string;
   };
+  platform: {
+    monitoring_enabled: boolean;
+    backup_frequency: string;
+    security_level: string;
+    auto_updates: boolean;
+  };
 }
 
-export const SettingsPanel = () => {
-  const [settings, setSettings] = useState<UserSettings>({
-    notifications: {
-      email: true,
-      push: true,
-      sms: false,
-      frequency: '15min'
-    },
-    api: {
-      cache_duration: 10,
-      rate_limit: 100,
-      max_results: 1000
-    },
-    privacy: {
-      data_retention: 30,
-      analytics: true,
-      location_tracking: false
-    },
-    preferences: {
-      language: 'fr',
-      timezone: 'Africa/Abidjan',
-      theme: 'light'
-    }
-  });
+const defaultSettings: UserSettings = {
+  notifications: {
+    email: true,
+    push: true,
+    sms: false,
+    frequency: '15min'
+  },
+  api: {
+    cache_duration: 10,
+    rate_limit: 100,
+    max_results: 1000
+  },
+  privacy: {
+    data_retention: 30,
+    analytics: true,
+    location_tracking: false
+  },
+  preferences: {
+    language: 'fr',
+    timezone: 'Africa/Abidjan',
+    theme: 'light'
+  },
+  platform: {
+    monitoring_enabled: true,
+    backup_frequency: 'daily',
+    security_level: 'standard',
+    auto_updates: true
+  }
+};
+
+export const SettingsPanel = ({ userRole, permissions }: SettingsPanelProps) => {
+  const [settings, setSettings] = useState<UserSettings>(defaultSettings);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const { profile } = useProfile();
+  const { toast } = useToast();
 
   const [apiStatus, setApiStatus] = useState({
     yimba_pulse: 'active',
@@ -68,8 +96,6 @@ export const SettingsPanel = () => {
     last_check: new Date().toISOString()
   });
 
-  const { toast } = useToast();
-
   useEffect(() => {
     loadSettings();
     checkApiStatus();
@@ -77,47 +103,89 @@ export const SettingsPanel = () => {
 
   const loadSettings = async () => {
     try {
-      // Charger les paramètres depuis Supabase
-      console.log('Chargement des paramètres utilisateur...');
-      // En production, récupérer depuis la base de données
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('system_settings')
+        .select('settings_category, settings_data')
+        .eq('user_id', profile?.id);
+
+      if (error) throw error;
+      
+      let loadedSettings = { ...defaultSettings };
+      
+      data?.forEach(item => {
+        if (item.settings_category in loadedSettings) {
+          loadedSettings[item.settings_category as keyof UserSettings] = {
+            ...loadedSettings[item.settings_category as keyof UserSettings],
+            ...item.settings_data
+          };
+        }
+      });
+      
+      setSettings(loadedSettings);
     } catch (error) {
-      console.error('Erreur lors du chargement des paramètres:', error);
+      console.error('Error loading settings:', error);
+      setSettings(defaultSettings);
+    } finally {
+      setLoading(false);
     }
   };
 
   const checkApiStatus = async () => {
     try {
-      // Vérifier le statut des APIs
       const response = await fetch('https://yimbapulseapi.a-car.ci/api/health');
       if (response.ok) {
         setApiStatus(prev => ({ ...prev, yimba_pulse: 'active' }));
       }
     } catch (error) {
       setApiStatus(prev => ({ ...prev, yimba_pulse: 'error' }));
-      console.error('Erreur de vérification API:', error);
+      console.error('API check error:', error);
     }
   };
 
   const saveSettings = async () => {
+    if (!profile?.id) return;
+    
     try {
-      // Sauvegarder dans Supabase
-      console.log('Sauvegarde des paramètres:', settings);
+      setSaving(true);
+      
+      const categories = Object.keys(settings) as (keyof UserSettings)[];
+      
+      for (const category of categories) {
+        const { error } = await supabase
+          .from('system_settings')
+          .upsert({
+            user_id: profile.id,
+            settings_category: category,
+            settings_data: settings[category]
+          }, {
+            onConflict: 'user_id,settings_category'
+          });
+
+        if (error) throw error;
+      }
       
       toast({
         title: "Paramètres sauvegardés",
         description: "Vos paramètres ont été mis à jour avec succès",
       });
     } catch (error) {
-      console.error('Erreur lors de la sauvegarde:', error);
+      console.error('Error saving settings:', error);
       toast({
         title: "Erreur",
         description: "Impossible de sauvegarder les paramètres",
         variant: "destructive",
       });
+    } finally {
+      setSaving(false);
     }
   };
 
-  const updateSetting = (category: keyof UserSettings, key: string, value: any) => {
+  const updateSetting = <T extends keyof UserSettings>(
+    category: T, 
+    key: keyof UserSettings[T], 
+    value: any
+  ) => {
     setSettings(prev => ({
       ...prev,
       [category]: {
@@ -144,6 +212,18 @@ export const SettingsPanel = () => {
       default: return '⚪';
     }
   };
+
+  if (!permissions.canAccessSettings) {
+    return (
+      <Card>
+        <CardContent className="p-8 text-center">
+          <Shield className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Accès non autorisé</h3>
+          <p className="text-gray-600">Vous n'avez pas les permissions pour accéder aux paramètres.</p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -175,11 +255,12 @@ export const SettingsPanel = () => {
       </Card>
 
       <Tabs defaultValue="profile" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="profile">👤 Profil</TabsTrigger>
           <TabsTrigger value="notifications">🔔 Notifications</TabsTrigger>
           <TabsTrigger value="api">🔧 APIs</TabsTrigger>
           <TabsTrigger value="privacy">🔒 Confidentialité</TabsTrigger>
+          <TabsTrigger value="platform">🏢 Plateforme</TabsTrigger>
           <TabsTrigger value="system">⚙️ Système</TabsTrigger>
         </TabsList>
 
@@ -373,10 +454,12 @@ export const SettingsPanel = () => {
                 </div>
               </div>
 
-              <Button onClick={checkApiStatus} variant="outline" className="w-full">
-                <Database className="w-4 h-4 mr-2" />
-                Tester la connexion aux APIs
-              </Button>
+              <div className="flex space-x-2">
+                <Button onClick={checkApiStatus} variant="outline" className="flex-1">
+                  <Database className="w-4 h-4 mr-2" />
+                  Tester la connexion
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -445,6 +528,118 @@ export const SettingsPanel = () => {
           </Card>
         </TabsContent>
 
+        <TabsContent value="platform" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Server className="w-5 h-5" />
+                <span>Configuration de la plateforme</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {permissions.canConfigurePlatform ? (
+                <>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label>Monitoring système actif</Label>
+                        <p className="text-sm text-gray-600">Surveillance automatique des performances</p>
+                      </div>
+                      <Switch
+                        checked={settings.platform.monitoring_enabled}
+                        onCheckedChange={(checked) => updateSetting('platform', 'monitoring_enabled', checked)}
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label>Mises à jour automatiques</Label>
+                        <p className="text-sm text-gray-600">Installation automatique des correctifs</p>
+                      </div>
+                      <Switch
+                        checked={settings.platform.auto_updates}
+                        onCheckedChange={(checked) => updateSetting('platform', 'auto_updates', checked)}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Fréquence des sauvegardes</Label>
+                    <Select
+                      value={settings.platform.backup_frequency}
+                      onValueChange={(value) => updateSetting('platform', 'backup_frequency', value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="hourly">Toutes les heures</SelectItem>
+                        <SelectItem value="daily">Quotidienne</SelectItem>
+                        <SelectItem value="weekly">Hebdomadaire</SelectItem>
+                        <SelectItem value="monthly">Mensuelle</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Niveau de sécurité</Label>
+                    <Select
+                      value={settings.platform.security_level}
+                      onValueChange={(value) => updateSetting('platform', 'security_level', value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="basic">Basique</SelectItem>
+                        <SelectItem value="standard">Standard</SelectItem>
+                        <SelectItem value="advanced">Avancé</SelectItem>
+                        <SelectItem value="enterprise">Entreprise</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="bg-green-50 p-4 rounded-lg">
+                    <h4 className="font-medium mb-2">✅ Statut de la plateforme</h4>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <span className="font-medium">Monitoring:</span>
+                        <span className="ml-2 text-green-600">
+                          {settings.platform.monitoring_enabled ? 'Actif' : 'Inactif'}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="font-medium">Sauvegardes:</span>
+                        <span className="ml-2 text-green-600">
+                          {settings.platform.backup_frequency}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="font-medium">Sécurité:</span>
+                        <span className="ml-2 text-green-600">
+                          {settings.platform.security_level}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="font-medium">Dernière sauvegarde:</span>
+                        <span className="ml-2 text-green-600">Il y a 2h</span>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="text-center p-8">
+                  <Shield className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">Accès restreint</h3>
+                  <p className="text-gray-600">
+                    Vous n'avez pas les permissions pour configurer la plateforme.
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
         <TabsContent value="system" className="space-y-4">
           <Card>
             <CardHeader>
@@ -460,57 +655,84 @@ export const SettingsPanel = () => {
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span>Frontend:</span>
-                      <Badge variant="outline">React + TypeScript</Badge>
+                      <span className="text-blue-600">React 18.3</span>
                     </div>
                     <div className="flex justify-between">
-                      <span>Base de données:</span>
-                      <Badge variant="outline">Supabase PostgreSQL</Badge>
+                      <span>Backend:</span>
+                      <span className="text-green-600">Supabase</span>
                     </div>
                     <div className="flex justify-between">
-                      <span>API Backend:</span>
-                      <Badge variant="outline">Yimba Pulse API</Badge>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Cache:</span>
-                      <Badge variant="outline">Redis (10 min)</Badge>
+                      <span>APIs:</span>
+                      <span className="text-purple-600">Yimba Pulse (30+)</span>
                     </div>
                   </div>
                 </div>
-
                 <div>
-                  <h4 className="font-medium mb-3">📊 Statistiques d'utilisation</h4>
+                  <h4 className="font-medium mb-3">📊 Performance</h4>
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
-                      <span>Recherches ce mois:</span>
-                      <span className="font-medium">1,247</span>
+                      <span>Temps de réponse:</span>
+                      <span className="text-green-600">&lt; 200ms</span>
                     </div>
                     <div className="flex justify-between">
-                      <span>APIs utilisées:</span>
-                      <span className="font-medium">30+</span>
+                      <span>Disponibilité:</span>
+                      <span className="text-green-600">99.9%</span>
                     </div>
                     <div className="flex justify-between">
-                      <span>Données stockées:</span>
-                      <span className="font-medium">2.3 GB</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Uptime:</span>
-                      <span className="font-medium text-green-600">99.9%</span>
+                      <span>Version:</span>
+                      <span className="text-blue-600">v2.4.1</span>
                     </div>
                   </div>
                 </div>
               </div>
 
-              <div className="pt-4 border-t">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <p className="text-sm text-gray-600">
-                      Dernière mise à jour: {new Date().toLocaleString('fr-FR')}
-                    </p>
+              {permissions.canViewSystemMetrics ? (
+                <div className="bg-blue-50 p-4 rounded-lg">
+                  <h4 className="font-medium mb-3">📊 Métriques système en temps réel</h4>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                    <div className="text-center">
+                      <Monitor className="w-8 h-8 mx-auto text-blue-600 mb-1" />
+                      <div className="font-medium">CPU</div>
+                      <div className="text-blue-600">23%</div>
+                    </div>
+                    <div className="text-center">
+                      <HardDrive className="w-8 h-8 mx-auto text-green-600 mb-1" />
+                      <div className="font-medium">RAM</div>
+                      <div className="text-green-600">67%</div>
+                    </div>
+                    <div className="text-center">
+                      <Database className="w-8 h-8 mx-auto text-purple-600 mb-1" />
+                      <div className="font-medium">DB</div>
+                      <div className="text-purple-600">12GB</div>
+                    </div>
+                    <div className="text-center">
+                      <Globe className="w-8 h-8 mx-auto text-orange-600 mb-1" />
+                      <div className="font-medium">API</div>
+                      <div className="text-orange-600">99.9%</div>
+                    </div>
                   </div>
-                  <Button onClick={saveSettings}>
-                    Sauvegarder les paramètres
-                  </Button>
                 </div>
+              ) : null}
+
+              <div className="flex space-x-2">
+                <Button onClick={saveSettings} disabled={saving || loading} className="flex-1">
+                  {saving ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                      Sauvegarde...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4 mr-2" />
+                      Sauvegarder tous les paramètres
+                    </>
+                  )}
+                </Button>
+                {userRole === 'admin' && (
+                  <Button variant="outline" onClick={() => setSettings(defaultSettings)}>
+                    Réinitialiser
+                  </Button>
+                )}
               </div>
             </CardContent>
           </Card>

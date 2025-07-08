@@ -17,6 +17,9 @@ import Profile from "./pages/Profile";
 import StatusOverview from "./pages/StatusOverview";
 import NotFound from "./pages/NotFound";
 
+// Ajout du composant racine pour gérer les routes
+import { Navigate } from "react-router-dom";
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -31,15 +34,10 @@ const App = () => (
             <Route path="/about" element={<About />} />
             <Route path="/auth" element={<Auth />} />
             
+            {/* Redirection automatique de /login vers /dashboard */}
+            <Route path="/login" element={<Navigate to="/dashboard" replace />} />
+            
             {/* Routes protégées */}
-            <Route 
-              path="/login" 
-              element={
-                <ProtectedRoute>
-                  <Index />
-                </ProtectedRoute>
-              } 
-            />
             <Route 
               path="/dashboard" 
               element={

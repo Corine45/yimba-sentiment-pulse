@@ -92,6 +92,48 @@ export type Database = {
         }
         Relationships: []
       }
+      alerts: {
+        Row: {
+          alert_type: string
+          created_at: string
+          id: string
+          keyword: string
+          last_triggered_at: string | null
+          platform: string
+          status: string
+          threshold: number
+          triggered_count: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          alert_type?: string
+          created_at?: string
+          id?: string
+          keyword: string
+          last_triggered_at?: string | null
+          platform: string
+          status?: string
+          threshold?: number
+          triggered_count?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          alert_type?: string
+          created_at?: string
+          id?: string
+          keyword?: string
+          last_triggered_at?: string | null
+          platform?: string
+          status?: string
+          threshold?: number
+          triggered_count?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       gender_demographics: {
         Row: {
           created_at: string
@@ -649,6 +691,33 @@ export type Database = {
         }
         Relationships: []
       }
+      system_settings: {
+        Row: {
+          created_at: string
+          id: string
+          settings_category: string
+          settings_data: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          settings_category: string
+          settings_data?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          settings_category?: string
+          settings_data?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string | null
@@ -710,6 +779,42 @@ export type Database = {
           session_end?: string | null
           session_start?: string
           updated_at?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_sessions_tracking: {
+        Row: {
+          created_at: string
+          id: string
+          ip_address: unknown | null
+          is_active: boolean | null
+          last_activity: string | null
+          session_end: string | null
+          session_start: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          ip_address?: unknown | null
+          is_active?: boolean | null
+          last_activity?: string | null
+          session_end?: string | null
+          session_start?: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          ip_address?: unknown | null
+          is_active?: boolean | null
+          last_activity?: string | null
+          session_end?: string | null
+          session_start?: string
           user_agent?: string | null
           user_id?: string
         }
