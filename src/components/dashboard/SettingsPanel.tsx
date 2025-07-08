@@ -111,14 +111,22 @@ export const SettingsPanel = ({ userRole, permissions }: SettingsPanelProps) => 
 
       if (error) throw error;
       
-      let loadedSettings = { ...defaultSettings };
+      const loadedSettings = { ...defaultSettings };
       
       data?.forEach(item => {
-        if (item.settings_category in loadedSettings) {
-          loadedSettings[item.settings_category as keyof UserSettings] = {
-            ...loadedSettings[item.settings_category as keyof UserSettings],
-            ...item.settings_data
-          };
+        const category = item.settings_category;
+        const settingsData = item.settings_data as Record<string, any>;
+        
+        if (category === 'notifications') {
+          loadedSettings.notifications = { ...loadedSettings.notifications, ...settingsData };
+        } else if (category === 'api') {
+          loadedSettings.api = { ...loadedSettings.api, ...settingsData };
+        } else if (category === 'privacy') {
+          loadedSettings.privacy = { ...loadedSettings.privacy, ...settingsData };
+        } else if (category === 'preferences') {
+          loadedSettings.preferences = { ...loadedSettings.preferences, ...settingsData };
+        } else if (category === 'platform') {
+          loadedSettings.platform = { ...loadedSettings.platform, ...settingsData };
         }
       });
       
