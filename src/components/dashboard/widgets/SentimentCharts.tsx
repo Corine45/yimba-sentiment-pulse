@@ -3,9 +3,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from "recharts";
 import { TrendingUp, BarChart3 } from "lucide-react";
 import { useSearchResults } from "@/hooks/useSearchResults";
+import { useSocialMediaData } from "@/hooks/useSocialMediaData";
 
 export const SentimentCharts = () => {
   const { searchResults, loading } = useSearchResults();
+  const { posts } = useSocialMediaData();
 
   if (loading) {
     return (

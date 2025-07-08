@@ -47,8 +47,10 @@ export const SentimentAnalysis = ({ userRole, permissions }: SentimentAnalysisPr
         <TabsContent value="overview" className="space-y-6">
           <SentimentOverview />
           <SourceDiversity />
-          <SentimentCharts />
-          <TrendingTopics />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <SentimentCharts />
+            <TrendingTopics />
+          </div>
         </TabsContent>
 
         <TabsContent value="influencers" className="space-y-6">
