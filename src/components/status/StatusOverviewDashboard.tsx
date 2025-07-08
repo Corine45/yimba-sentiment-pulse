@@ -29,6 +29,9 @@ import { useNavigate } from "react-router-dom";
 import { useSearchResults } from "@/hooks/useSearchResults";
 import { useAlertsData } from "@/hooks/useAlertsData";
 import { useSystemMetrics } from "@/hooks/useSystemMetrics";
+import { useStatusOverviewData } from "@/hooks/useStatusOverviewData";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { AppSidebar } from "@/components/dashboard/components/AppSidebar";
 
 interface StatusOverviewDashboardProps {
   user: any;
@@ -44,6 +47,7 @@ export const StatusOverviewDashboard = ({ user, onLogout }: StatusOverviewDashbo
   const { searchResults } = useSearchResults();
   const { alerts } = useAlertsData();
   const { metrics } = useSystemMetrics();
+  const { statusData, loading: statusLoading } = useStatusOverviewData();
 
   const getAvailableTabs = () => {
     const tabs = [];
@@ -101,30 +105,49 @@ export const StatusOverviewDashboard = ({ user, onLogout }: StatusOverviewDashbo
 
   const availableTabs = getAvailableTabs();
 
-  // Calculer les statistiques dynamiques
-  const activeSearches = searchResults.filter(result => 
+  // Calculer les statistiques dynamiques avec données réelles
+  const activeSearches = statusData?.recentActivity.searches || searchResults.filter(result => 
     new Date(result.created_at).getTime() > Date.now() - 24 * 60 * 60 * 1000
   ).length;
 
-  const totalAlerts = alerts.length;
+  const totalAlerts = statusData?.platformStats.totalAlerts || alerts.length;
   const lastActivityTime = searchResults.length > 0 
     ? Math.floor((Date.now() - new Date(searchResults[0]?.created_at || Date.now()).getTime()) / (1000 * 60))
     : 0;
 
+  if (statusLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <span className="ml-3">Chargement de l'état des lieux...</span>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center space-x-4">
-              <Button
-                variant="ghost"
-                onClick={() => navigate('/dashboard')}
-                className="text-sm"
-              >
-                ← Retour au tableau de bord
-              </Button>
+    <SidebarProvider>
+      <div className="min-h-screen flex w-full">
+        <AppSidebar 
+          activeTab="status"
+          onTabChange={() => {}}
+          user={user}
+          permissions={permissions}
+        />
+        
+        <div className="flex-1 bg-gray-50">
+          {/* Header */}
+          <div className="bg-white border-b">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="flex items-center justify-between h-16">
+                <div className="flex items-center space-x-4">
+                  <SidebarTrigger />
+                  <Button
+                    variant="ghost"
+                    onClick={() => navigate('/dashboard')}
+                    className="text-sm"
+                  >
+                    ← Retour au tableau de bord
+                  </Button>
               <div>
                 <h1 className="text-xl font-semibold text-gray-900">État des lieux - YIMBA</h1>
                 <p className="text-sm text-gray-600">Vue d'ensemble de la plateforme</p>
@@ -138,28 +161,28 @@ export const StatusOverviewDashboard = ({ user, onLogout }: StatusOverviewDashbo
                   {getRoleLabel(user.role)}
                 </Badge>
               </div>
-              <Button variant="outline" size="sm" onClick={onLogout}>
-                Déconnexion
-              </Button>
+                  <Button variant="outline" size="sm" onClick={onLogout}>
+                    Déconnexion
+                  </Button>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      </div>
 
-      {/* Restrictions d'accès pour observateurs */}
-      {user.role === "observateur" && (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
-          <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-            <p className="text-sm text-blue-800">
-              <Eye className="w-4 h-4 inline mr-1" />
-              Mode consultation - Accès limité aux informations générales selon votre profil
-            </p>
-          </div>
-        </div>
-      )}
+          {/* Restrictions d'accès pour observateurs */}
+          {user.role === "observateur" && (
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
+              <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-sm text-blue-800">
+                  <Eye className="w-4 h-4 inline mr-1" />
+                  Mode consultation - Accès limité aux informations générales selon votre profil
+                </p>
+              </div>
+            </div>
+          )}
 
-      {/* Contenu principal */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          {/* Contenu principal */}
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className={`grid w-full bg-white p-1 shadow-sm`} style={{gridTemplateColumns: `repeat(${availableTabs.length}, 1fr)`}}>
             {availableTabs.map((tab) => (
@@ -261,8 +284,10 @@ export const StatusOverviewDashboard = ({ user, onLogout }: StatusOverviewDashbo
               <DataSummary userRole={user.role} permissions={permissions} />
             </TabsContent>
           )}
-        </Tabs>
+            </Tabs>
+          </div>
+        </div>
       </div>
-    </div>
+    </SidebarProvider>
   );
 };

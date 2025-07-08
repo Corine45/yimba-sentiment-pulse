@@ -114,19 +114,21 @@ export const SettingsPanel = ({ userRole, permissions }: SettingsPanelProps) => 
       const loadedSettings = { ...defaultSettings };
       
       data?.forEach(item => {
-        const category = item.settings_category;
-        const settingsData = item.settings_data as Record<string, any>;
+        const category = item.settings_category as keyof UserSettings;
+        const settingsData = item.settings_data as any;
         
-        if (category === 'notifications') {
-          loadedSettings.notifications = { ...loadedSettings.notifications, ...settingsData };
-        } else if (category === 'api') {
-          loadedSettings.api = { ...loadedSettings.api, ...settingsData };
-        } else if (category === 'privacy') {
-          loadedSettings.privacy = { ...loadedSettings.privacy, ...settingsData };
-        } else if (category === 'preferences') {
-          loadedSettings.preferences = { ...loadedSettings.preferences, ...settingsData };
-        } else if (category === 'platform') {
-          loadedSettings.platform = { ...loadedSettings.platform, ...settingsData };
+        if (category && settingsData && typeof settingsData === 'object') {
+          if (category === 'notifications' && loadedSettings.notifications) {
+            loadedSettings.notifications = { ...loadedSettings.notifications, ...settingsData };
+          } else if (category === 'api' && loadedSettings.api) {
+            loadedSettings.api = { ...loadedSettings.api, ...settingsData };
+          } else if (category === 'privacy' && loadedSettings.privacy) {
+            loadedSettings.privacy = { ...loadedSettings.privacy, ...settingsData };
+          } else if (category === 'preferences' && loadedSettings.preferences) {
+            loadedSettings.preferences = { ...loadedSettings.preferences, ...settingsData };
+          } else if (category === 'platform' && loadedSettings.platform) {
+            loadedSettings.platform = { ...loadedSettings.platform, ...settingsData };
+          }
         }
       });
       

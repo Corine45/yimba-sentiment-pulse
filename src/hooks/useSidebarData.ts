@@ -101,18 +101,33 @@ export const useSidebarData = () => {
         }
       ];
 
-      // Statut utilisateur basé sur l'activité récente et l'heure de la dernière activité
+      // Statut utilisateur basé sur l'activité récente et la session tracking
       let userStatus: 'online' | 'busy' | 'away' | 'offline' = 'online';
       
-      const lastActivity = searchResults?.[0] ? new Date(searchResults[0].created_at) : new Date(0);
-      const timeSinceActivity = Date.now() - lastActivity.getTime();
+      // Récupérer la session utilisateur active pour déterminer le statut réel
+      const { data: activeSessions } = await supabase
+        .from('user_sessions_tracking')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .order('last_activity', { ascending: false })
+        .limit(1);
+
+      const activeSession = activeSessions?.[0];
       
-      if (timeSinceActivity > 30 * 60 * 1000) { // Plus de 30 minutes d'inactivité
-        userStatus = 'away';
-      } else if (activeSearches > 5) {
-        userStatus = 'busy';
+      if (activeSession) {
+        const lastActivity = new Date(activeSession.last_activity || activeSession.session_start);
+        const timeSinceActivity = Date.now() - lastActivity.getTime();
+        
+        if (timeSinceActivity < 5 * 60 * 1000) { // Moins de 5 minutes = en ligne
+          userStatus = activeSearches > 5 ? 'busy' : 'online';
+        } else if (timeSinceActivity < 30 * 60 * 1000) { // 5-30 minutes = absent
+          userStatus = 'away';
+        } else { // Plus de 30 minutes = hors ligne
+          userStatus = 'offline';
+        }
       } else {
-        userStatus = 'online';
+        userStatus = 'offline';
       }
 
       setSidebarData({
