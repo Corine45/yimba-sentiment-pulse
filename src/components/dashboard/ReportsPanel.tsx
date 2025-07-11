@@ -13,6 +13,7 @@ import { ReportsList } from "./reports/ReportsList";
 import { NewReportGenerator } from "./reports/NewReportGenerator";
 import { ScheduledReports } from "./reports/ScheduledReports";
 import { useAuth } from "@/hooks/useAuth";
+import { useProfile } from "@/hooks/useProfile";
 
 interface Report {
   id: string;
@@ -74,9 +75,10 @@ export const ReportsPanel = () => {
     }
   };
 
-  // Vérifier les permissions
-  const canGenerateReports = user?.role === 'admin' || user?.role === 'analyste';
-  const canExportData = user?.role === 'admin' || user?.role === 'analyste';
+  // Vérifier les permissions depuis le profil
+  const { profile } = useProfile();
+  const canGenerateReports = profile?.role === 'admin' || profile?.role === 'analyste';
+  const canExportData = profile?.role === 'admin' || profile?.role === 'analyste';
 
   return (
     <div className="space-y-6">

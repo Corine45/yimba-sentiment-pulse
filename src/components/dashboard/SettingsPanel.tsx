@@ -270,8 +270,8 @@ export const SettingsPanel = ({ userRole, permissions }: SettingsPanelProps) => 
           <TabsTrigger value="notifications">🔔 Notifications</TabsTrigger>
           <TabsTrigger value="api">🔧 APIs</TabsTrigger>
           <TabsTrigger value="privacy">🔒 Confidentialité</TabsTrigger>
-          <TabsTrigger value="platform">🏢 Plateforme</TabsTrigger>
-          <TabsTrigger value="system">⚙️ Système</TabsTrigger>
+          {permissions.canConfigurePlatform && <TabsTrigger value="platform">🏢 Plateforme</TabsTrigger>}
+          {userRole === 'admin' && <TabsTrigger value="system">⚙️ Système</TabsTrigger>}
         </TabsList>
 
         <TabsContent value="profile" className="space-y-4">

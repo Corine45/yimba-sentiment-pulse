@@ -9,6 +9,7 @@ import { Activity, AlertTriangle, TrendingUp, Eye, MapPin, Calendar, Shield, Dat
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useHealthSurveillanceData } from "@/hooks/useHealthSurveillanceData";
+import { useHealthSearch } from "@/hooks/useHealthSearch";
 
 interface HealthAlert {
   id: string;
@@ -37,6 +38,7 @@ export const HealthSurveillance = () => {
   
   // 🔧 CONNEXION: Utiliser les données réelles de Supabase
   const { alerts: supabaseAlerts, cases, loading } = useHealthSurveillanceData();
+  const { results: searchResults, loading: searchLoading, searchHealthData, saveSearchToSupabase } = useHealthSearch();
   
   // État local pour les alertes enrichies
   const [healthAlerts, setHealthAlerts] = useState<HealthAlert[]>([]);
@@ -183,7 +185,23 @@ export const HealthSurveillance = () => {
     }
   };
 
-  const filteredAlerts = healthAlerts.filter(alert => {
+  // Recherche en temps réel quand les filtres changent
+  const handleSearch = async () => {
+    if (searchTerm.trim()) {
+      await searchHealthData(searchTerm, selectedRegion, selectedSeverity);
+      await saveSearchToSupabase({
+        term: searchTerm,
+        region: selectedRegion,
+        severity: selectedSeverity,
+        resultsCount: searchResults.length
+      });
+    }
+  };
+
+  // Combiner les alertes statiques et les résultats de recherche dynamiques
+  const combinedResults = [...healthAlerts, ...searchResults];
+  
+  const filteredAlerts = combinedResults.filter(alert => {
     const matchesSearch = alert.keyword.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          alert.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          alert.region.toLowerCase().includes(searchTerm.toLowerCase());
@@ -201,7 +219,9 @@ export const HealthSurveillance = () => {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-        <span className="ml-2">Chargement des données de veille sanitaire...</span>
+        <span className="ml-2">
+          {searchLoading ? 'Recherche en cours via APIs...' : 'Chargement des données de veille sanitaire...'}
+        </span>
       </div>
     );
   }
@@ -297,12 +317,20 @@ export const HealthSurveillance = () => {
           <Card>
             <CardContent className="p-4">
               <div className="flex flex-col md:flex-row gap-4">
-                <div className="flex-1">
+                <div className="flex-1 flex space-x-2">
                   <Input
                     placeholder="Rechercher par mot-clé, région ou contenu..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
                   />
+                  <Button 
+                    onClick={handleSearch} 
+                    disabled={loading || searchLoading}
+                    className="px-6"
+                  >
+                    {searchLoading ? '🔍 Recherche...' : '🔍 Rechercher'}
+                  </Button>
                 </div>
                 <div className="flex gap-2">
                   <Select value={selectedRegion} onValueChange={setSelectedRegion}>
