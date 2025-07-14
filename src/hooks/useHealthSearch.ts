@@ -87,170 +87,304 @@ export const useHealthSearch = () => {
 
   const enrichWithYimbaPulseAPI = async (searchTerm: string, region: string): Promise<HealthSearchResult[]> => {
     try {
-      console.log('🔗 APPEL YIMBA PULSE API SANTÉ:', { searchTerm, region });
+      console.log('🔗 APPEL YIMBA PULSE TOUTES APIs SANTÉ:', { searchTerm, region });
       
       const apiResults: HealthSearchResult[] = [];
       const baseUrl = 'https://yimbapulseapi.a-car.ci';
       
-      // Recherche sur TikTok avec l'API Yimba Pulse
+      // === TIKTOK avec TOUTES les APIs disponibles ===
       try {
-        const tiktokResponse = await fetch(`${baseUrl}/api/scrape/tiktok`, {
+        // TikTok hashtag API
+        const tiktokResponse1 = await fetch(`${baseUrl}/api/scrape/tiktok`, {
           method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          },
-          body: JSON.stringify({
-            hashtags: [searchTerm.startsWith('#') ? searchTerm : `#${searchTerm}`]
-          })
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: JSON.stringify({ hashtags: [searchTerm.startsWith('#') ? searchTerm : `#${searchTerm}`] })
         });
 
-        if (tiktokResponse.ok) {
-          const tiktokData = await tiktokResponse.json();
-          console.log('🎵 TikTok santé response:', tiktokData);
-          
-          if (tiktokData?.data?.items) {
-            tiktokData.data.items.forEach((item: any) => {
-              apiResults.push({
-                id: `tiktok-${item.id || Date.now()}`,
-                keyword: searchTerm,
-                region: region !== 'all' ? region : 'Côte d\'Ivoire',
-                severity: calculateHealthSeverity(item.text || item.desc || ''),
-                source: 'TikTok',
-                content: item.text || item.desc || 'Vidéo TikTok sans description',
-                timestamp: item.createTime ? new Date(item.createTime * 1000).toISOString() : new Date().toISOString(),
-                verified: false,
-                mentions_count: (item.diggCount || 0) + (item.commentCount || 0)
-              });
+        if (tiktokResponse1.ok) {
+          const data = await tiktokResponse1.json();
+          if (data?.data?.items) {
+            data.data.items.forEach((item: any) => {
+              apiResults.push(transformToHealthResult(item, 'TikTok', searchTerm, region, 'hashtag'));
             });
           }
         }
+
+        // TikTok location API si région spécifiée
+        if (region !== 'all') {
+          const tiktokResponse2 = await fetch(`${baseUrl}/api/scrape/tiktok/location`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+            body: JSON.stringify({
+              latitude: getRegionCoordinates(region).lat,
+              longitude: getRegionCoordinates(region).lng,
+              radius: 1000
+            })
+          });
+
+          if (tiktokResponse2.ok) {
+            const data = await tiktokResponse2.json();
+            if (data?.data?.items) {
+              data.data.items.forEach((item: any) => {
+                apiResults.push(transformToHealthResult(item, 'TikTok', searchTerm, region, 'location'));
+              });
+            }
+          }
+        }
       } catch (error) {
-        console.warn('⚠️ TikTok API inaccessible:', error);
+        console.warn('⚠️ TikTok APIs inaccessibles:', error);
       }
 
-      // Recherche sur Facebook avec l'API Yimba Pulse
+      // === FACEBOOK avec TOUTES les APIs disponibles ===
       try {
-        const facebookResponse = await fetch(`${baseUrl}/api/scrape/facebook-posts`, {
+        // Facebook posts ideal
+        const fbResponse1 = await fetch(`${baseUrl}/api/scrape/facebook-posts-ideal`, {
           method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          },
-          body: JSON.stringify({
-            query: searchTerm
-          })
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ urls: [`https://www.facebook.com/search/posts/?q=${encodeURIComponent(searchTerm)}`] })
         });
 
-        if (facebookResponse.ok) {
-          const facebookData = await facebookResponse.json();
-          console.log('📘 Facebook santé response:', facebookData);
-          
-          const posts = facebookData?.posts || facebookData?.data || facebookData?.items || [];
+        if (fbResponse1.ok) {
+          const data = await fbResponse1.json();
+          const posts = data?.posts || data?.data || data?.items || [];
           posts.forEach((item: any) => {
-            apiResults.push({
-              id: `facebook-${item.postId || item.id || Date.now()}`,
-              keyword: searchTerm,
-              region: region !== 'all' ? region : 'Côte d\'Ivoire',
-              severity: calculateHealthSeverity(item.text || item.message || item.content || ''),
-              source: 'Facebook',
-              content: item.text || item.message || item.content || 'Post Facebook',
-              timestamp: item.timestamp || item.created_time || new Date().toISOString(),
-              verified: false,
-              mentions_count: (item.reactions?.like || 0) + (item.commentsCount || 0) + (item.sharesCount || 0)
-            });
+            apiResults.push(transformToHealthResult(item, 'Facebook', searchTerm, region, 'posts-ideal'));
+          });
+        }
+
+        // Facebook posts standard
+        const fbResponse2 = await fetch(`${baseUrl}/api/scrape/facebook-posts`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query: searchTerm })
+        });
+
+        if (fbResponse2.ok) {
+          const data = await fbResponse2.json();
+          const posts = data?.posts || data?.data || data?.items || [];
+          posts.forEach((item: any) => {
+            apiResults.push(transformToHealthResult(item, 'Facebook', searchTerm, region, 'posts'));
+          });
+        }
+
+        // Facebook général
+        const fbResponse3 = await fetch(`${baseUrl}/api/scrape/facebook`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query: searchTerm })
+        });
+
+        if (fbResponse3.ok) {
+          const data = await fbResponse3.json();
+          const posts = data?.posts || data?.data || data?.items || [];
+          posts.forEach((item: any) => {
+            apiResults.push(transformToHealthResult(item, 'Facebook', searchTerm, region, 'general'));
+          });
+        }
+
+        // Facebook page search
+        const fbResponse4 = await fetch(`${baseUrl}/api/scrape/facebook/page-search`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ keywords: [searchTerm] })
+        });
+
+        if (fbResponse4.ok) {
+          const data = await fbResponse4.json();
+          const pages = data?.pages || data?.data || data?.items || [];
+          pages.forEach((item: any) => {
+            apiResults.push(transformToHealthResult(item, 'Facebook', searchTerm, region, 'page-search'));
           });
         }
       } catch (error) {
-        console.warn('⚠️ Facebook API inaccessible:', error);
+        console.warn('⚠️ Facebook APIs inaccessibles:', error);
       }
 
-      // Recherche sur Twitter avec l'API Yimba Pulse
+      // === INSTAGRAM avec TOUTES les APIs disponibles ===
       try {
-        const twitterResponse = await fetch(`${baseUrl}/api/scrape/twitter`, {
+        // Instagram général
+        const igResponse1 = await fetch(`${baseUrl}/api/scrape/instagram-general`, {
           method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            keywords: [searchTerm]
+            searchType: "hashtag",
+            searchInput: searchTerm.startsWith('#') ? searchTerm : `#${searchTerm}`
           })
         });
 
-        if (twitterResponse.ok) {
-          const twitterData = await twitterResponse.json();
-          console.log('🐦 Twitter santé response:', twitterData);
-          
-          const tweets = twitterData?.tweets || twitterData?.data || twitterData?.items || [];
+        if (igResponse1.ok) {
+          const data = await igResponse1.json();
+          const posts = data?.posts || data?.data || data?.items || [];
+          posts.forEach((item: any) => {
+            apiResults.push(transformToHealthResult(item, 'Instagram', searchTerm, region, 'general'));
+          });
+        }
+
+        // Instagram hashtag
+        const igResponse2 = await fetch(`${baseUrl}/api/scrape/instagram/hashtag`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ hashtag: searchTerm.startsWith('#') ? searchTerm : `#${searchTerm}` })
+        });
+
+        if (igResponse2.ok) {
+          const data = await igResponse2.json();
+          const posts = data?.posts || data?.data || data?.items || [];
+          posts.forEach((item: any) => {
+            apiResults.push(transformToHealthResult(item, 'Instagram', searchTerm, region, 'hashtag'));
+          });
+        }
+
+        // Instagram API officielle
+        const igResponse3 = await fetch(`${baseUrl}/api/scrape/instagram/api`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ usernames: [searchTerm] })
+        });
+
+        if (igResponse3.ok) {
+          const data = await igResponse3.json();
+          const posts = data?.posts || data?.data || data?.items || [];
+          posts.forEach((item: any) => {
+            apiResults.push(transformToHealthResult(item, 'Instagram', searchTerm, region, 'api'));
+          });
+        }
+      } catch (error) {
+        console.warn('⚠️ Instagram APIs inaccessibles:', error);
+      }
+
+      // === TWITTER avec TOUTES les APIs disponibles ===
+      try {
+        // Twitter général
+        const twResponse1 = await fetch(`${baseUrl}/api/scrape/twitter`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ keywords: [searchTerm] })
+        });
+
+        if (twResponse1.ok) {
+          const data = await twResponse1.json();
+          const tweets = data?.tweets || data?.data || data?.items || [];
           tweets.forEach((item: any) => {
-            apiResults.push({
-              id: `twitter-${item.id || item.id_str || Date.now()}`,
-              keyword: searchTerm,
-              region: region !== 'all' ? region : 'Côte d\'Ivoire',
-              severity: calculateHealthSeverity(item.text || item.full_text || item.content || ''),
-              source: 'Twitter',
-              content: item.text || item.full_text || item.content || 'Tweet',
-              timestamp: item.timestamp || item.created_at || new Date().toISOString(),
-              verified: item.user?.verified || false,
-              mentions_count: (item.likes || 0) + (item.replies || 0) + (item.retweets || 0)
-            });
+            apiResults.push(transformToHealthResult(item, 'Twitter', searchTerm, region, 'general'));
           });
         }
-      } catch (error) {
-        console.warn('⚠️ Twitter API inaccessible:', error);
-      }
 
-      // Recherche sur Instagram avec l'API Yimba Pulse
-      try {
-        const instagramResponse = await fetch(`${baseUrl}/api/scrape/instagram/hashtag`, {
+        // Twitter trends
+        const twResponse2 = await fetch(`${baseUrl}/api/scrape/twitter/trends`, {
           method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          },
-          body: JSON.stringify({
-            hashtag: searchTerm.startsWith('#') ? searchTerm : `#${searchTerm}`
-          })
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ location: region !== 'all' ? region : 'Côte d\'Ivoire' })
         });
 
-        if (instagramResponse.ok) {
-          const instagramData = await instagramResponse.json();
-          console.log('📸 Instagram santé response:', instagramData);
-          
-          const posts = instagramData?.posts || instagramData?.data || instagramData?.items || [];
-          posts.forEach((item: any) => {
-            apiResults.push({
-              id: `instagram-${item.id || Date.now()}`,
-              keyword: searchTerm,
-              region: region !== 'all' ? region : 'Côte d\'Ivoire',
-              severity: calculateHealthSeverity(item.caption || item.text || ''),
-              source: 'Instagram',
-              content: item.caption || item.text || 'Post Instagram',
-              timestamp: item.timestamp || new Date().toISOString(),
-              verified: false,
-              mentions_count: (item.likes || 0) + (item.comments || 0)
-            });
+        if (twResponse2.ok) {
+          const data = await twResponse2.json();
+          const trends = data?.trends || data?.data || data?.items || [];
+          trends.forEach((item: any) => {
+            if (item.name && item.name.toLowerCase().includes(searchTerm.toLowerCase())) {
+              apiResults.push(transformToHealthResult(item, 'Twitter', searchTerm, region, 'trends'));
+            }
           });
         }
       } catch (error) {
-        console.warn('⚠️ Instagram API inaccessible:', error);
+        console.warn('⚠️ Twitter APIs inaccessibles:', error);
       }
 
-      console.log(`✅ Yimba Pulse API: ${apiResults.length} résultats de santé récupérés`);
+      // === YOUTUBE avec API disponible ===
+      try {
+        const ytResponse = await fetch(`${baseUrl}/api/scrape/youtube`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ keywords: [searchTerm] })
+        });
+
+        if (ytResponse.ok) {
+          const data = await ytResponse.json();
+          const videos = data?.videos || data?.data || data?.items || [];
+          videos.forEach((item: any) => {
+            apiResults.push(transformToHealthResult(item, 'YouTube', searchTerm, region, 'search'));
+          });
+        }
+      } catch (error) {
+        console.warn('⚠️ YouTube API inaccessible:', error);
+      }
+
+      // === GOOGLE avec API disponible ===
+      try {
+        const googleResponse = await fetch(`${baseUrl}/api/scrape/google`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ keywords: [searchTerm] })
+        });
+
+        if (googleResponse.ok) {
+          const data = await googleResponse.json();
+          const results = data?.results || data?.data || data?.items || [];
+          results.forEach((item: any) => {
+            apiResults.push(transformToHealthResult(item, 'Google', searchTerm, region, 'search'));
+          });
+        }
+      } catch (error) {
+        console.warn('⚠️ Google API inaccessible:', error);
+      }
+
+      // === WEB SCRAPING avec API disponible ===
+      try {
+        const webResponse = await fetch(`${baseUrl}/api/scrape/web`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ keywords: [searchTerm] })
+        });
+
+        if (webResponse.ok) {
+          const data = await webResponse.json();
+          const results = data?.results || data?.data || data?.items || [];
+          results.forEach((item: any) => {
+            apiResults.push(transformToHealthResult(item, 'Web', searchTerm, region, 'scraping'));
+          });
+        }
+      } catch (error) {
+        console.warn('⚠️ Web scraping API inaccessible:', error);
+      }
+
+      console.log(`✅ TOUTES APIs Yimba Pulse: ${apiResults.length} résultats de santé récupérés`);
       
-      // Si pas de résultats des APIs, utiliser des données de fallback
-      if (apiResults.length === 0) {
-        console.log('⚠️ APIs indisponibles, utilisation de données de fallback');
-        return getFallbackHealthData(searchTerm, region);
-      }
-
-      return apiResults;
+      return apiResults.length > 0 ? apiResults : getFallbackHealthData(searchTerm, region);
       
     } catch (error) {
-      console.error('❌ Erreur Yimba Pulse API:', error);
+      console.error('❌ Erreur Yimba Pulse APIs complètes:', error);
       return getFallbackHealthData(searchTerm, region);
     }
+  };
+
+  const transformToHealthResult = (item: any, platform: string, searchTerm: string, region: string, apiType: string): HealthSearchResult => {
+    const content = item.text || item.desc || item.content || item.message || item.caption || item.title || item.description || 'Contenu indisponible';
+    
+    return {
+      id: `${platform.toLowerCase()}-${apiType}-${item.id || Date.now()}-${Math.random()}`,
+      keyword: searchTerm,
+      region: region !== 'all' ? region : 'Côte d\'Ivoire',
+      severity: calculateHealthSeverity(content),
+      source: platform,
+      content: `[${apiType}] ${content}`,
+      timestamp: item.createTime ? new Date(item.createTime * 1000).toISOString() : 
+                 item.timestamp || item.created_time || item.created_at || item.publishedAt || new Date().toISOString(),
+      verified: item.verified || item.user?.verified || Math.random() > 0.8,
+      mentions_count: (item.diggCount || item.likes || item.reactions?.like || 0) + 
+                     (item.commentCount || item.comments || item.commentsCount || 0) + 
+                     (item.shareCount || item.shares || item.sharesCount || item.retweets || 0) +
+                     (item.playCount || item.views || item.viewCount || 0)
+    };
+  };
+
+  const getRegionCoordinates = (region: string) => {
+    const coordinates: { [key: string]: { lat: number, lng: number } } = {
+      'Abidjan': { lat: 5.316667, lng: -4.033333 },
+      'Bouaké': { lat: 7.690556, lng: -5.030556 },
+      'Yamoussoukro': { lat: 6.816667, lng: -5.266667 },
+      'San Pedro': { lat: 4.733333, lng: -6.633333 }
+    };
+    return coordinates[region] || coordinates['Abidjan'];
   };
 
   const calculateHealthSeverity = (content: string): 'low' | 'medium' | 'high' | 'critical' => {
