@@ -86,34 +86,128 @@ export const useHealthSearch = () => {
   }, [toast]);
 
   const enrichWithYimbaPulseAPI = async (searchTerm: string, region: string): Promise<HealthSearchResult[]> => {
-    // Simulation d'enrichissement avec vos APIs Yimba Pulse
-    // À remplacer par de vrais appels API quand prêts
+    try {
+      console.log('🔗 APPEL API YIMBA PULSE:', { searchTerm, region });
+      
+      const apiResults: HealthSearchResult[] = [];
+      
+      // 1. Appel à l'API de recherche social media
+      const socialMediaResponse = await fetch(`https://api.yimbapulse.com/social-search`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.YIMBA_PULSE_API_KEY}`,
+        },
+        body: JSON.stringify({
+          keywords: [searchTerm],
+          region: region !== 'all' ? region : undefined,
+          platforms: ['facebook', 'tiktok', 'twitter', 'instagram'],
+          health_filter: true,
+          limit: 50
+        })
+      });
+
+      if (socialMediaResponse.ok) {
+        const socialData = await socialMediaResponse.json();
+        
+        socialData.results?.forEach((item: any) => {
+          apiResults.push({
+            id: `yimba-${item.id}`,
+            keyword: searchTerm,
+            region: item.location?.region || region,
+            severity: calculateSeverity(item.sentiment_score, item.urgency_indicators),
+            source: item.platform,
+            content: item.content,
+            timestamp: item.created_at,
+            verified: item.verified || false,
+            mentions_count: item.engagement?.mentions || 1
+          });
+        });
+      }
+
+      // 2. Appel à l'API de veille sanitaire spécialisée
+      const healthResponse = await fetch(`https://api.yimbapulse.com/health-surveillance`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.YIMBA_PULSE_API_KEY}`,
+        },
+        body: JSON.stringify({
+          disease_keywords: [searchTerm],
+          geographical_area: region !== 'all' ? region : 'cote-d-ivoire',
+          alert_level: 'all',
+          time_range: '7d'
+        })
+      });
+
+      if (healthResponse.ok) {
+        const healthData = await healthResponse.json();
+        
+        healthData.alerts?.forEach((alert: any) => {
+          apiResults.push({
+            id: `health-${alert.id}`,
+            keyword: searchTerm,
+            region: alert.region,
+            severity: alert.severity_level,
+            source: alert.data_source || 'Health Surveillance',
+            content: alert.description,
+            timestamp: alert.detected_at,
+            verified: alert.official_confirmation,
+            mentions_count: alert.occurrence_count || 1
+          });
+        });
+      }
+
+      // 3. Si pas de résultats des APIs, utiliser des données de fallback locales
+      if (apiResults.length === 0) {
+        console.log('⚠️ APIs Yimba Pulse indisponibles, utilisation de données de fallback');
+        return getFallbackHealthData(searchTerm, region);
+      }
+
+      console.log(`✅ API Yimba Pulse: ${apiResults.length} résultats récupérés`);
+      return apiResults;
+      
+    } catch (error) {
+      console.error('❌ Erreur API Yimba Pulse:', error);
+      
+      // En cas d'erreur API, utiliser des données de fallback
+      return getFallbackHealthData(searchTerm, region);
+    }
+  };
+
+  const calculateSeverity = (sentimentScore: number, urgencyIndicators: any[]): 'low' | 'medium' | 'high' | 'critical' => {
+    const urgencyCount = urgencyIndicators?.length || 0;
     
-    const mockAPIResults: HealthSearchResult[] = [];
-    
-    // Mots-clés de santé spécifiques
+    if (sentimentScore < -0.7 || urgencyCount >= 3) return 'critical';
+    if (sentimentScore < -0.4 || urgencyCount >= 2) return 'high';
+    if (sentimentScore < -0.1 || urgencyCount >= 1) return 'medium';
+    return 'low';
+  };
+
+  const getFallbackHealthData = (searchTerm: string, region: string): HealthSearchResult[] => {
     const healthKeywords = ['covid', 'paludisme', 'rougeole', 'choléra', 'dengue', 'tuberculose', 'VIH', 'grippe'];
     const regions = region === 'all' ? ['Abidjan', 'Bouaké', 'Yamoussoukro', 'San Pedro'] : [region];
     const platforms = ['Facebook', 'TikTok', 'Twitter', 'Instagram', 'WhatsApp'];
+    
+    const fallbackResults: HealthSearchResult[] = [];
 
     if (healthKeywords.some(keyword => searchTerm.toLowerCase().includes(keyword))) {
-      // Générer des résultats d'API simulés pour les termes de santé
-      for (let i = 0; i < 3; i++) {
-        mockAPIResults.push({
-          id: `api-${Date.now()}-${i}`,
+      for (let i = 0; i < 2; i++) {
+        fallbackResults.push({
+          id: `fallback-${Date.now()}-${i}`,
           keyword: searchTerm,
           region: regions[i % regions.length],
-          severity: ['low', 'medium', 'high', 'critical'][Math.floor(Math.random() * 4)] as any,
+          severity: ['medium', 'high'][i % 2] as any,
           source: platforms[i % platforms.length],
-          content: `Données API Yimba Pulse: Mentions de "${searchTerm}" détectées dans la région ${regions[i % regions.length]}`,
-          timestamp: new Date(Date.now() - Math.random() * 24 * 60 * 60 * 1000).toISOString(),
-          verified: Math.random() > 0.3,
-          mentions_count: Math.floor(Math.random() * 100) + 5
+          content: `[Données locales] Surveillance de "${searchTerm}" dans la région ${regions[i % regions.length]} - API externe temporairement indisponible`,
+          timestamp: new Date(Date.now() - Math.random() * 12 * 60 * 60 * 1000).toISOString(),
+          verified: false,
+          mentions_count: Math.floor(Math.random() * 20) + 5
         });
       }
     }
 
-    return mockAPIResults;
+    return fallbackResults;
   };
 
   const saveSearchToSupabase = useCallback(async (searchParams: {
