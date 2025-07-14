@@ -65,9 +65,9 @@ export const HealthSurveillance = () => {
 
   const loadHealthData = async () => {
     try {
-      console.log('🏥 CHARGEMENT DONNÉES VEILLE SANITAIRE - APPELS APIs AUTOMATIQUES');
+      console.log('🏥 CHARGEMENT DONNÉES VEILLE SANITAIRE - APIs SEULEMENT');
       
-      // 🔧 TRANSFORMATION: Alertes Supabase -> Alertes sanitaires
+      // 🔧 TRANSFORMATION: Alertes Supabase -> Alertes sanitaires (si elles existent)
       const transformedAlerts: HealthAlert[] = supabaseAlerts.map((alert, index) => ({
         id: alert.id,
         keyword: alert.disease,
@@ -81,25 +81,10 @@ export const HealthSurveillance = () => {
         mentions_count: Math.floor(Math.random() * 50) + 5
       }));
 
-      // 🚀 NOUVELLE APPROCHE: Appels automatiques APIs pour veille continue
-      const healthKeywords = ['covid', 'paludisme', 'rougeole', 'choléra', 'dengue'];
-      const autoApiResults: HealthAlert[] = [];
-
-      // Appel automatique de surveillance pour chaque maladie prioritaire
-      for (const keyword of healthKeywords) {
-        console.log(`🔍 Auto-surveillance: ${keyword}`);
-        
-        try {
-          // Utiliser la fonction de recherche API réelle
-          await searchHealthData(keyword, 'all', 'all');
-        } catch (error) {
-          console.warn(`⚠️ Erreur auto-surveillance ${keyword}:`, error);
-        }
-      }
-
-      setHealthAlerts([...transformedAlerts, ...autoApiResults]);
+      // 📝 IMPORTANT: Ne charger que les alertes Supabase réelles, pas de données simulées
+      setHealthAlerts(transformedAlerts);
       
-      console.log(`✅ Données chargées: ${transformedAlerts.length + autoApiResults.length} alertes sanitaires`);
+      console.log(`✅ Données chargées: ${transformedAlerts.length} alertes sanitaires réelles`);
       
     } catch (error) {
       console.error('❌ Erreur chargement données:', error);
