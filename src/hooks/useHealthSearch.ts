@@ -349,11 +349,11 @@ export const useHealthSearch = () => {
 
       console.log(`✅ TOUTES APIs Yimba Pulse: ${apiResults.length} résultats de santé récupérés`);
       
-      return apiResults.length > 0 ? apiResults : getFallbackHealthData(searchTerm, region);
+      return apiResults;
       
     } catch (error) {
       console.error('❌ Erreur Yimba Pulse APIs complètes:', error);
-      return getFallbackHealthData(searchTerm, region);
+      return [];
     }
   };
 
@@ -406,31 +406,6 @@ export const useHealthSearch = () => {
     return 'low';
   };
 
-  const getFallbackHealthData = (searchTerm: string, region: string): HealthSearchResult[] => {
-    const healthKeywords = ['covid', 'paludisme', 'rougeole', 'choléra', 'dengue', 'tuberculose', 'VIH', 'grippe'];
-    const regions = region === 'all' ? ['Abidjan', 'Bouaké', 'Yamoussoukro', 'San Pedro'] : [region];
-    const platforms = ['Facebook', 'TikTok', 'Twitter', 'Instagram'];
-    
-    const fallbackResults: HealthSearchResult[] = [];
-
-    if (healthKeywords.some(keyword => searchTerm.toLowerCase().includes(keyword))) {
-      for (let i = 0; i < 3; i++) {
-        fallbackResults.push({
-          id: `fallback-${Date.now()}-${i}`,
-          keyword: searchTerm,
-          region: regions[i % regions.length],
-          severity: ['medium', 'high', 'critical'][i % 3] as any,
-          source: platforms[i % platforms.length],
-          content: `[Données de fallback] Surveillance de "${searchTerm}" dans la région ${regions[i % regions.length]} - API temporairement indisponible`,
-          timestamp: new Date(Date.now() - Math.random() * 12 * 60 * 60 * 1000).toISOString(),
-          verified: Math.random() > 0.7,
-          mentions_count: Math.floor(Math.random() * 50) + 10
-        });
-      }
-    }
-
-    return fallbackResults;
-  };
 
   const saveSearchToSupabase = useCallback(async (searchParams: {
     term: string;
