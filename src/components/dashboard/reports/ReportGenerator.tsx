@@ -47,8 +47,8 @@ export const ReportGenerator = () => {
         template: selectedTemplate,
         type: 'custom',
         format: selectedFormat as 'pdf' | 'powerpoint' | 'html',
-        period: dateRange,
-        dateRange,
+        period: typeof dateRange === 'string' ? dateRange : 'custom',
+        dateRange: typeof dateRange === 'object' ? dateRange : undefined,
         // 🔧 CONNEXION: Utiliser les données réelles de Supabase + APIs
         includeRealData: true,
         includeAIContext: true,
