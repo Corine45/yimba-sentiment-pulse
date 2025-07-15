@@ -301,7 +301,62 @@ export const YimbaReportTemplate: React.FC<YimbaReportTemplateProps> = ({
         </div>
       </div>
 
-      {/* Contenu dynamique */}
+      {/* Page 7: Système de mots-clés (Dynamique) */}
+      <div className="page-break bg-white min-h-screen p-8">
+        <h1 className="text-2xl font-bold mb-6">Corpus de mots-clés utilisés pour la collecte de données</h1>
+        
+        <div className="space-y-6">
+          <p className="text-sm leading-relaxed">
+            Le système repose sur un référentiel de plus de <strong>200 mots-clés</strong>, expressions et hashtags, sélectionnés selon trois critères :
+          </p>
+
+          <div className="space-y-4">
+            <div>
+              <h3 className="font-bold mb-2">• <strong>Pertinence</strong> par rapport au sujet</h3>
+            </div>
+            <div>
+              <h3 className="font-bold mb-2">• <strong>Diversité linguistique et culturelle</strong>, incluant l'argot local, le nouchi, les fautes volontaires ou orthographes déguisées :</h3>
+            </div>
+            <div>
+              <h3 className="font-bold mb-2">• <strong>Capacité à détecter des discours hostiles</strong>, même implicites ou euphémisés.</h3>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <h3 className="font-bold mb-2">La liste des {keywords.length > 0 ? keywords.length : '80'} mots clés utilisés pour la collecte de données {searchTerm ? `(${searchTerm})` : '(Crise anti-woubi)'} :</h3>
+            
+            <div className="bg-gray-50 p-4 rounded border">
+              <p className="text-sm italic mb-3">
+                {keywords.length > 0 
+                  ? `"${keywords.join(', ')}"` 
+                  : `"lesbienne, lesbiennes, lesbianisme, lesbianisme, homosexuelle, homosexuelles, femme homo, femme homos, femme homosexualité, femmes homo, femmes homos, femmes homosexuelles, elles homo, elles homos, elle homosexualité, une homo, une homosexualité, lopéré, lopérés, garçon manqué, garcçonmangue, garconsmangues, garçonsmanques, femme pédé, femme pédés, femmepédé, femmespédés, #femmeshomos, #elleshomo, #elleshomo, #elleshomosexualité, gay, homosexuel, homosexuels, homme homo, homme homos, homme homosexualité, hommes homo, hommes homos, hommes homosexualité, il homo, il homos, il homosexualité, ils, homo, ils, homos, ils, homosexualité, un homo, un homos, un, homosexualité, bodacrou, bodacrous, garçon princesse, garçonsprincesses, garçonsdeprincesses, #garçonsprincess, #gaysociaux, #woubisme, woubi, #woubi, woubis, #woubis, woubisme"`
+                }
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <p className="text-sm leading-relaxed">
+              Ce corpus a été conçu pour <strong>s'adapter à des contextes sociaux mouvants</strong>, et peut évoluer en fonction de l'actualité ou des formes nouvelles de haine en ligne.
+            </p>
+            
+            <p className="text-sm leading-relaxed">
+              Les données collectées sont <strong>majoritairement en français</strong>, avec une <strong>présence de contenu en argot</strong>.
+            </p>
+          </div>
+
+          <div className="flex justify-between items-end mt-auto">
+            <div className="flex space-x-4">
+              <div className="w-12 h-12 bg-blue-600 text-white flex items-center justify-center font-bold">PNUD</div>
+              <div className="w-12 h-12 bg-gradient-to-r from-cyan-400 to-blue-500 text-white flex items-center justify-center">Y</div>
+              <div className="w-12 h-12 bg-red-600 text-white flex items-center justify-center">O</div>
+            </div>
+            <div className="text-4xl font-bold text-blue-600">7</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Contenu dynamique supplémentaire */}
       {content && (
         <div className="page-break">
           {content}
