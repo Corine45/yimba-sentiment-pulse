@@ -356,258 +356,251 @@ export const YimbaReportTemplate: React.FC<YimbaReportTemplateProps> = ({
         </div>
       </div>
 
-      {/* Page 8: Analyse de sentiment par plateforme (Dynamique) */}
+      {/* Page 8: Mentions des meilleurs profils publics */}
       <div className="page-break bg-white min-h-screen p-8">
-        <h1 className="text-2xl font-bold mb-6">Analyse de sentiment par plateforme sociale</h1>
+        <h1 className="text-2xl font-bold mb-6">Mentions des meilleurs profils publics</h1>
         
-        <div className="space-y-6">
-          <p className="text-sm leading-relaxed">
-            L'analyse de sentiment est réalisée en temps réel sur les principales plateformes sociales, 
-            permettant de détecter les tendances et l'évolution des opinions publiques.
-          </p>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* TikTok */}
-            <div className="border rounded-lg p-4">
-              <h3 className="font-bold mb-3 flex items-center">
-                <span className="w-3 h-3 bg-black rounded-full mr-2"></span>
-                TikTok
-              </h3>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span>Mentions positives:</span>
-                  <span className="font-semibold text-green-600">32%</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Mentions négatives:</span>
-                  <span className="font-semibold text-red-600">45%</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Mentions neutres:</span>
-                  <span className="font-semibold text-gray-600">23%</span>
-                </div>
-                <div className="text-xs text-gray-500 mt-2">
-                  Mots-clés détectés: {keywords.length > 0 ? keywords.slice(0, 3).join(', ') : 'woubi, lesbienne, gay'}
-                </div>
-              </div>
+        <div className="grid gap-6">
+          {/* Profil 1 - Neutre */}
+          <div className="border border-gray-200 rounded-lg p-4 bg-gray-50 flex items-start space-x-4">
+            <div className="w-16 h-16 bg-black rounded-full flex items-center justify-center text-white font-bold">
+              <span className="text-2xl">♪</span>
             </div>
-
-            {/* Facebook */}
-            <div className="border rounded-lg p-4">
-              <h3 className="font-bold mb-3 flex items-center">
-                <span className="w-3 h-3 bg-blue-600 rounded-full mr-2"></span>
-                Facebook
-              </h3>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span>Mentions positives:</span>
-                  <span className="font-semibold text-green-600">28%</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Mentions négatives:</span>
-                  <span className="font-semibold text-red-600">52%</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Mentions neutres:</span>
-                  <span className="font-semibold text-gray-600">20%</span>
-                </div>
-                <div className="text-xs text-gray-500 mt-2">
-                  Groupes analysés: {searchTerm ? `Recherches liées à "${searchTerm}"` : 'Groupes LGBT+ CI'}
-                </div>
+            <div className="flex-1">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="font-bold text-blue-600 underline">nk_bienvenu</h3>
+                <span className="text-sm bg-gray-100 text-gray-800 px-3 py-1 rounded-full">Neutral</span>
               </div>
-            </div>
-
-            {/* Twitter/X */}
-            <div className="border rounded-lg p-4">
-              <h3 className="font-bold mb-3 flex items-center">
-                <span className="w-3 h-3 bg-black rounded-full mr-2"></span>
-                Twitter/X
-              </h3>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span>Mentions positives:</span>
-                  <span className="font-semibold text-green-600">38%</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Mentions négatives:</span>
-                  <span className="font-semibold text-red-600">41%</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Mentions neutres:</span>
-                  <span className="font-semibold text-gray-600">21%</span>
-                </div>
-                <div className="text-xs text-gray-500 mt-2">
-                  Hashtags populaires: #woubi, #LGBT, #tolerancia
-                </div>
-              </div>
-            </div>
-
-            {/* Instagram */}
-            <div className="border rounded-lg p-4">
-              <h3 className="font-bold mb-3 flex items-center">
-                <span className="w-3 h-3 bg-pink-500 rounded-full mr-2"></span>
-                Instagram
-              </h3>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span>Mentions positives:</span>
-                  <span className="font-semibold text-green-600">44%</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Mentions négatives:</span>
-                  <span className="font-semibold text-red-600">35%</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Mentions neutres:</span>
-                  <span className="font-semibold text-gray-600">21%</span>
-                </div>
-                <div className="text-xs text-gray-500 mt-2">
-                  Stories analysées: {keywords.length > 0 ? `${keywords.length} termes` : '200+ termes'}
-                </div>
-              </div>
+              <p className="text-xs text-gray-600 mb-2">tiktok.com • 11 793 followers • 2025-06-02</p>
+              <p className="text-sm text-gray-800">
+                #tik_tok #congo #camerountiktok #congolaise #tikfokivoire225 #videoviral #vis...
+              </p>
             </div>
           </div>
 
-          <div className="bg-blue-50 p-4 rounded border">
-            <h3 className="font-bold mb-2">📊 Tendances générales observées:</h3>
-            <ul className="text-sm space-y-1">
-              <li>• Augmentation des contenus de sensibilisation (+15% cette semaine)</li>
-              <li>• Pic d'activité négatif détecté entre 18h-22h</li>
-              <li>• Communautés de soutien plus actives le weekend</li>
-              <li>• Utilisation croissante d'euphémismes pour éviter la modération</li>
-            </ul>
+          {/* Profil 2 - Négatif */}
+          <div className="border border-gray-200 rounded-lg p-4 bg-gray-50 flex items-start space-x-4">
+            <div className="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center text-white font-bold">
+              GROOV
+            </div>
+            <div className="flex-1">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="font-bold text-blue-600 underline">Strong2kin Moov</h3>
+                <span className="text-sm bg-red-100 text-red-800 px-3 py-1 rounded-full">Negative</span>
+              </div>
+              <p className="text-xs text-gray-600 mb-2">facebook.com • 169 K followers • 2025-05-27</p>
+              <p className="text-sm text-gray-800">
+                : {keywords[0] || searchTerm} n'aura jamais raison
+              </p>
+            </div>
           </div>
 
-          <div className="flex justify-between items-end mt-auto">
-            <div className="flex space-x-4">
-              <div className="w-12 h-12 bg-blue-600 text-white flex items-center justify-center font-bold">PNUD</div>
-              <div className="w-12 h-12 bg-gradient-to-r from-cyan-400 to-blue-500 text-white flex items-center justify-center">Y</div>
-              <div className="w-12 h-12 bg-red-600 text-white flex items-center justify-center">O</div>
+          {/* Profil 3 - Positif */}
+          <div className="border border-gray-200 rounded-lg p-4 bg-gray-50 flex items-start space-x-4">
+            <div className="w-16 h-16 rounded-full overflow-hidden">
+              <div className="w-full h-full bg-gradient-to-br from-yellow-400 to-orange-500"></div>
             </div>
-            <div className="text-4xl font-bold text-blue-600">8</div>
+            <div className="flex-1">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="font-bold text-blue-600 underline">Elh_Momar</h3>
+                <span className="text-sm bg-green-100 text-green-800 px-3 py-1 rounded-full">Positive</span>
+              </div>
+              <p className="text-xs text-gray-600 mb-2">x.com • 31 759 followers • 2025-06-30</p>
+              <p className="text-sm text-gray-800">
+                totalement mérité pour les meufs qui défendaient les {keywords[0] || searchTerm} ici. J'en suis très...
+              </p>
+            </div>
           </div>
+
+          {/* Profil 4 - Neutre */}
+          <div className="border border-gray-200 rounded-lg p-4 bg-gray-50 flex items-start space-x-4">
+            <div className="w-16 h-16 rounded-full overflow-hidden">
+              <div className="w-full h-full bg-gradient-to-br from-blue-400 to-purple-500"></div>
+            </div>
+            <div className="flex-1">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="font-bold text-blue-600 underline">Dramane est un {keywords[0] || searchTerm} point</h3>
+                <span className="text-sm bg-gray-100 text-gray-800 px-3 py-1 rounded-full">Neutral</span>
+              </div>
+              <p className="text-xs text-gray-600 mb-2">youtube.com • 15 700 followers • 2025-06-12</p>
+              <p className="text-sm text-gray-800">
+                Video can be found here
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex justify-between items-end mt-auto">
+          <div className="flex space-x-4">
+            <div className="w-12 h-12 bg-blue-600 text-white flex items-center justify-center font-bold">PNUD</div>
+            <div className="w-12 h-12 bg-gradient-to-r from-cyan-400 to-blue-500 text-white flex items-center justify-center">Y</div>
+            <div className="w-12 h-12 bg-red-600 text-white flex items-center justify-center">O</div>
+          </div>
+          <div className="text-4xl font-bold text-blue-600">8</div>
         </div>
       </div>
 
-      {/* Page 9: Répartition géographique et temporelle (Dynamique) */}
+      {/* Page 9: Les Sources */}
       <div className="page-break bg-white min-h-screen p-8">
-        <h1 className="text-2xl font-bold mb-6">Répartition géographique et temporelle des mentions</h1>
+        <h1 className="text-3xl font-bold mb-8">LES SOURCES</h1>
         
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Répartition par région */}
-            <div>
-              <h3 className="font-bold mb-4">📍 Répartition par région (Côte d'Ivoire)</h3>
-              <div className="space-y-3">
-                <div className="border rounded-lg p-3">
-                  <div className="flex justify-between items-center">
-                    <span className="font-medium">Abidjan</span>
-                    <span className="text-sm font-semibold">67%</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2 mt-1">
-                    <div className="bg-blue-600 h-2 rounded-full" style={{width: '67%'}}></div>
-                  </div>
-                  <div className="text-xs text-gray-600 mt-1">
-                    Mentions: {searchTerm ? `Liées à "${searchTerm}"` : '2,847 détectées'}
-                  </div>
+        <div className="grid grid-cols-2 gap-12">
+          {/* Tableau des sources */}
+          <div>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between py-3 border-b border-gray-200">
+                <div className="flex items-center space-x-3">
+                  <span className="text-gray-500 font-bold">1</span>
+                  <div className="w-6 h-6 bg-red-600 rounded flex items-center justify-center text-white text-xs">▶</div>
+                  <span className="font-medium">youtube.com</span>
                 </div>
-
-                <div className="border rounded-lg p-3">
-                  <div className="flex justify-between items-center">
-                    <span className="font-medium">Bouaké</span>
-                    <span className="text-sm font-semibold">12%</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2 mt-1">
-                    <div className="bg-green-600 h-2 rounded-full" style={{width: '12%'}}></div>
-                  </div>
-                  <div className="text-xs text-gray-600 mt-1">Mentions: 512 détectées</div>
-                </div>
-
-                <div className="border rounded-lg p-3">
-                  <div className="flex justify-between items-center">
-                    <span className="font-medium">Yamoussoukro</span>
-                    <span className="text-sm font-semibold">8%</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2 mt-1">
-                    <div className="bg-orange-600 h-2 rounded-full" style={{width: '8%'}}></div>
-                  </div>
-                  <div className="text-xs text-gray-600 mt-1">Mentions: 341 détectées</div>
-                </div>
-
-                <div className="border rounded-lg p-3">
-                  <div className="flex justify-between items-center">
-                    <span className="font-medium">Autres régions</span>
-                    <span className="text-sm font-semibold">13%</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2 mt-1">
-                    <div className="bg-purple-600 h-2 rounded-full" style={{width: '13%'}}></div>
-                  </div>
-                  <div className="text-xs text-gray-600 mt-1">Mentions: 553 détectées</div>
+                <div className="text-right">
+                  <div className="font-bold">39</div>
+                  <div className="text-xs text-gray-500">29 224 361 979</div>
                 </div>
               </div>
-            </div>
 
-            {/* Évolution temporelle */}
-            <div>
-              <h3 className="font-bold mb-4">⏰ Évolution temporelle (7 derniers jours)</h3>
-              <div className="space-y-3">
-                <div className="bg-gray-50 p-3 rounded-lg">
-                  <div className="grid grid-cols-7 gap-1 text-center text-xs">
-                    <div className="font-medium">Lun</div>
-                    <div className="font-medium">Mar</div>
-                    <div className="font-medium">Mer</div>
-                    <div className="font-medium">Jeu</div>
-                    <div className="font-medium">Ven</div>
-                    <div className="font-medium">Sam</div>
-                    <div className="font-medium">Dim</div>
-                  </div>
-                  <div className="grid grid-cols-7 gap-1 mt-2">
-                    <div className="h-8 bg-blue-300 rounded flex items-center justify-center text-xs">142</div>
-                    <div className="h-12 bg-blue-500 rounded flex items-center justify-center text-xs text-white">298</div>
-                    <div className="h-10 bg-blue-400 rounded flex items-center justify-center text-xs">201</div>
-                    <div className="h-16 bg-red-600 rounded flex items-center justify-center text-xs text-white">456</div>
-                    <div className="h-14 bg-red-500 rounded flex items-center justify-center text-xs text-white">367</div>
-                    <div className="h-6 bg-green-400 rounded flex items-center justify-center text-xs">89</div>
-                    <div className="h-8 bg-green-500 rounded flex items-center justify-center text-xs">123</div>
-                  </div>
+              <div className="flex items-center justify-between py-3 border-b border-gray-200">
+                <div className="flex items-center space-x-3">
+                  <span className="text-gray-500 font-bold">2</span>
+                  <div className="w-6 h-6 bg-blue-600 rounded flex items-center justify-center text-white text-xs">f</div>
+                  <span className="font-medium">facebook.com</span>
                 </div>
+                <div className="text-right">
+                  <div className="font-bold">21</div>
+                  <div className="text-xs text-gray-500">12 676 353 455</div>
+                </div>
+              </div>
 
-                <div className="text-sm space-y-2">
-                  <div className="flex items-center">
-                    <div className="w-3 h-3 bg-red-600 rounded mr-2"></div>
-                    <span>Pic d'activité: Jeudi-Vendredi (événement déclencheur détecté)</span>
-                  </div>
-                  <div className="flex items-center">
-                    <div className="w-3 h-3 bg-green-500 rounded mr-2"></div>
-                    <span>Activité modérée: Weekend (contenu de soutien)</span>
-                  </div>
-                  <div className="flex items-center">
-                    <div className="w-3 h-3 bg-blue-500 rounded mr-2"></div>
-                    <span>Activité normale: Début de semaine</span>
-                  </div>
+              <div className="flex items-center justify-between py-3 border-b border-gray-200">
+                <div className="flex items-center space-x-3">
+                  <span className="text-gray-500 font-bold">3</span>
+                  <div className="w-6 h-6 bg-gradient-to-br from-purple-600 via-pink-600 to-orange-400 rounded flex items-center justify-center text-white text-xs">📷</div>
+                  <span className="font-medium">instagram.com</span>
+                </div>
+                <div className="text-right">
+                  <div className="font-bold">2</div>
+                  <div className="text-xs text-gray-500">5 941 574 085</div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between py-3 border-b border-gray-200">
+                <div className="flex items-center space-x-3">
+                  <span className="text-gray-500 font-bold">4</span>
+                  <div className="w-6 h-6 bg-black rounded flex items-center justify-center text-white text-xs">TT</div>
+                  <span className="font-medium">tiktok.com</span>
+                </div>
+                <div className="text-right">
+                  <div className="font-bold">18</div>
+                  <div className="text-xs text-gray-500">2 204 397 122</div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between py-3 border-b border-gray-200">
+                <div className="flex items-center space-x-3">
+                  <span className="text-gray-500 font-bold">5</span>
+                  <div className="w-6 h-6 bg-purple-600 rounded flex items-center justify-center text-white text-xs">T</div>
+                  <span className="font-medium">twitch.tv</span>
+                </div>
+                <div className="text-right">
+                  <div className="font-bold">1</div>
+                  <div className="text-xs text-gray-500">1 178 332 120</div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between py-3">
+                <div className="flex items-center space-x-3">
+                  <span className="text-gray-500 font-bold">6</span>
+                  <div className="w-6 h-6 bg-black rounded flex items-center justify-center text-white text-xs">X</div>
+                  <span className="font-medium">x.com</span>
+                </div>
+                <div className="text-right">
+                  <div className="font-bold">255</div>
+                  <div className="text-xs text-gray-500">731 205 274</div>
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-            <h3 className="font-bold mb-2 text-yellow-900">⚠️ Observations clés:</h3>
-            <ul className="text-sm text-yellow-800 space-y-1">
-              <li>• <strong>Concentration urbaine:</strong> 67% des mentions proviennent d'Abidjan</li>
-              <li>• <strong>Événement déclencheur:</strong> Pic notable jeudi-vendredi (enquête recommandée)</li>
-              <li>• <strong>Patterns temporels:</strong> Activité réduite le weekend, hausse en semaine</li>
-              <li>• <strong>Mots-clés régionaux:</strong> Variations linguistiques détectées par région</li>
-            </ul>
-          </div>
-
-          <div className="flex justify-between items-end mt-auto">
-            <div className="flex space-x-4">
-              <div className="w-12 h-12 bg-blue-600 text-white flex items-center justify-center font-bold">PNUD</div>
-              <div className="w-12 h-12 bg-gradient-to-r from-cyan-400 to-blue-500 text-white flex items-center justify-center">Y</div>
-              <div className="w-12 h-12 bg-red-600 text-white flex items-center justify-center">O</div>
+          {/* Graphique en camembert */}
+          <div className="flex flex-col items-center">
+            <h3 className="font-bold text-lg mb-4">LES SOURCES</h3>
+            <div className="relative w-64 h-64">
+              <svg viewBox="0 0 100 100" className="w-full h-full">
+                {/* YouTube - Rouge - 39% */}
+                <circle
+                  cx="50"
+                  cy="50"
+                  r="30"
+                  fill="none"
+                  stroke="#dc2626"
+                  strokeWidth="20"
+                  strokeDasharray="73.6 188.5"
+                  strokeDashoffset="0"
+                  transform="rotate(-90 50 50)"
+                />
+                {/* Facebook - Bleu - 21% */}
+                <circle
+                  cx="50"
+                  cy="50"
+                  r="30"
+                  fill="none"
+                  stroke="#2563eb"
+                  strokeWidth="20"
+                  strokeDasharray="39.6 188.5"
+                  strokeDashoffset="-73.6"
+                  transform="rotate(-90 50 50)"
+                />
+                {/* X.com - Noir - Reste */}
+                <circle
+                  cx="50"
+                  cy="50"
+                  r="30"
+                  fill="none"
+                  stroke="#000000"
+                  strokeWidth="20"
+                  strokeDasharray="75.3 188.5"
+                  strokeDashoffset="-113.2"
+                  transform="rotate(-90 50 50)"
+                />
+              </svg>
             </div>
-            <div className="text-4xl font-bold text-blue-600">9</div>
+            <div className="mt-4 space-y-2 text-sm">
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-3 bg-red-600 rounded"></div>
+                <span>youtube.com</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-3 bg-blue-600 rounded"></div>
+                <span>facebook.com</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-3 bg-gradient-to-br from-purple-600 via-pink-600 to-orange-400 rounded"></div>
+                <span>instagram.com</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-3 bg-yellow-500 rounded"></div>
+                <span>tiktok.com</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-3 bg-purple-600 rounded"></div>
+                <span>twitch.tv</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-3 bg-black rounded"></div>
+                <span>x.com</span>
+              </div>
+            </div>
           </div>
+        </div>
+
+        <div className="flex justify-between items-end mt-auto">
+          <div className="flex space-x-4">
+            <div className="w-12 h-12 bg-blue-600 text-white flex items-center justify-center font-bold">PNUD</div>
+            <div className="w-12 h-12 bg-gradient-to-r from-cyan-400 to-blue-500 text-white flex items-center justify-center">Y</div>
+            <div className="w-12 h-12 bg-red-600 text-white flex items-center justify-center">O</div>
+          </div>
+          <div className="text-4xl font-bold text-blue-600">9</div>
         </div>
       </div>
 
