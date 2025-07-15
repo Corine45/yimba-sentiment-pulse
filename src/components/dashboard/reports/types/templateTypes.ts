@@ -3,18 +3,22 @@ export interface ReportTemplate {
   id: string;
   name: string;
   description: string;
-  category: 'executive' | 'demographic' | 'ai' | 'crisis' | 'trends' | 'multimedia';
+  category: 'executive' | 'demographic' | 'ai' | 'crisis' | 'trends' | 'multimedia' | 'analysis';
   previewImage?: string;
-  defaultConfig: {
+  defaultConfig?: {
     type: string;
     period: string;
     format: string;
     sections: string[];
     charts: string[];
   };
-  features: string[];
-  estimatedSize: string;
+  features?: string[];
+  estimatedSize?: string;
   estimatedTime: string;
+  tags?: string[];
+  supportedFormats?: string[];
+  staticPages?: number;
+  dynamicContent?: boolean;
 }
 
 export const TEMPLATE_CATEGORIES = {
@@ -23,5 +27,6 @@ export const TEMPLATE_CATEGORIES = {
   ai: 'Intelligence Artificielle',
   crisis: 'Gestion de crise',
   trends: 'Tendances',
-  multimedia: 'Multimédia'
+  multimedia: 'Multimédia',
+  analysis: 'Analyse'
 };

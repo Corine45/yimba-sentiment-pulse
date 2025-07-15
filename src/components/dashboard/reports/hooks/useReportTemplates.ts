@@ -7,6 +7,17 @@ export const useReportTemplates = () => {
 
   const templates: ReportTemplate[] = [
     {
+      id: 'yimba-analysis',
+      name: 'Rapport d\'Analyse Yimba',
+      description: 'Template professionnel avec 4 pages statiques Yimba et contenu dynamique',
+      category: 'analysis',
+      tags: ['yimba', 'professional', 'social-media'],
+      estimatedTime: '5-10 minutes',
+      supportedFormats: ['html', 'pdf'],
+      staticPages: 4,
+      dynamicContent: true
+    },
+    {
       id: 'executive-summary',
       name: 'Rapport Exécutif',
       description: 'Vue d\'ensemble stratégique pour la direction avec KPIs essentiels',

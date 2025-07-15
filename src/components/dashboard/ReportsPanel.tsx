@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { ReportsList } from "./reports/ReportsList";
 import { NewReportGenerator } from "./reports/NewReportGenerator";
+import { YimbaReportGenerator } from "./reports/YimbaReportGenerator";
 import { ScheduledReports } from "./reports/ScheduledReports";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";

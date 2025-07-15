@@ -6,11 +6,15 @@ export interface ReportConfig {
   type: string;
   period: string;
   format: string;
-  dateRange?: string;
+  dateRange?: {
+    from: Date;
+    to: Date;
+  };
   customDateRange?: {
     startDate: string;
     endDate: string;
   };
+  keywords?: string[];
   includeRealData?: boolean;
   includeAIContext?: boolean;
   includeDemographics?: boolean;
@@ -30,10 +34,12 @@ export interface GeneratedReport {
   title: string;
   type: string;
   format: string;
-  generatedAt: string;
-  fileUrl: string;
+  generatedAt?: string;
+  createdAt?: Date;
+  fileUrl?: string;
   size: string;
-  status: 'completed' | 'failed';
+  status?: 'completed' | 'failed';
+  data?: any;
 }
 
 export const REPORT_TYPES = {
