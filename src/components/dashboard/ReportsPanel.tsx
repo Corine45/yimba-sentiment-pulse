@@ -147,9 +147,10 @@ export const ReportsPanel = () => {
       </div>
 
       <Tabs defaultValue="list" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="list">📋 Liste des rapports</TabsTrigger>
           <TabsTrigger value="generate">➕ Générer un rapport</TabsTrigger>
+          <TabsTrigger value="yimba">📊 Rapport Yimba</TabsTrigger>
           <TabsTrigger value="scheduled">📅 Rapports programmés</TabsTrigger>
         </TabsList>
 
@@ -170,6 +171,23 @@ export const ReportsPanel = () => {
                 <h3 className="text-lg font-medium mb-2">Accès non autorisé</h3>
                 <p className="text-gray-600">
                   Vous n'avez pas les permissions nécessaires pour générer des rapports.
+                  Contactez votre administrateur pour obtenir l'accès.
+                </p>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        <TabsContent value="yimba">
+          {canGenerateReports ? (
+            <YimbaReportGenerator />
+          ) : (
+            <Card>
+              <CardContent className="p-8 text-center">
+                <BarChart3 className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-medium mb-2">Accès non autorisé</h3>
+                <p className="text-gray-600">
+                  Vous n'avez pas les permissions nécessaires pour générer des rapports Yimba.
                   Contactez votre administrateur pour obtenir l'accès.
                 </p>
               </CardContent>
