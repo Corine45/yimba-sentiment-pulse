@@ -294,6 +294,51 @@ export const ReportGenerator = () => {
         onDownload={handleDownloadReport}
       />
 
+      {/* Test de génération de rapport */}
+      <Card className="bg-yellow-50 border-yellow-200">
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2 text-yellow-900">
+            <FileText className="w-5 h-5" />
+            <span>🧪 Test rapide - Générer un rapport exemple</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-yellow-700 text-sm">
+            Testez rapidement la génération avec un rapport pré-configuré :
+          </p>
+          
+          <Button 
+            onClick={() => {
+              setReportTitle("Rapport d'Analyse YIMBA - Surveillance Sanitaire");
+              setReportDescription("Analyse complète des tendances de surveillance sanitaire avec données Yimba Pulse");
+              setSelectedTemplate("detailed");
+              setSelectedFormat("html");
+              
+              toast({
+                title: "Configuration automatique",
+                description: "Formulaire pré-rempli avec un exemple de rapport",
+              });
+            }}
+            variant="outline"
+            className="w-full border-yellow-300 text-yellow-800 hover:bg-yellow-100"
+          >
+            📝 Pré-remplir avec un exemple
+          </Button>
+          
+          <div className="bg-yellow-100 p-3 rounded-lg">
+            <h4 className="font-medium text-yellow-900 mb-2">📋 Contenu du rapport inclus :</h4>
+            <div className="text-sm text-yellow-800 space-y-1">
+              <div>• Page de couverture YIMBA</div>
+              <div>• Description de la plateforme</div>
+              <div>• Signification et méthodologie</div>
+              <div>• Limites et biais (pages 5-6)</div>
+              <div>• Avertissements et recommandations</div>
+              <div>• Données de surveillance en temps réel</div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Informations sur les rapports programmés */}
       <Card className="bg-orange-50 border-orange-200">
         <CardHeader>

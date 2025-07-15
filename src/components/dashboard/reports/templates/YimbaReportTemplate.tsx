@@ -213,6 +213,94 @@ export const YimbaReportTemplate: React.FC<YimbaReportTemplateProps> = ({
         </div>
       </div>
 
+      {/* Page 5: Limites et biais de la plateforme YIMBA */}
+      <div className="page-break bg-white min-h-screen p-8">
+        <h1 className="text-2xl font-bold mb-6">Limites et biais de la plateforme YIMBA</h1>
+        
+        <div className="space-y-6">
+          <p className="text-sm leading-relaxed">
+            Malgré ses capacités techniques avancées, la plateforme YIMBA présente certaines limites structurelles et biais méthodologiques qu'il 
+            convient de garder à l'esprit dans l'analyse des résultats :
+          </p>
+
+          <div className="space-y-4">
+            <div>
+              <h3 className="font-bold mb-2">1. Limite d'accès aux données privées</h3>
+              <ul className="list-disc ml-6 space-y-1 text-sm">
+                <li>YIMBA ne collecte que des <strong>contenus publics</strong> : publications, commentaires, tweets, vidéos accessibles sans restriction.</li>
+                <li><strong>Messages privés, groupes fermés et profils verrouillés</strong> (ex. Facebook, WhatsApp, Messenger) ne sont pas analysés, ce qui <strong>réduit la portée de la surveillance</strong>, surtout dans des contextes où la haine ou l'organisation de violences peut aussi circuler en circuit fermé.</li>
+              </ul>
+            </div>
+
+            <div>
+              <h3 className="font-bold mb-2">2. Données partiellement inaccessibles selon les plateformes</h3>
+              <ul className="list-disc ml-6 space-y-1 text-sm">
+                <li>Sur <strong>Facebook</strong> et <strong>Instagram</strong>, certaines données sont <strong>restreintes ou partiellement cryptées</strong> pour des raisons de politique interne des plateformes, ce qui peut <strong>limiter la profondeur de l'analyse</strong>.</li>
+                <li>À l'inverse, des plateformes comme <strong>Twitter (X)</strong> offrent un accès plus large aux données publiques, créant un <strong>biais de visibilité</strong> en faveur de certaines sources.</li>
+              </ul>
+            </div>
+
+            <div>
+              <h3 className="font-bold mb-2">3. Limites dans la reconnaissance des contenus codés</h3>
+              <ul className="list-disc ml-6 space-y-1 text-sm">
+                <li>Malgré l'enrichissement du corpus (214 mots-clés), une partie de ces contenus peut <strong>échapper à la détection automatisée</strong>, surtout s'ils changent rapidement de forme ou s'ils utilisent des <strong>mèmes visuels</strong> non textuels.</li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="flex justify-between items-end mt-auto">
+            <div className="flex space-x-4">
+              <div className="w-12 h-12 bg-blue-600 text-white flex items-center justify-center font-bold">PNUD</div>
+              <div className="w-12 h-12 bg-gradient-to-r from-cyan-400 to-blue-500 text-white flex items-center justify-center">Y</div>
+              <div className="w-12 h-12 bg-red-600 text-white flex items-center justify-center">O</div>
+            </div>
+            <div className="text-4xl font-bold text-blue-600">5</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Page 6: Suite des limites et biais */}
+      <div className="page-break bg-white min-h-screen p-8">
+        <h1 className="text-2xl font-bold mb-6">Limites et biais de la plateforme YIMBA</h1>
+        
+        <div className="space-y-6">
+          <div>
+            <h3 className="font-bold mb-2">4. Temporalité et variabilité</h3>
+            <ul className="list-disc ml-6 space-y-1 text-sm">
+              <li>L'analyse repose sur des <strong>fenêtres temporelles précises</strong> (ex. crise anti-woubi sur 1 an).</li>
+              <li>Des <strong>contenus plus anciens ou postérieurs</strong> peuvent ne pas être pris en compte, limitant la représentation chronologique complète du phénomène.</li>
+            </ul>
+          </div>
+
+          <div>
+            <h3 className="font-bold mb-2">5. Biais d'interprétation algorithmique</h3>
+            <p className="text-sm leading-relaxed">
+              L'analyse de <strong>tonalité (positif, neutre, négatif)</strong> ou de <strong>sentiment</strong> est automatisée par des algorithmes, qui peuvent mal interpréter l'ironie, le 
+              sarcasme ou les subtilités culturelles ; cela peut entraîner des <strong>faux positifs</strong> (contenu neutre classé comme haineux) ou des <strong>faux négatifs</strong> 
+              (discours problématique non détecté).
+            </p>
+          </div>
+
+          <div className="mt-8">
+            <h3 className="font-bold mb-2">• En résumé</h3>
+            <p className="text-sm leading-relaxed">
+              <strong>YIMBA</strong> reste un outil précieux pour cartographier les tendances visibles, mais son utilisation doit s'accompagner d'une lecture critique et 
+              contextualisée. Les résultats doivent être interprétés comme des <strong>indicateurs de signaux publics</strong>, et non comme un reflet exhaustif ou absolu de la 
+              réalité sociale.
+            </p>
+          </div>
+
+          <div className="flex justify-between items-end mt-auto">
+            <div className="flex space-x-4">
+              <div className="w-12 h-12 bg-blue-600 text-white flex items-center justify-center font-bold">PNUD</div>
+              <div className="w-12 h-12 bg-gradient-to-r from-cyan-400 to-blue-500 text-white flex items-center justify-center">Y</div>
+              <div className="w-12 h-12 bg-red-600 text-white flex items-center justify-center">O</div>
+            </div>
+            <div className="text-4xl font-bold text-blue-600">6</div>
+          </div>
+        </div>
+      </div>
+
       {/* Contenu dynamique */}
       {content && (
         <div className="page-break">
