@@ -611,6 +611,251 @@ export const YimbaReportTemplate: React.FC<YimbaReportTemplateProps> = ({
         </div>
       </div>
 
+      {/* Page 10: Résumé des statistiques */}
+      <div className="page-break bg-white min-h-screen p-8">
+        <h1 className="text-3xl font-bold mb-8">Résumé</h1>
+        
+        <div className="grid grid-cols-2 gap-8">
+          {/* Graphique en camembert */}
+          <div className="flex flex-col">
+            <div className="w-64 h-64 mx-auto mb-6">
+              <div className="relative w-full h-full">
+                <svg className="w-full h-full" viewBox="0 0 100 100">
+                  {/* Camembert - mentions (vert) */}
+                  <circle cx="50" cy="50" r="30" fill="#10B981" stroke="#fff" strokeWidth="2" strokeDasharray="70 30" strokeDashoffset="0" />
+                  {/* Mentions réseaux sociaux (orange) */}
+                  <circle cx="50" cy="50" r="30" fill="#F59E0B" stroke="#fff" strokeWidth="2" strokeDasharray="15 85" strokeDashoffset="-70" />
+                  {/* Mentions hors réseaux (violet) */}
+                  <circle cx="50" cy="50" r="30" fill="#8B5CF6" stroke="#fff" strokeWidth="2" strokeDasharray="10 90" strokeDashoffset="-85" />
+                  {/* Mentions négatives (rouge) */}
+                  <circle cx="50" cy="50" r="30" fill="#EF4444" stroke="#fff" strokeWidth="2" strokeDasharray="5 95" strokeDashoffset="-95" />
+                </svg>
+              </div>
+            </div>
+            
+            {/* Légende */}
+            <div className="text-xs space-y-2">
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-3 bg-green-500"></div>
+                <span>Mentions</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-3 bg-yellow-500"></div>
+                <span>Mentions sur les réseaux sociaux</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-3 bg-purple-500"></div>
+                <span>Mentions hors réseaux sociaux</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-3 bg-red-500"></div>
+                <span>Nombre de mentions négatives</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-3 bg-yellow-600"></div>
+                <span>Nombre de mentions positives</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-3 bg-blue-500"></div>
+                <span>Interactions sur les réseaux sociaux</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-3 bg-gray-500"></div>
+                <span>Nombre de partages</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-3 bg-indigo-500"></div>
+                <span>Contenu généré par les utilisateurs</span>
+              </div>
+            </div>
+          </div>
+          
+          {/* Statistiques */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <div className="text-xs text-gray-600 mb-1">Total mentions</div>
+              <div className="text-2xl font-bold">8,390</div>
+            </div>
+            
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <div className="text-xs text-gray-600 mb-1">Mentions sur les réseaux sociaux</div>
+              <div className="text-2xl font-bold">8,370</div>
+            </div>
+            
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <div className="text-xs text-gray-600 mb-1">Commentaires sur les réseaux sociaux</div>
+              <div className="text-2xl font-bold">7,067,234</div>
+            </div>
+            
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <div className="text-xs text-gray-600 mb-1">J'aime sur les réseaux sociaux</div>
+              <div className="text-2xl font-bold">2,870,600</div>
+            </div>
+            
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <div className="text-xs text-gray-600 mb-1">Nombre de mentions positives</div>
+              <div className="text-2xl font-bold">970</div>
+            </div>
+            
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <div className="text-xs text-gray-600 mb-1">Nombre de mentions négatives</div>
+              <div className="text-2xl font-bold">5,930</div>
+            </div>
+            
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <div className="text-xs text-gray-600 mb-1">Réactions sur les réseaux sociaux</div>
+              <div className="text-2xl font-bold">311,040</div>
+            </div>
+            
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <div className="text-xs text-gray-600 mb-1">Portée des médias sociaux</div>
+              <div className="text-2xl font-bold">19,958,190</div>
+            </div>
+            
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <div className="text-xs text-gray-600 mb-1">Partages sur les réseaux sociaux</div>
+              <div className="text-2xl font-bold">687,597</div>
+            </div>
+          </div>
+        </div>
+        
+        {/* Définitions */}
+        <div className="mt-8 text-xs space-y-2">
+          <div><strong>Mentions :</strong> Nombre total de fois où cela est cité en ligne.</div>
+          <div><strong>Mentions sur les réseaux sociaux :</strong> Citations de la marque sur les réseaux sociaux.</div>
+          <div><strong>Nombre de mentions positives :</strong> Mentions exprimant une opinion favorable.</div>
+          <div><strong>Nombre de mentions négatives :</strong> Mentions exprimant une opinion défavorable.</div>
+          <div><strong>Portée estimée sur les réseaux sociaux :</strong> Nombre estimé de personnes ayant vu les mentions sur les réseaux sociaux.</div>
+          <div><strong>Mentions « J'aime » sur les réseaux sociaux :</strong> Nombre de « J'aime » reçus sur les publications.</div>
+          <div><strong>Nombre de partages :</strong> Nombre de fois où les publications ont été partagées.</div>
+        </div>
+        
+        <div className="flex justify-between items-end mt-8">
+          <div className="flex space-x-4">
+            <div className="w-12 h-12 bg-blue-600 text-white flex items-center justify-center font-bold">PNUD</div>
+            <div className="w-12 h-12 bg-gradient-to-r from-cyan-400 to-blue-500 text-white flex items-center justify-center">Y</div>
+            <div className="w-12 h-12 bg-red-600 text-white flex items-center justify-center">O</div>
+          </div>
+          <div className="text-4xl font-bold text-blue-600">10</div>
+        </div>
+      </div>
+
+      {/* Page 11: Mentions les plus populaires */}
+      <div className="page-break bg-white min-h-screen p-8">
+        <h1 className="text-3xl font-bold mb-8">Mentions les plus populaires</h1>
+        
+        <div className="grid grid-cols-2 gap-6">
+          {/* Mention 1 */}
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <div className="flex items-center space-x-3 mb-3">
+              <div className="w-12 h-12 bg-gradient-to-r from-pink-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold">
+                EM
+              </div>
+              <div>
+                <div className="font-bold text-blue-600">Elh_Momar</div>
+                <div className="text-xs text-gray-500">@elh_momar • 2025-06-30</div>
+              </div>
+              <div className="ml-auto">
+                <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs">Positive</span>
+              </div>
+            </div>
+            <p className="text-sm text-gray-800 mb-2">
+              Oui c'est moi qui suis à l'origine du terme "{searchTerm}" et c'est tota...
+            </p>
+            <div className="text-xs text-gray-500">
+              1.7k likes • 823 retweets • 156 followers • 2025-06-30
+            </div>
+          </div>
+          
+          {/* Mention 2 */}
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <div className="flex items-center space-x-3 mb-3">
+              <div className="w-12 h-12 bg-black rounded-full flex items-center justify-center text-white font-bold">
+                T
+              </div>
+              <div>
+                <div className="font-bold text-blue-600">__nypu__</div>
+                <div className="text-xs text-gray-500">@nypu • 2025-06-30</div>
+              </div>
+              <div className="ml-auto">
+                <span className="bg-gray-100 text-gray-800 px-2 py-1 rounded text-xs">Neutral</span>
+              </div>
+            </div>
+            <p className="text-sm text-gray-800 mb-2">
+              La personne qui n'est pas d'accord je bloque... #camerountiktok #pov #humou...
+            </p>
+            <div className="text-xs text-gray-500">
+              TikTok • 892 likes • 234 comments
+            </div>
+          </div>
+          
+          {/* Mention 3 */}
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <div className="flex items-center space-x-3 mb-3">
+              <div className="w-12 h-12 bg-gray-800 rounded-full flex items-center justify-center text-white font-bold">
+                C
+              </div>
+              <div>
+                <div className="font-bold text-blue-600">Côte d'Ivoire : Solthis dre...</div>
+                <div className="text-xs text-gray-500">cardineworld.com • 2025-06-12</div>
+              </div>
+              <div className="ml-auto">
+                <span className="bg-gray-100 text-gray-800 px-2 py-1 rounded text-xs">Neutral</span>
+              </div>
+            </div>
+            <p className="text-sm text-gray-800 mb-2">
+              ... [...] Elle a également rappelé que malgré les avancées, le contexte reste...
+            </p>
+            <div className="text-xs text-gray-500">
+              Web • 445 engagements
+            </div>
+          </div>
+          
+          {/* Mention 4 */}
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <div className="flex items-center space-x-3 mb-3">
+              <div className="w-12 h-12 bg-black rounded-full flex items-center justify-center text-white font-bold">
+                T
+              </div>
+              <div>
+                <div className="font-bold text-blue-600">zareyalokumulokum</div>
+                <div className="text-xs text-gray-500">@zareyalokumulokum • TikTok</div>
+              </div>
+              <div className="ml-auto">
+                <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs">Positive</span>
+              </div>
+            </div>
+            <p className="text-sm text-gray-800 mb-2">
+              le Cameroun aussi c'est un autre niveau hein le {searchTerm} transgenre écoutez # #c...
+            </p>
+            <div className="text-xs text-gray-500">
+              TikTok • 1.2k likes • 567 comments
+            </div>
+          </div>
+        </div>
+        
+        {/* Informations sur les mots-clés utilisés */}
+        <div className="mt-8 bg-blue-50 p-4 rounded-lg">
+          <h3 className="font-bold mb-2">Mots-clés utilisés pour cette recherche :</h3>
+          <div className="flex flex-wrap gap-2">
+            {keywords.map((keyword, index) => (
+              <span key={index} className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">
+                {keyword}
+              </span>
+            ))}
+          </div>
+        </div>
+        
+        <div className="flex justify-between items-end mt-8">
+          <div className="flex space-x-4">
+            <div className="w-12 h-12 bg-blue-600 text-white flex items-center justify-center font-bold">PNUD</div>
+            <div className="w-12 h-12 bg-gradient-to-r from-cyan-400 to-blue-500 text-white flex items-center justify-center">Y</div>
+            <div className="w-12 h-12 bg-red-600 text-white flex items-center justify-center">O</div>
+          </div>
+          <div className="text-4xl font-bold text-blue-600">11</div>
+        </div>
+      </div>
+
       {/* Contenu dynamique supplémentaire */}
       {content && (
         <div className="page-break">
