@@ -27,36 +27,47 @@ export const YimbaReportTemplate: React.FC<YimbaReportTemplateProps> = ({
   return (
     <div className="w-full max-w-4xl mx-auto bg-white">
       {/* Page 1 - Couverture */}
-      <div className="min-h-screen flex flex-col p-8 relative" style={{ background: 'linear-gradient(135deg, #00bcd4 0%, #2196f3 100%)' }}>
+      <div className="min-h-screen flex flex-col p-8 bg-white relative">
         {/* Header avec logos */}
         <div className="flex justify-between items-start mb-16">
-          <div className="flex items-center space-x-4">
-            <img src="/lovable-uploads/c0d1b7c6-ee67-46b1-a8ef-212e2ebfd9d4.png" alt="ONUSIDA" className="h-16" />
+          {/* ONUSIDA à gauche sur fond cyan */}
+          <div className="bg-cyan-400 p-4 flex items-center">
+            <img src="/lovable-uploads/c0d1b7c6-ee67-46b1-a8ef-212e2ebfd9d4.png" alt="ONUSIDA" className="h-12" />
           </div>
-          <div className="flex items-center space-x-4">
-            <img src="/lovable-uploads/e0fb972f-1d9a-4ac8-a76a-9f7bb512f2bc.png" alt="Yimba" className="h-20" />
-            <img src="/lovable-uploads/99c3f9d0-c5e8-42e6-95d9-756fadfef0f1.png" alt="PNUD" className="h-24" />
+          
+          {/* PNUD à droite */}
+          <div className="bg-blue-600 p-4">
+            <img src="/lovable-uploads/99c3f9d0-c5e8-42e6-95d9-756fadfef0f1.png" alt="PNUD" className="h-16 w-16" />
           </div>
         </div>
 
+        {/* Logo Yimba central */}
+        <div className="flex justify-center mb-12">
+          <img src="/lovable-uploads/e0fb972f-1d9a-4ac8-a76a-9f7bb512f2bc.png" alt="Yimba" className="h-24" />
+        </div>
+
         {/* Titre principal */}
-        <div className="text-center mb-16 flex-1 flex flex-col justify-center">
-          <h1 className="text-4xl font-bold text-white mb-8 leading-tight max-w-4xl mx-auto">
+        <div className="text-center mb-12 flex-1 flex flex-col justify-center">
+          <h1 className="text-3xl font-bold text-black mb-8 leading-tight max-w-4xl mx-auto">
             {keywords.length > 0 ? `Campagne ${keywords.join(", ")}: analyse des perceptions sur les réseaux sociaux en Côte d'Ivoire au regard de la communauté LGBTQI` : `${searchTerm}: analyse des perceptions sur les réseaux sociaux en Côte d'Ivoire`}
           </h1>
-          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 max-w-md mx-auto">
-            <p className="text-white/80 text-lg mb-2">Période d'analyse</p>
-            <p className="text-white text-xl font-bold">
+          
+          {/* Date en bas à droite */}
+          <div className="absolute bottom-24 right-8">
+            <p className="text-black text-lg font-medium">
               {formatDate(dateRange.from)} - {formatDate(dateRange.to)}
             </p>
           </div>
         </div>
 
         {/* Footer avec logos */}
-        <div className="flex justify-between items-end">
-          <div className="flex items-center space-x-4">
-            <img src="/lovable-uploads/05b938b5-f3ff-417a-8be3-66366fcedabf.png" alt="Expertise France" className="h-12" />
+        <div className="flex justify-between items-end mt-auto">
+          {/* Expertise France à gauche sur fond bleu */}
+          <div className="bg-blue-600 text-white p-4 flex items-center">
+            <img src="/lovable-uploads/05b938b5-f3ff-417a-8be3-66366fcedabf.png" alt="Expertise France" className="h-8" />
           </div>
+          
+          {/* Logos des réseaux sociaux */}
           <div className="flex space-x-4">
             <img src="/lovable-uploads/c86f5ae2-b7b4-418c-bee8-fa95c3f72eeb.png" alt="Facebook" className="w-12 h-12 rounded-lg" />
             <img src="/lovable-uploads/d17b0fc4-ef6c-4b1c-ab99-c29bebbc7b05.png" alt="X (Twitter)" className="w-12 h-12 rounded-lg" />
