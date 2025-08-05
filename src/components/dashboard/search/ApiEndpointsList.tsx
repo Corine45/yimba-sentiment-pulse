@@ -17,6 +17,15 @@ export const ApiEndpointsList = () => {
       category: "Social Media"
     },
     {
+      name: "TikTok Free",
+      icon: "🎵",
+      endpoint: "/api/scrape/tiktok/free",
+      description: "Scraper TikTok gratuitement avec clockworks~free-tiktok-scraper",
+      maxResults: 50,
+      active: true,
+      category: "Social Media"
+    },
+    {
       name: "TikTok Location",
       icon: "📍",
       endpoint: "/api/scrape/tiktok/location",
@@ -87,6 +96,15 @@ export const ApiEndpointsList = () => {
       endpoint: "/api/scrape/facebook-page-likes",
       description: "Scraper les pages aimées par une page Facebook",
       maxResults: 30,
+      active: true,
+      category: "Social Media"
+    },
+    {
+      name: "Facebook Search Scraper",
+      icon: "🔍",
+      endpoint: "/api/scrape/facebook/search-scraper",
+      description: "Scraper des résultats Facebook avec apify~facebook-search-scraper",
+      maxResults: 100,
       active: true,
       category: "Social Media"
     },
