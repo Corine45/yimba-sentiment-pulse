@@ -89,10 +89,20 @@ export const RealSearchPanel = () => {
     setFilters(newFilters);
   };
 
+  // 🔧 FIX PAGINATION: S'assurer que currentPage est valide
   const totalPages = Math.ceil(mentions.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
+  
+  // Réinitialiser à la page 1 si la page actuelle est invalide
+  const validCurrentPage = currentPage > totalPages ? 1 : currentPage;
+  if (validCurrentPage !== currentPage && mentions.length > 0) {
+    setCurrentPage(validCurrentPage);
+  }
+  
+  const startIndex = (validCurrentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const paginatedMentions = mentions.slice(startIndex, endIndex);
+  
+  console.log(`📄 PAGINATION DEBUG: Page ${validCurrentPage}/${totalPages}, Items ${startIndex+1}-${Math.min(endIndex, mentions.length)} sur ${mentions.length}`);
 
   return (
     <div className="space-y-6">
@@ -182,12 +192,19 @@ export const RealSearchPanel = () => {
 
           {totalMentions > 0 && (
             <SearchPagination
-              currentPage={currentPage}
+              currentPage={validCurrentPage}
               totalPages={totalPages}
               totalItems={totalMentions}
               itemsPerPage={itemsPerPage}
-              onPageChange={setCurrentPage}
-              onItemsPerPageChange={setItemsPerPage}
+              onPageChange={(page) => {
+                console.log(`📄 CHANGEMENT PAGE: ${page}`);
+                setCurrentPage(page);
+              }}
+              onItemsPerPageChange={(newItemsPerPage) => {
+                console.log(`📄 CHANGEMENT ITEMS/PAGE: ${newItemsPerPage}`);
+                setItemsPerPage(newItemsPerPage);
+                setCurrentPage(1); // Reset à la page 1 quand on change le nombre d'items
+              }}
             />
           )}
         </TabsContent>
