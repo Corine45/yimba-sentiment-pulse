@@ -86,7 +86,7 @@ export default class RealApiService {
   // 🆕 Méthode dédiée pour la recherche sur toutes les plateformes
   private async searchAllPlatforms(keywords: string[], platforms: string[], filters: SearchFilters): Promise<MentionResult[]> {
     try {
-      console.log('🚀 NOUVELLE RECHERCHE API BACKEND FIABLE - YIMBA PULSE API');
+      console.log('🚀 RECHERCHE API BACKEND - YIMBA PULSE API AVEC OPTIMISATIONS');
       console.log('🔗 Base URL:', this.baseUrl);
       console.log('📝 Mots-clés:', keywords);
       console.log('🎯 Plateformes sélectionnées:', platforms);
@@ -94,8 +94,8 @@ export default class RealApiService {
       
       const allResults: MentionResult[] = [];
       
-      // Traitement séquentiel pour éviter la surcharge des APIs
-      for (const platform of platforms) {
+      // Traitement en parallèle pour maximiser les résultats
+      const platformPromises = platforms.map(async (platform) => {
         console.log(`\n🎯 === RECHERCHE ${platform.toUpperCase()} AVEC APIS MULTIPLES ===`);
         
         try {
@@ -129,15 +129,17 @@ export default class RealApiService {
           }
 
           console.log(`✅ ${platform.toUpperCase()} TOTAL: ${platformResults.length} résultats via APIs multiples`);
-          allResults.push(...platformResults);
-          
-          // Délai entre plateformes pour éviter la surcharge
-          await new Promise(resolve => setTimeout(resolve, 500));
+          return platformResults;
           
         } catch (error) {
           console.error(`❌ Erreur ${platform} COMPLET:`, error);
+          return [];
         }
-      }
+      });
+
+      // Attendre tous les résultats en parallèle
+      const allPlatformResults = await Promise.all(platformPromises);
+      allPlatformResults.forEach(results => allResults.push(...results));
 
       // Application des filtres seulement si spécifiés
       const filteredResults = Object.keys(filters).length > 0 ? 
@@ -180,8 +182,13 @@ export default class RealApiService {
             },
             body: JSON.stringify({
               hashtags: [keyword.startsWith('#') ? keyword : `#${keyword}`],
-              resultsPerPage: 100,
-              maxResults: 200
+              searchQueries: [keyword],
+              resultsPerPage: 500,
+              maxResults: 1000,
+              scrapeOptions: {
+                maxRequestRetries: 3,
+                requestTimeoutSecs: 30
+              }
             })
           });
 
@@ -219,8 +226,12 @@ export default class RealApiService {
               search: keyword,
               searchQueries: [keyword],
               hashtags: [keyword.startsWith('#') ? keyword : `#${keyword}`],
-              maxResults: 200,
-              resultsPerPage: 100
+              maxResults: 1000,
+              resultsPerPage: 500,
+              scrapeOptions: {
+                maxRequestRetries: 3,
+                requestTimeoutSecs: 30
+              }
             })
           });
 
@@ -266,8 +277,12 @@ export default class RealApiService {
             body: JSON.stringify({
               query: keyword,
               search: keyword,
-              resultsPerPage: 100,
-              maxResults: 200
+              resultsPerPage: 500,
+              maxResults: 1000,
+              scrapeOptions: {
+                maxRequestRetries: 3,
+                requestTimeoutSecs: 30
+              }
             })
           });
 
