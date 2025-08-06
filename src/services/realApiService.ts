@@ -2,7 +2,7 @@ import { PlatformTransformers } from './api/platformTransformers';
 import { MentionResult, SearchFilters, CachedResult } from './api/types';
 import { FiltersManager } from './api/filtersManager';
 
-const CACHE_EXPIRY_MS = 10 * 60 * 1000; // 10 minutes
+const CACHE_EXPIRY_MS = 15 * 60 * 1000; // 15 minutes pour cache plus long
 
 export default class RealApiService {
   private baseUrl: string;

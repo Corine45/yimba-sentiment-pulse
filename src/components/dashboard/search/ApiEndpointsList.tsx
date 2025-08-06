@@ -109,6 +109,33 @@ export const ApiEndpointsList = () => {
       category: "Social Media"
     },
     {
+      name: "Facebook Posts",
+      icon: "📝",
+      endpoint: "/api/scrape/facebook",
+      description: "Scraper des posts Facebook par mots-clés",
+      maxResults: 100,
+      active: true,
+      category: "Social Media"
+    },
+    {
+      name: "Facebook Page Search",
+      icon: "📄",
+      endpoint: "/api/scrape/facebook/page-search",
+      description: "Scraper des pages Facebook par mots-clés",
+      maxResults: 100,
+      active: true,
+      category: "Social Media"
+    },
+    {
+      name: "Facebook Posts URLs",
+      icon: "🔗",
+      endpoint: "/api/scrape/facebook-posts-ideal",
+      description: "Scraper des publications Facebook via des URLs",
+      maxResults: 50,
+      active: true,
+      category: "Social Media"
+    },
+    {
       name: "Facebook URL ID",
       icon: "🔗",
       endpoint: "/api/scrape/facebook-url-id",
@@ -159,7 +186,16 @@ export const ApiEndpointsList = () => {
       name: "Instagram API",
       icon: "🔌",
       endpoint: "/api/scrape/instagram/api",
-      description: "Scraper via l'API Instagram officielle",
+      description: "Scraper via l'API Instagram officielle (profil, publications...)",
+      maxResults: 50,
+      active: true,
+      category: "Social Media"
+    },
+    {
+      name: "Instagram General V2",
+      icon: "📱",
+      endpoint: "/api/scrape/instagram-general",
+      description: "Scraper Instagram (profil, hashtags, lieux ou URL directe)",
       maxResults: 50,
       active: true,
       category: "Social Media"
@@ -236,7 +272,7 @@ export const ApiEndpointsList = () => {
       icon: "📺",
       endpoint: "/api/scrape/youtube",
       description: "Scraper YouTube par mots-clés",
-      maxResults: 60,
+      maxResults: 100,
       active: true,
       category: "Video"
     },
