@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -89,20 +89,39 @@ export const RealSearchPanel = () => {
     setFilters(newFilters);
   };
 
-  // 🔧 FIX PAGINATION: S'assurer que currentPage est valide
+  // 🔧 FIX PAGINATION: S'assurer que currentPage est valide et éviter les doublons
   const totalPages = Math.ceil(mentions.length / itemsPerPage);
   
+  // Créer un Set d'IDs uniques pour éviter les doublons
+  const uniqueMentions = useMemo(() => {
+    const seen = new Set();
+    return mentions.filter(mention => {
+      const uniqueId = `${mention.id}-${mention.platform}-${mention.timestamp}`;
+      if (seen.has(uniqueId)) {
+        return false;
+      }
+      seen.add(uniqueId);
+      return true;
+    });
+  }, [mentions]);
+
+  // Recalculer les pages avec les mentions uniques
+  const correctedTotalPages = Math.ceil(uniqueMentions.length / itemsPerPage);
+  
   // Réinitialiser à la page 1 si la page actuelle est invalide
-  const validCurrentPage = currentPage > totalPages ? 1 : currentPage;
-  if (validCurrentPage !== currentPage && mentions.length > 0) {
-    setCurrentPage(validCurrentPage);
-  }
+  const validCurrentPage = currentPage > correctedTotalPages ? 1 : currentPage;
+  
+  useEffect(() => {
+    if (validCurrentPage !== currentPage && uniqueMentions.length > 0) {
+      setCurrentPage(validCurrentPage);
+    }
+  }, [validCurrentPage, currentPage, uniqueMentions.length]);
   
   const startIndex = (validCurrentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const paginatedMentions = mentions.slice(startIndex, endIndex);
+  const paginatedMentions = uniqueMentions.slice(startIndex, endIndex);
   
-  console.log(`📄 PAGINATION DEBUG: Page ${validCurrentPage}/${totalPages}, Items ${startIndex+1}-${Math.min(endIndex, mentions.length)} sur ${mentions.length}`);
+  console.log(`📄 PAGINATION DEBUG: Page ${validCurrentPage}/${correctedTotalPages}, Items ${startIndex+1}-${Math.min(endIndex, uniqueMentions.length)} sur ${uniqueMentions.length} (mentions uniques)`);
 
   return (
     <div className="space-y-6">
@@ -193,8 +212,8 @@ export const RealSearchPanel = () => {
           {totalMentions > 0 && (
             <SearchPagination
               currentPage={validCurrentPage}
-              totalPages={totalPages}
-              totalItems={totalMentions}
+              totalPages={correctedTotalPages}
+              totalItems={uniqueMentions.length}
               itemsPerPage={itemsPerPage}
               onPageChange={(page) => {
                 console.log(`📄 CHANGEMENT PAGE: ${page}`);

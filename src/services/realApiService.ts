@@ -179,7 +179,9 @@ export default class RealApiService {
               'Accept': 'application/json'
             },
             body: JSON.stringify({
-              hashtags: [keyword.startsWith('#') ? keyword : `#${keyword}`]
+              hashtags: [keyword.startsWith('#') ? keyword : `#${keyword}`],
+              resultsPerPage: 100,
+              maxResults: 200
             })
           });
 
@@ -205,17 +207,20 @@ export default class RealApiService {
           console.warn('⚠️ TikTok hashtag API inaccessible:', error);
         }
 
-        // API 2: TikTok Free API
+        // API 2: TikTok Search API avec plus de paramètres
         try {
-          const response2 = await fetch(`${this.baseUrl}/api/scrape/tiktok/free`, {
+          const response2 = await fetch(`${this.baseUrl}/api/scrape/tiktok/search`, {
             method: 'POST',
             headers: { 
               'Content-Type': 'application/json',
               'Accept': 'application/json'
             },
             body: JSON.stringify({
-              keyword: keyword,
-              maxResults: 100
+              search: keyword,
+              searchQueries: [keyword],
+              hashtags: [keyword.startsWith('#') ? keyword : `#${keyword}`],
+              maxResults: 200,
+              resultsPerPage: 100
             })
           });
 
@@ -259,7 +264,10 @@ export default class RealApiService {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              query: keyword
+              query: keyword,
+              search: keyword,
+              resultsPerPage: 100,
+              maxResults: 200
             })
           });
 
@@ -284,7 +292,10 @@ export default class RealApiService {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              query: keyword
+              query: keyword,
+              search: keyword,
+              resultsPerPage: 100,
+              maxResults: 200
             })
           });
 
@@ -353,7 +364,9 @@ export default class RealApiService {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               searchType: "hashtag",
-              searchInput: keyword.startsWith('#') ? keyword : `#${keyword}`
+              searchInput: keyword.startsWith('#') ? keyword : `#${keyword}`,
+              resultsLimit: 200,
+              resultsPerPage: 100
             })
           });
 
@@ -378,7 +391,10 @@ export default class RealApiService {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              usernames: [keyword] // Recherche par nom d'utilisateur si applicable
+              usernames: [keyword],
+              hashtags: [keyword.startsWith('#') ? keyword : `#${keyword}`],
+              resultsLimit: 200,
+              resultsPerPage: 100
             })
           });
 
@@ -421,7 +437,11 @@ export default class RealApiService {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              query: keyword
+              query: keyword,
+              search: keyword,
+              searchQueries: [keyword],
+              maxResults: 200,
+              resultsPerPage: 100
             })
           });
 
@@ -464,7 +484,9 @@ export default class RealApiService {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              searchKeywords: keyword
+              searchKeywords: keyword,
+              maxItems: 200,
+              resultsPerPage: 100
             })
           });
 
@@ -505,7 +527,9 @@ export default class RealApiService {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            query: keyword
+            query: keyword,
+            maxResults: 200,
+            resultsPerPage: 100
           })
         });
 
