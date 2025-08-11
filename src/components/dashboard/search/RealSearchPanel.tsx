@@ -1,4 +1,3 @@
-
 import { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -18,6 +17,7 @@ import { useRealSearch } from "@/hooks/useRealSearch";
 import { SearchFilters } from "@/services/api/types";
 
 export const RealSearchPanel = () => {
+  // 🔥 ÉTAT LOCAL POUR LA CONFIGURATION DE RECHERCHE
   const [keywords, setKeywords] = useState<string[]>([]);
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
   const [filters, setFilters] = useState<SearchFilters>({});
@@ -25,6 +25,7 @@ export const RealSearchPanel = () => {
   const [itemsPerPage, setItemsPerPage] = useState(25);
   const [activeTab, setActiveTab] = useState('search');
   
+  // 🎯 DONNÉES EXCLUSIVEMENT DE VOS APIs - ZERO DONNÉES STATIQUES
   const { 
     mentions, 
     isLoading, 
@@ -38,94 +39,86 @@ export const RealSearchPanel = () => {
     clearCache 
   } = useRealSearch();
 
+  console.log('🔍 RealSearchPanel - DONNÉES PURES API YIMBA PULSE:', {
+    totalMentions,
+    mentionsCount: mentions.length,
+    isLoading,
+    platforms: Object.keys(platformCounts),
+    sentiment: sentimentStats
+  });
+
   const handleSearch = () => {
     setCurrentPage(1);
-    console.log('🚀 RECHERCHE FIABLE AVEC TOUTES LES APIs:', {
+    console.log('🚀 RECHERCHE EXCLUSIVEMENT VOS APIs:', {
       keywords,
       platforms: selectedPlatforms,
       filters,
-      api: 'https://yimbapulseapi.a-car.ci',
-      totalApis: 'Plus de 30 endpoints disponibles'
+      api: 'https://yimbapulseapi.a-car.ci'
     });
     executeSearch(keywords, selectedPlatforms, filters);
   };
 
-  const handleSaveMentions = async (format: 'json' | 'pdf' | 'csv' = 'json') => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    const mentionsToSave = mentions.slice(startIndex, endIndex);
-    
-    await saveMentions(mentionsToSave, keywords, selectedPlatforms, filters, format);
+  const handleSaveMentions = async () => {
+    if (paginatedMentions.length === 0) return;
+    await saveMentions(paginatedMentions, keywords, selectedPlatforms, filters);
   };
 
   const clearAllFilters = () => {
     setFilters({});
-    console.log('🗑️ Tous les filtres effacés');
+    setCurrentPage(1);
   };
 
   const getActiveFiltersCount = () => {
-    let count = 0;
-    if (filters.language) count++;
-    if (filters.excludedLanguages?.length) count++;
-    if (filters.geography?.country) count++;
-    if (filters.excludedCountries?.length) count++;
-    if (filters.author) count++;
-    if (filters.domain) count++;
-    if (filters.country) count++;
-    if (filters.importance && filters.importance !== 'all') count++;
-    if (filters.visited && filters.visited !== 'all') count++;
-    if (filters.minInfluenceScore && filters.minInfluenceScore > 0) count++;
-    if (filters.sentiment) count++;
-    if (filters.sortBy) count++;
-    if (filters.period) count++;
-    if (filters.tags?.length) count++;
-    if (filters.dateFrom || filters.dateTo) count++;
-    if (filters.minEngagement) count++;
-    return count;
+    return Object.keys(filters).filter(key => {
+      const value = filters[key as keyof SearchFilters];
+      return value !== undefined && value !== null && value !== '';
+    }).length;
   };
 
   const handleFiltersChange = (newFilters: SearchFilters) => {
-    console.log('🔧 MISE À JOUR FILTRES OPTIONNELS:', newFilters);
     setFilters(newFilters);
+    setCurrentPage(1);
   };
 
-  // 🔧 FIX PAGINATION: S'assurer que currentPage est valide et éviter les doublons
-  const totalPages = Math.ceil(mentions.length / itemsPerPage);
-  
-  // Créer un Set d'IDs uniques pour éviter les doublons
+  // 🔥 DÉDUPLICATION DES MENTIONS API UNIQUEMENT
   const uniqueMentions = useMemo(() => {
+    console.log('🔍 Déduplication des mentions API YIMBA PULSE:', mentions.length);
     const seen = new Set();
-    return mentions.filter(mention => {
-      const uniqueId = `${mention.id}-${mention.platform}-${mention.timestamp}`;
-      if (seen.has(uniqueId)) {
-        return false;
-      }
-      seen.add(uniqueId);
+    const filtered = mentions.filter(mention => {
+      const key = `${mention.id}-${mention.platform}-${mention.timestamp}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
       return true;
     });
+    console.log('✅ Mentions uniques de VOS APIs:', filtered.length);
+    return filtered;
   }, [mentions]);
 
-  // Recalculer les pages avec les mentions uniques
-  const correctedTotalPages = Math.ceil(uniqueMentions.length / itemsPerPage);
-  
-  // Réinitialiser à la page 1 si la page actuelle est invalide
-  const validCurrentPage = currentPage > correctedTotalPages ? 1 : currentPage;
+  // PAGINATION BASÉE EXCLUSIVEMENT SUR VOS APIs
+  const totalPages = Math.ceil(uniqueMentions.length / itemsPerPage);
   
   useEffect(() => {
-    if (validCurrentPage !== currentPage && uniqueMentions.length > 0) {
-      setCurrentPage(validCurrentPage);
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(1);
     }
-  }, [validCurrentPage, currentPage, uniqueMentions.length]);
-  
-  const startIndex = (validCurrentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const paginatedMentions = uniqueMentions.slice(startIndex, endIndex);
-  
-  console.log(`📄 PAGINATION DEBUG: Page ${validCurrentPage}/${correctedTotalPages}, Items ${startIndex+1}-${Math.min(endIndex, uniqueMentions.length)} sur ${uniqueMentions.length} (mentions uniques)`);
+  }, [totalPages, currentPage]);
+
+  const paginatedMentions = uniqueMentions.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  console.log('📊 DONNÉES FINALES AFFICHÉES (VOS APIs UNIQUEMENT):', {
+    totalMentions,
+    uniqueCount: uniqueMentions.length,
+    paginatedCount: paginatedMentions.length,
+    currentPage,
+    totalPages
+  });
 
   return (
     <div className="space-y-6">
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="search">🔍 Recherche</TabsTrigger>
           <TabsTrigger value="apis">🔗 Mes APIs</TabsTrigger>
@@ -133,7 +126,6 @@ export const RealSearchPanel = () => {
         </TabsList>
 
         <TabsContent value="search" className="space-y-6">
-          {/* Configuration de recherche */}
           <Card>
             <CardHeader>
               <CardTitle>
@@ -141,11 +133,11 @@ export const RealSearchPanel = () => {
               </CardTitle>
               <div className="text-sm text-gray-600 bg-blue-50 p-3 rounded-lg">
                 <div className="flex items-center space-x-2">
-                  <span className="text-blue-600 font-semibold">🚀 API Backend Fiable:</span>
+                  <span className="text-blue-600 font-semibold">🚀 API Backend Exclusif:</span>
                   <code className="bg-white px-2 py-1 rounded">https://yimbapulseapi.a-car.ci</code>
                 </div>
                 <div className="mt-2 text-xs text-green-600">
-                  ✨ <strong>30+ APIs harmonisées actives</strong> - TikTok • Facebook • Instagram • Twitter/X • YouTube • Google • Web + toutes les variantes spécialisées
+                  ✨ <strong>VOS APIs HARMONISÉES ACTIVES</strong> - TikTok • Facebook • Instagram • Twitter/X • YouTube • Google • Web
                 </div>
               </div>
             </CardHeader>
@@ -164,67 +156,63 @@ export const RealSearchPanel = () => {
                 getActiveFiltersCount={getActiveFiltersCount}
               />
 
-              {/* Bouton de recherche principal */}
               <div className="flex justify-center pt-4">
                 <Button 
                   onClick={handleSearch} 
                   disabled={isLoading || keywords.length === 0 || selectedPlatforms.length === 0}
-                  className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-semibold px-8 py-3 text-lg"
                   size="lg"
+                  className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-semibold px-8 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
                 >
                   <Search className="w-5 h-5 mr-2" />
-                  {isLoading ? "🔄 Recherche fiable via 30+ APIs..." : "🚀 Rechercher via toutes mes APIs"}
+                  {isLoading ? "Recherche API en cours..." : "🔍 Rechercher dans mes APIs"}
                 </Button>
               </div>
-              
-              {/* Debug des API */}
-              {isLoading && (
-                <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                  <p className="text-sm text-yellow-800">
-                    🔍 Recherche fiable en cours sur vos 30+ APIs harmonisées...
-                  </p>
-                  <div className="text-xs text-yellow-600 mt-1">
-                    Plateformes: {selectedPlatforms.join(', ')} | Mots-clés: {keywords.join(', ')}
-                  </div>
-                  <div className="text-xs text-yellow-600 mt-1">
-                    Filtres: {getActiveFiltersCount() > 0 ? `${getActiveFiltersCount()} filtres actifs` : 'Aucun filtre (données brutes)'}
-                  </div>
-                </div>
-              )}
             </CardContent>
           </Card>
 
-          {/* Widgets et résultats */}
-          {totalMentions > 0 && <WordCloud mentions={mentions} />}
-
-          {totalMentions > 0 && (
-            <SearchStats
-              totalMentions={totalMentions}
-              sentimentStats={sentimentStats}
-              totalEngagement={totalEngagement}
-              mentions={mentions}
-              onSaveMentions={handleSaveMentions}
-            />
+          {/* RÉSULTATS EXCLUSIVEMENT DE VOS APIs */}
+          {(uniqueMentions.length > 0 || isLoading) && (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2 space-y-6">
+                <SearchStats 
+                  totalMentions={totalMentions}
+                  sentimentStats={sentimentStats}
+                  totalEngagement={totalEngagement}
+                  mentions={uniqueMentions}
+                  onSaveMentions={handleSaveMentions}
+                />
+                
+                <Brand24StyleResults 
+                  mentions={paginatedMentions}
+                  isLoading={isLoading}
+                />
+                
+                {uniqueMentions.length > 0 && (
+                  <SearchPagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    itemsPerPage={itemsPerPage}
+                    totalItems={uniqueMentions.length}
+                    onPageChange={setCurrentPage}
+                    onItemsPerPageChange={setItemsPerPage}
+                  />
+                )}
+              </div>
+              
+              <div className="space-y-6">
+                <WordCloud mentions={uniqueMentions} />
+              </div>
+            </div>
           )}
 
-          <Brand24StyleResults mentions={paginatedMentions} isLoading={isLoading} />
-
-          {totalMentions > 0 && (
-            <SearchPagination
-              currentPage={validCurrentPage}
-              totalPages={correctedTotalPages}
-              totalItems={uniqueMentions.length}
-              itemsPerPage={itemsPerPage}
-              onPageChange={(page) => {
-                console.log(`📄 CHANGEMENT PAGE: ${page}`);
-                setCurrentPage(page);
-              }}
-              onItemsPerPageChange={(newItemsPerPage) => {
-                console.log(`📄 CHANGEMENT ITEMS/PAGE: ${newItemsPerPage}`);
-                setItemsPerPage(newItemsPerPage);
-                setCurrentPage(1); // Reset à la page 1 quand on change le nombre d'items
-              }}
-            />
+          {!isLoading && uniqueMentions.length === 0 && keywords.length > 0 && (
+            <Card>
+              <CardContent className="text-center py-8">
+                <p className="text-gray-500">
+                  Aucune mention trouvée dans vos APIs pour ces critères.
+                </p>
+              </CardContent>
+            </Card>
           )}
         </TabsContent>
 
