@@ -47,6 +47,14 @@ const AppWithSessionTracking = () => {
               } 
             />
             <Route 
+              path="/dashboard/:tab" 
+              element={
+                <ProtectedRoute>
+                  <Dashboard />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
               path="/profile" 
               element={
                 <ProtectedRoute>

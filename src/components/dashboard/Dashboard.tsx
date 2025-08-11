@@ -1,5 +1,6 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import { DashboardHeader } from "./components/DashboardHeader";
 import { WelcomeMessage } from "./components/WelcomeMessage";
 import { DashboardTabs } from "./components/DashboardTabs";
@@ -13,9 +14,21 @@ interface DashboardProps {
 }
 
 export const Dashboard = ({ user, onLogout }: DashboardProps) => {
+  const { tab } = useParams();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("search");
 
   const permissions = getRolePermissions(user.role);
+
+  // Synchroniser l'onglet actif avec l'URL
+  useEffect(() => {
+    if (tab) {
+      setActiveTab(tab);
+    } else {
+      // Si pas d'onglet dans l'URL, rediriger vers search par défaut
+      navigate('/dashboard/search', { replace: true });
+    }
+  }, [tab, navigate]);
 
   return (
     <SidebarProvider>

@@ -165,7 +165,10 @@ export const AppSidebar = ({ activeTab, onTabChange, user, permissions }: AppSid
               {availableTabs.map((tab) => (
                 <SidebarMenuItem key={tab.value}>
                   <SidebarMenuButton 
-                    onClick={() => onTabChange(tab.value)}
+                    onClick={() => {
+                      navigate(`/dashboard/${tab.value}`, { replace: true });
+                      onTabChange(tab.value);
+                    }}
                     isActive={activeTab === tab.value}
                     tooltip={tab.description}
                     className="w-full justify-start"
