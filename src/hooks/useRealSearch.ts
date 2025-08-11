@@ -16,6 +16,12 @@ export const useRealSearch = () => {
   const { toast } = useToast();
   const { saveMentions } = useSavedMentions();
 
+  console.log('🔍 useRealSearch - État actuel:', {
+    totalMentions,
+    mentionsLength: mentions.length,
+    isLoading
+  });
+
   const executeSearch = async (
     keywords: string[],
     selectedPlatforms: string[],
@@ -46,10 +52,16 @@ export const useRealSearch = () => {
         filters
       );
 
-      console.log(`🏁 TOTAL: ${results.length} mentions récupérées`);
-      console.log(`📦 Cache (10 min): ${cacheUsed ? 'Utilisé' : 'Nouvelle requête'}`);
-      console.log(`📊 Répartition par plateforme:`, counts);
+      console.log(`🏁 REAL API RESULTS:`, {
+        total: results.length,
+        cache: cacheUsed ? 'Utilisé' : 'Nouvelle requête',
+        platforms: counts,
+        sampleData: results.slice(0, 2)
+      });
 
+      // FORCER LA MISE À JOUR COMPLÈTE DE L'ÉTAT
+      console.log('🔄 MISE À JOUR FORCÉE DE TOUTES LES DONNÉES');
+      
       // Calculer les statistiques de sentiment
       const positive = results.filter(m => m.sentiment === 'positive').length;
       const neutral = results.filter(m => m.sentiment === 'neutral').length;
@@ -58,12 +70,19 @@ export const useRealSearch = () => {
         sum + m.engagement.likes + m.engagement.comments + m.engagement.shares, 0
       );
 
-      setMentions(results);
-      setPlatformCounts(counts);
+      // REMPLACEMENT COMPLET DES DONNÉES
+      setMentions([...results]); // Force new array reference
+      setPlatformCounts({...counts}); // Force new object reference
       setTotalMentions(results.length);
       setFromCache(cacheUsed);
       setSentimentStats({ positive, neutral, negative });
       setTotalEngagement(engagement);
+      
+      console.log('✅ ÉTAT MIS À JOUR AVEC:', {
+        newTotal: results.length,
+        newMentions: results.length,
+        newPlatforms: Object.keys(counts)
+      });
 
       if (results.length > 0) {
         toast({
