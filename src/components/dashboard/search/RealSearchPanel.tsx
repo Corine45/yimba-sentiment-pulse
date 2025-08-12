@@ -14,7 +14,7 @@ import { SearchStats } from "./SearchStats";
 import { SearchHeader } from "./SearchHeader";
 import { ApiEndpointsList } from "./ApiEndpointsList";
 import { OptionalAdvancedFilters } from "./OptionalAdvancedFilters";
-import { useRealSearch } from "@/hooks/useRealSearch";
+import { useRealSearchOptimized as useRealSearch } from "@/hooks/useRealSearchOptimized";
 import { SearchFilters } from "@/services/api/types";
 
 export const RealSearchPanel = () => {
@@ -35,7 +35,9 @@ export const RealSearchPanel = () => {
     totalEngagement,
     executeSearch, 
     saveMentions, 
-    clearCache 
+    clearCache,
+    realtimeEnabled,
+    toggleRealtimeSearch
   } = useRealSearch();
 
   const handleSearch = () => {
@@ -165,7 +167,7 @@ export const RealSearchPanel = () => {
               />
 
               {/* Bouton de recherche principal */}
-              <div className="flex justify-center pt-4">
+              <div className="flex justify-center pt-4 space-x-4">
                 <Button 
                   onClick={handleSearch} 
                   disabled={isLoading || keywords.length === 0 || selectedPlatforms.length === 0}
@@ -173,21 +175,42 @@ export const RealSearchPanel = () => {
                   size="lg"
                 >
                   <Search className="w-5 h-5 mr-2" />
-                  {isLoading ? "🔄 Recherche fiable via 30+ APIs..." : "🚀 Rechercher via toutes mes APIs"}
+                  {isLoading ? "🔄 Recherche via toutes vos APIs..." : "🚀 Rechercher via toutes mes APIs"}
                 </Button>
+                
+                {totalMentions > 0 && (
+                  <Button 
+                    onClick={toggleRealtimeSearch}
+                    variant={realtimeEnabled ? "destructive" : "outline"}
+                    size="lg"
+                  >
+                    {realtimeEnabled ? "🔴 Arrêter Temps Réel" : "🟢 Temps Réel"}
+                  </Button>
+                )}
               </div>
               
-              {/* Debug des API */}
+              {/* Debug des API et Statut Temps Réel */}
               {isLoading && (
                 <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                   <p className="text-sm text-yellow-800">
-                    🔍 Recherche fiable en cours sur vos 30+ APIs harmonisées...
+                    🔍 Recherche en cours sur vos APIs https://yimbapulseapi.a-car.ci...
                   </p>
                   <div className="text-xs text-yellow-600 mt-1">
                     Plateformes: {selectedPlatforms.join(', ')} | Mots-clés: {keywords.join(', ')}
                   </div>
                   <div className="text-xs text-yellow-600 mt-1">
                     Filtres: {getActiveFiltersCount() > 0 ? `${getActiveFiltersCount()} filtres actifs` : 'Aucun filtre (données brutes)'}
+                  </div>
+                </div>
+              )}
+              
+              {realtimeEnabled && (
+                <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                  <p className="text-sm text-green-800">
+                    🔴 TEMPS RÉEL ACTIF - Surveillance automatique des nouvelles mentions
+                  </p>
+                  <div className="text-xs text-green-600 mt-1">
+                    Les nouvelles mentions s'ajoutent automatiquement sans recharger la page
                   </div>
                 </div>
               )}
