@@ -64,11 +64,16 @@ export const useRealSearchOptimized = () => {
     });
   }, [toast]);
 
-  // Hook pour la surveillance temps réel
+  // État pour les paramètres de surveillance temps réel
+  const [currentKeywords, setCurrentKeywords] = useState<string[]>([]);
+  const [currentPlatforms, setCurrentPlatforms] = useState<string[]>([]);
+  const [currentFilters, setCurrentFilters] = useState<SearchFilters>({});
+
+  // Hook pour la surveillance temps réel avec les vrais paramètres
   useRealtimeSearch({
-    keywords: [], // Sera mis à jour lors de la recherche
-    platforms: [], // Sera mis à jour lors de la recherche
-    filters: {},  // Sera mis à jour lors de la recherche
+    keywords: currentKeywords,
+    platforms: currentPlatforms,
+    filters: currentFilters,
     onNewMentions: handleNewMentions,
     isEnabled: realtimeEnabled
   });
@@ -122,7 +127,10 @@ export const useRealSearchOptimized = () => {
       setSentimentStats({ positive, neutral, negative });
       setTotalEngagement(engagement);
 
-      // Activer la surveillance temps réel après une recherche réussie
+      // Activer la surveillance temps réel avec les vrais paramètres de recherche
+      setCurrentKeywords(keywords);
+      setCurrentPlatforms(selectedPlatforms);
+      setCurrentFilters(filters);
       setRealtimeEnabled(true);
 
       if (results.length > 0) {
