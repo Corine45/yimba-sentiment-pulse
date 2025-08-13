@@ -97,7 +97,8 @@ export const useRealSearchOptimized = () => {
     try {
       const apiService = new RealApiService();
       
-      // FORCE LA NOUVELLE RECHERCHE - NETTOIE LE CACHE
+      // Forcer une recherche fraîche sans cache
+      console.log('🧹 Vidage du cache pour nouvelles données');
       apiService.clearCache();
       
       console.log('🔍 RECHERCHE FORCÉE SANS CACHE - API YIMBA EXCLUSIVE');

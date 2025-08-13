@@ -22,38 +22,51 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
 
   useEffect(() => {
+    let mounted = true;
     console.log('🔐 Initialisation du contexte d\'authentification');
     
-    // Configuration du listener d'authentification
+    // Configuration du listener d'authentification en premier
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        if (!mounted) return;
+        
         console.log(`🔄 Auth state change: ${event}`, session?.user?.email);
         
-        // Mise à jour synchrone des états
-        setSession(session);
-        setUser(session?.user ?? null);
-        setLoading(false);
-        
-        // Gérer les événements spécifiques
-        if (event === 'SIGNED_IN') {
-          console.log('✅ Utilisateur connecté:', session?.user?.email);
+        // Éviter les conflits de mises à jour
+        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+          console.log('✅ Utilisateur connecté/token rafraîchi:', session?.user?.email);
+          setSession(session);
+          setUser(session?.user ?? null);
         } else if (event === 'SIGNED_OUT') {
           console.log('🚪 Utilisateur déconnecté');
-        } else if (event === 'TOKEN_REFRESHED') {
-          console.log('🔄 Token rafraîchi pour:', session?.user?.email);
+          setSession(null);
+          setUser(null);
         }
+        
+        setLoading(false);
       }
     );
 
-    // Vérification initiale de la session (une seule fois)
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log('📋 Session initiale:', session?.user?.email || 'aucune');
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
+    // Vérification initiale unique
+    const initSession = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (mounted && !error) {
+          console.log('📋 Session initiale:', session?.user?.email || 'aucune');
+          setSession(session);
+          setUser(session?.user ?? null);
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error('❌ Erreur session initiale:', error);
+        if (mounted) setLoading(false);
+      }
+    };
+
+    initSession();
 
     return () => {
+      mounted = false;
       console.log('🧹 Nettoyage du listener d\'authentification');
       subscription.unsubscribe();
     };
