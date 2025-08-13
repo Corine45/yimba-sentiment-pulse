@@ -82,7 +82,10 @@ export const useSessionTracking = () => {
 
   useEffect(() => {
     if (user) {
-      startSession();
+      // Délai pour éviter les conflits avec l'authentification lors du rechargement
+      const timer = setTimeout(() => {
+        startSession();
+      }, 1000);
 
       // Surveiller l'activité utilisateur
       const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
@@ -95,17 +98,21 @@ export const useSessionTracking = () => {
       // Mettre à jour périodiquement
       const interval = setInterval(updateActivity, 60000); // Toutes les minutes
 
-      // Gérer la fermeture de l'onglet/fenêtre
-      const handleBeforeUnload = () => endSession();
+      // Gérer la fermeture de l'onglet/fenêtre (sans endSession qui peut causer des problèmes)
+      const handleBeforeUnload = () => {
+        // Ne pas appeler endSession ici car ça peut causer des déconnexions
+        console.log('Page unload - session tracking stopped');
+      };
       window.addEventListener('beforeunload', handleBeforeUnload);
 
       return () => {
+        clearTimeout(timer);
         events.forEach(event => {
           document.removeEventListener(event, handleActivity, true);
         });
         clearInterval(interval);
         window.removeEventListener('beforeunload', handleBeforeUnload);
-        endSession();
+        // Ne pas appeler endSession dans le cleanup non plus
       };
     }
   }, [user]);
