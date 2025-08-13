@@ -22,7 +22,7 @@ export const RealSearchPanel = () => {
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
   const [filters, setFilters] = useState<SearchFilters>({});
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(25);
+  const [itemsPerPage, setItemsPerPage] = useState(50); // Augmenté à 50 pour voir plus de mentions
   const [activeTab, setActiveTab] = useState('search');
   
   const { 

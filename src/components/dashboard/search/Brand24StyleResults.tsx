@@ -120,12 +120,20 @@ export const Brand24StyleResults = ({ mentions, isLoading }: Brand24StyleResults
 
               {/* Auteur */}
               <div className="flex items-center mb-2">
-                <span className="font-medium text-gray-900">@{mention.author}</span>
+                <span className="font-medium text-gray-900">
+                  @{mention.author || 'Utilisateur anonyme'}
+                </span>
+                {!mention.author && (
+                  <span className="text-xs text-red-500 ml-2">(Nom d'utilisateur non disponible)</span>
+                )}
               </div>
 
               {/* Contenu */}
               <p className="text-gray-700 mb-4 line-clamp-3">
-                {mention.content}
+                {mention.content || 'Contenu non disponible'}
+                {!mention.content && (
+                  <span className="text-xs text-red-500 ml-2">(Contenu masqué ou supprimé)</span>
+                )}
               </p>
 
               {/* Métriques d'engagement */}
