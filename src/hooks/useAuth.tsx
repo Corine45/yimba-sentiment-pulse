@@ -24,14 +24,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     console.log('🔐 Initialisation du contexte d\'authentification');
     
-    // Configuration du listener AVANT de vérifier la session existante
+    // Configuration du listener d'authentification
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
         console.log(`🔄 Auth state change: ${event}`, session?.user?.email);
         
         // Mise à jour synchrone des états
         setSession(session);
         setUser(session?.user ?? null);
+        setLoading(false);
         
         // Gérer les événements spécifiques
         if (event === 'SIGNED_IN') {
@@ -41,30 +42,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } else if (event === 'TOKEN_REFRESHED') {
           console.log('🔄 Token rafraîchi pour:', session?.user?.email);
         }
-        
-        setLoading(false);
       }
     );
 
-    // Vérification de la session existante APRÈS avoir configuré le listener
-    const checkSession = async () => {
-      try {
-        const { data: { session }, error } = await supabase.auth.getSession();
-        if (error) {
-          console.error('❌ Erreur lors de la récupération de la session:', error);
-        } else {
-          console.log('📋 Session existante vérifiée:', session?.user?.email || 'aucune');
-          setSession(session);
-          setUser(session?.user ?? null);
-        }
-      } catch (error) {
-        console.error('❌ Erreur de vérification de session:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    checkSession();
+    // Vérification initiale de la session (une seule fois)
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log('📋 Session initiale:', session?.user?.email || 'aucune');
+      setSession(session);
+      setUser(session?.user ?? null);
+      setLoading(false);
+    });
 
     return () => {
       console.log('🧹 Nettoyage du listener d\'authentification');
