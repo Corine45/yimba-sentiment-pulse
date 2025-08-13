@@ -4,15 +4,14 @@ import { SentimentAnalyzer } from '../sentiment/sentimentAnalyzer';
 export class PlatformTransformers {
   
   static transformTikTokData(items: any[]): MentionResult[] {
-    console.log(`🎵 Transformation TikTok: ${items.length} éléments`);
+    console.log(`🎵 TRANSFORMATION TIKTOK RÉELLE: ${items.length} éléments de votre API`);
     
     return items.map((item, index) => {
-      // Calcul correct de l'engagement
-      const stats = item.stats || {};
-      const likes = stats.diggCount || 0;
-      const comments = stats.commentCount || 0;
-      const shares = stats.shareCount || 0;
-      const views = stats.playCount || 0;
+      // UTILISATION DES VRAIES DONNÉES DE VOTRE API TIKTOK
+      const likes = item.likes || item.diggCount || item.stats?.diggCount || 0;
+      const comments = item.comments || item.commentCount || item.stats?.commentCount || 0;
+      const shares = item.shares || item.shareCount || item.stats?.shareCount || 0;
+      const views = item.plays || item.playCount || item.stats?.playCount || 0;
       
       const engagement = {
         likes,
@@ -27,16 +26,16 @@ export class PlatformTransformers {
       console.log(`TikTok ${index}: Engagement total=${totalEngagement} (likes:${likes}, comments:${comments}, shares:${shares}), Sentiment: ${sentiment}`);
       
       return {
-        id: item.id || `tiktok-${index}`,
+        id: item.id || item.video_id || `tiktok-${Date.now()}-${index}`,
         platform: 'TikTok',
-        content: item.text || '',
-        author: item.authorMeta?.name || 'Utilisateur TikTok',
-        created_at: item.createTimeISO || new Date().toISOString(),
-        timestamp: item.createTimeISO || new Date().toISOString(),
+        content: item.text || item.desc || item.description || '',
+        author: item.username || item.authorMeta?.name || item.author || 'Utilisateur TikTok',
+        created_at: item.created_at || item.createTimeISO || new Date().toISOString(),
+        timestamp: item.created_at || item.createTimeISO || new Date().toISOString(),
         engagement,
         sentiment,
-        url: `https://www.tiktok.com/@${item.authorMeta?.name}/video/${item.id}`,
-        author_url: item.authorMeta?.profileUrl || '',
+        url: item.video_url || item.url || `https://www.tiktok.com/@${item.username || item.authorMeta?.name}/video/${item.id}`,
+        author_url: item.author_url || item.authorMeta?.profileUrl || `https://www.tiktok.com/@${item.username}`,
         location: item.locationCreated ? { city: item.locationCreated } : undefined,
         influence_score: this.calculateInfluenceScore(totalEngagement, item.authorMeta?.followerCount || 0),
         tags: this.extractHashtags(item.text || '')
@@ -45,12 +44,13 @@ export class PlatformTransformers {
   }
 
   static transformFacebookData(items: any[]): MentionResult[] {
-    console.log(`📘 Transformation Facebook: ${items.length} éléments`);
+    console.log(`📘 TRANSFORMATION FACEBOOK RÉELLE: ${items.length} éléments de votre API`);
     
     return items.map((item, index) => {
-      const likes = item.likes?.count || item.reactions?.count || Math.floor(Math.random() * 100) + 10;
-      const comments = item.comments?.count || Math.floor(Math.random() * 20) + 5;
-      const shares = item.shares?.count || Math.floor(Math.random() * 30) + 2;
+      // UTILISATION DES VRAIES DONNÉES DE VOTRE API FACEBOOK
+      const likes = item.reactions_count || item.likes || item.reactions?.like || 0;
+      const comments = item.comments_count || item.comments || 0;
+      const shares = item.reshare_count || item.shares || 0;
       
       const engagement = { likes, comments, shares, views: 0 };
       const totalEngagement = likes + comments + shares;
@@ -59,24 +59,22 @@ export class PlatformTransformers {
       console.log(`Facebook ${index}: Engagement total=${totalEngagement}, Sentiment: ${sentiment}`);
       
       const createdAt = item.created_time || new Date().toISOString();
-      const postId = item.id || `facebook-${index}`;
+      const postId = item.post_id || item.id || `facebook-${Date.now()}-${index}`;
       
-      // 🔧 CORRECTION: URL Facebook correcte
-      const facebookUrl = item.permalink_url || 
-                         `https://www.facebook.com/${postId}` ||
-                         `https://www.facebook.com/posts/${postId}`;
+      // URL FACEBOOK RÉELLE DE VOTRE API
+      const facebookUrl = item.url || item.permalink_url || `https://www.facebook.com/posts/${postId}`;
       
       return {
         id: postId,
         platform: 'Facebook',
         content: item.message || item.text || item.story || '',
-        author: item.from?.name || 'Utilisateur Facebook',
-        created_at: createdAt,
-        timestamp: createdAt,
+        author: item.author?.name || item.from?.name || 'Utilisateur Facebook',
+        created_at: item.timestamp || item.created_time || createdAt,
+        timestamp: item.timestamp || item.created_time || createdAt,
         engagement,
         sentiment,
         url: facebookUrl, // ✅ URL Facebook directe
-        author_url: `https://facebook.com/${item.from?.id || item.from?.username}`,
+        author_url: item.author?.url || `https://facebook.com/${item.from?.id || item.from?.username}`,
         location: item.place?.name ? { city: item.place.name } : undefined,
         influence_score: this.calculateInfluenceScore(totalEngagement, 0),
         tags: this.extractHashtags(item.message || item.text || '')
@@ -85,14 +83,14 @@ export class PlatformTransformers {
   }
 
   static transformTwitterData(items: any[]): MentionResult[] {
-    console.log(`🐦 Transformation Twitter: ${items.length} éléments`);
+    console.log(`🐦 TRANSFORMATION TWITTER RÉELLE: ${items.length} éléments de votre API`);
     
     return items.map((item, index) => {
-      // Calcul des métriques et de l'engagement
+      // UTILISATION DES VRAIES DONNÉES DE VOTRE API TWITTER
       const metrics = item.public_metrics || {};
-      const likes = metrics.like_count || Math.floor(Math.random() * 150) + 20;
-      const comments = metrics.reply_count || Math.floor(Math.random() * 30) + 5;
-      const shares = metrics.retweet_count || Math.floor(Math.random() * 40) + 3;
+      const likes = item.favorite_count || metrics.like_count || item.likes || 0;
+      const comments = item.reply_count || metrics.reply_count || item.comments || 0;
+      const shares = item.retweet_count || metrics.retweet_count || item.shares || 0;
       
       const engagement = { likes, comments, shares, views: 0 };
       const totalEngagement = likes + comments + shares;
@@ -121,12 +119,13 @@ export class PlatformTransformers {
   }
 
   static transformInstagramData(items: any[]): MentionResult[] {
-    console.log(`📸 Transformation Instagram: ${items.length} éléments`);
+    console.log(`📸 TRANSFORMATION INSTAGRAM RÉELLE: ${items.length} éléments de votre API`);
     
     return items.map((item, index) => {
-      const likes = item.like_count || Math.floor(Math.random() * 200) + 30;
-      const comments = item.comments_count || Math.floor(Math.random() * 25) + 8;
-      const shares = Math.floor(Math.random() * 15) + 2;
+      // UTILISATION DES VRAIES DONNÉES DE VOTRE API INSTAGRAM
+      const likes = item.like_count || item.likes || 0;
+      const comments = item.comments_count || item.comment_count || item.comments || 0;
+      const shares = item.shares || 0;
       
       const engagement = { likes, comments, shares, views: 0 };
       const totalEngagement = likes + comments + shares;
@@ -155,14 +154,15 @@ export class PlatformTransformers {
   }
 
   static transformYouTubeData(items: any[]): MentionResult[] {
-    console.log(`🎥 Transformation YouTube: ${items.length} éléments`);
+    console.log(`🎥 TRANSFORMATION YOUTUBE RÉELLE: ${items.length} éléments de votre API`);
     
     return items.map((item, index) => {
+      // UTILISATION DES VRAIES DONNÉES DE VOTRE API YOUTUBE
       const statistics = item.statistics || {};
-      const likes = parseInt(statistics.likeCount || '0') || Math.floor(Math.random() * 500) + 50;
-      const comments = parseInt(statistics.commentCount || '0') || Math.floor(Math.random() * 100) + 15;
-      const views = parseInt(statistics.viewCount || '0') || Math.floor(Math.random() * 10000) + 1000;
-      const shares = Math.floor(views * 0.01) + Math.floor(Math.random() * 20);
+      const likes = parseInt(statistics.likeCount || '0') || item.likes || 0;
+      const comments = parseInt(statistics.commentCount || '0') || item.comments || 0;
+      const views = parseInt(statistics.viewCount || '0') || item.views || 0;
+      const shares = item.shares || Math.floor(views * 0.01) || 0;
       
       const engagement = { likes, comments, shares, views };
       const totalEngagement = likes + comments + shares;
@@ -191,14 +191,13 @@ export class PlatformTransformers {
   }
 
   static transformGoogleData(items: any[]): MentionResult[] {
-    console.log(`🔍 Transformation Google: ${items.length} éléments`);
+    console.log(`🔍 TRANSFORMATION GOOGLE RÉELLE: ${items.length} éléments de votre API`);
     
     return items.map((item, index) => {
-      // Simuler engagement basé sur position dans résultats
-      const baseEngagement = Math.max(100 - (index * 10), 10);
-      const likes = Math.floor(baseEngagement * (0.5 + Math.random() * 0.5));
-      const comments = Math.floor(likes * 0.3);
-      const shares = Math.floor(likes * 0.2);
+      // UTILISATION DES VRAIES DONNÉES DE VOTRE API GOOGLE
+      const likes = item.likes || 0;
+      const comments = item.comments || 0; 
+      const shares = item.shares || 0;
       
       const engagement = { likes, comments, shares, views: 0 };
       const totalEngagement = likes + comments + shares;
@@ -227,12 +226,13 @@ export class PlatformTransformers {
   }
 
   static transformWebData(items: any[]): MentionResult[] {
-    console.log(`🌐 Transformation Web: ${items.length} éléments`);
+    console.log(`🌐 TRANSFORMATION WEB RÉELLE: ${items.length} éléments de votre API`);
     
     return items.map((item, index) => {
-      const likes = Math.floor(Math.random() * 80) + 20;
-      const comments = Math.floor(Math.random() * 15) + 5;
-      const shares = Math.floor(Math.random() * 25) + 3;
+      // UTILISATION DES VRAIES DONNÉES DE VOTRE API WEB
+      const likes = item.likes || 0;
+      const comments = item.comments || 0;
+      const shares = item.shares || 0;
       
       const engagement = { likes, comments, shares, views: 0 };
       const totalEngagement = likes + comments + shares;
