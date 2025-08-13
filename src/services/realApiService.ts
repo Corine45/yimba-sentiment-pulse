@@ -192,6 +192,12 @@ export default class RealApiService {
             })
           });
 
+          console.log(`🌐 TikTok API Request Body for "${keyword}":`, {
+            hashtags: [keyword.startsWith('#') ? keyword : `#${keyword}`],
+            searchQueries: [keyword],
+            timestamp: new Date().toISOString()
+          });
+
           if (response1.ok) {
             const data = await response1.json();
             console.log('🎵 TikTok hashtag API response:', data);

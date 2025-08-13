@@ -102,9 +102,16 @@ export const useRealSearchOptimized = () => {
       
       console.log('🔍 RECHERCHE FORCÉE SANS CACHE - API YIMBA EXCLUSIVE');
       console.log('🔗 API Backend:', 'https://yimbapulseapi.a-car.ci');
-      console.log('📝 Mots-clés:', keywords);
-      console.log('🎯 Plateformes:', selectedPlatforms);
-      console.log('🔧 Filtres:', filters);
+      console.log('📝 Mots-clés EXACTS:', keywords);
+      console.log('🎯 Plateformes EXACTES:', selectedPlatforms);
+      console.log('🔧 Filtres EXACTS:', filters);
+      console.log('⏰ Timestamp recherche:', new Date().toISOString());
+      
+      // DEBUG: Vérifier si les mots-clés changent vraiment
+      console.log('🔍 DEBUG RECHERCHE DIFFÉRENTIELLE:');
+      console.log('- Keywords Hash:', JSON.stringify(keywords));
+      console.log('- Platforms Hash:', JSON.stringify(selectedPlatforms));
+      console.log('- Cache Key que nous utilisons:', `search:${keywords.join(',')}:${selectedPlatforms.join(',')}:${JSON.stringify(filters)}`);
 
       const { results, fromCache: cacheUsed, platformCounts: counts } = await apiService.searchWithCache(
         keywords,
