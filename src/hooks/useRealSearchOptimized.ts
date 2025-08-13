@@ -97,7 +97,11 @@ export const useRealSearchOptimized = () => {
     try {
       const apiService = new RealApiService();
       
-      console.log('🔍 RECHERCHE OPTIMISÉE AVEC CACHE 15 MIN ET TEMPS RÉEL');
+      // FORCE LA NOUVELLE RECHERCHE - NETTOIE LE CACHE
+      apiService.clearCache();
+      
+      console.log('🔍 RECHERCHE FORCÉE SANS CACHE - API YIMBA EXCLUSIVE');
+      console.log('🔗 API Backend:', 'https://yimbapulseapi.a-car.ci');
       console.log('📝 Mots-clés:', keywords);
       console.log('🎯 Plateformes:', selectedPlatforms);
       console.log('🔧 Filtres:', filters);
